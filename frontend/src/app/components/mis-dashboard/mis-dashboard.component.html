@@ -1,0 +1,491 @@
+<div class="container-fluid bg-white min-vh-100 d-flex flex-column">
+    <!-- Header -->
+    <header class="d-flex justify-content-between align-items-center py-3 px-4 bg-white shadow-sm mb-4">
+        <div class="d-flex align-items-center">
+            <h4 class="mb-0 text-primary fw-bold">MIS Dashboard</h4>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-grow-1 px-4">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4 px-2 border-bottom-0">
+            <li class="nav-item">
+                <a class="nav-link position-relative" [class.active]="viewMode === 'pending'"
+                    [class.fw-bold]="viewMode === 'pending'" [class.bg-primary]="viewMode === 'pending'"
+                    [class.text-white]="viewMode === 'pending'" [class.text-muted]="viewMode !== 'pending'"
+                    [class.shadow]="viewMode === 'pending'" (click)="toggleView('pending')" href="javascript:void(0)"
+                    style="transition: all 0.2s;"
+                    [style.box-shadow]="viewMode === 'pending' ? '0 4px 6px rgba(0,0,0,0.1), inset 0 3px 0 #0d6efd, inset 0 6px 0 #ffffff' : 'none'"
+                    [style.top]="viewMode === 'pending' ? '2px' : '0'">
+                    <i class="bi bi-hourglass-split me-2"></i>Pending Updates
+                    <span class="badge ms-1" [class.bg-white]="viewMode === 'pending'"
+                        [class.text-primary]="viewMode === 'pending'" [class.bg-secondary]="viewMode !== 'pending'"
+                        *ngIf="pendingPolicies.length > 0">{{ pendingPolicies.length
+                        }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link position-relative" [class.active]="viewMode === 'updated'"
+                    [class.fw-bold]="viewMode === 'updated'" [class.bg-primary]="viewMode === 'updated'"
+                    [class.text-white]="viewMode === 'updated'" [class.text-muted]="viewMode !== 'updated'"
+                    [class.shadow]="viewMode === 'updated'" (click)="toggleView('updated')" href="javascript:void(0)"
+                    style="transition: all 0.2s;"
+                    [style.box-shadow]="viewMode === 'updated' ? '0 4px 6px rgba(0,0,0,0.1), inset 0 3px 0 #0d6efd, inset 0 6px 0 #ffffff' : 'none'"
+                    [style.top]="viewMode === 'updated' ? '2px' : '0'">
+                    <i class="bi bi-check2-all me-2"></i>Updated
+                    <span class="badge ms-1" [class.bg-white]="viewMode === 'updated'"
+                        [class.text-primary]="viewMode === 'updated'" [class.bg-secondary]="viewMode !== 'updated'"
+                        *ngIf="updatedPolicies.length > 0">{{ updatedPolicies.length
+                        }}</span>
+                </a>
+            </li>
+        </ul>
+
+        <!-- Stats / Search Bar -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0"
+                        placeholder="Search (Policy No, Customer, Vehicle...)" [(ngModel)]="searchTerm"
+                        (input)="filterPolicies()">
+                </div>
+            </div>
+            <div class="col-md-8 text-end">
+                <span class="text-muted small me-3">Records in View: <strong>{{ filteredPolicies.length
+                        }}</strong></span>
+                <button class="btn btn-primary btn-sm" (click)="loadPolicies()"><i class="bi bi-arrow-clockwise"></i>
+                    Refresh</button>
+            </div>
+        </div>
+
+        <!-- Pending Data Table -->
+        <div class="card shadow-sm border-0" *ngIf="viewMode === 'pending'">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th class="ps-4">Policy No.</th>
+                                <th>Customer</th>
+                                <th>Details</th>
+                                <th>Premium</th>
+                                <th>Issued Date</th>
+                                <th class="text-center">Documents</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let policy of filteredPolicies">
+                                <td class="ps-4 fw-bold text-dark">{{ policy.policyNumber }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
+                                    </div>
+                                    <div class="small text-muted"
+                                        *ngIf="policy.customer.phone && policy.customer.phone != 0 && policy.customer.phone !== 'null'">
+                                        {{ policy.customer.phone }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ policy.insuranceName }}</div>
+                                    <div class="small badge bg-info bg-opacity-10 text-info border border-info">{{
+                                        policy.type }}</div>
+                                </td>
+                                <td class="fw-bold text-success">{{ policy.amount | currency:'INR' }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ policy.policyIssueDate |
+                                        date:'mediumDate' }}</span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary"
+                                            (click)="downloadPaymentProof(policy.id)" title="Payment Proof">
+                                            <i class="bi bi-receipt"></i> Payment
+                                        </button>
+                                        <button class="btn btn-outline-success"
+                                            (click)="downloadPolicyDocument(policy.id)" title="Policy Document">
+                                            <i class="bi bi-file-earmark-pdf"></i> Policy
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-light text-primary" (click)="viewDetails(policy)">
+                                        <i class="bi bi-eye"></i> View Full
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="filteredPolicies.length === 0 && !loading">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                    No pending updates found.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Data Table -->
+        <div class="card shadow-sm border-0" *ngIf="viewMode === 'updated'">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th class="ps-4">Policy No.</th>
+                                <th>Customer</th>
+                                <th>Details</th>
+                                <th>MIS Status</th>
+                                <th>Business Type</th>
+                                <th>Branch</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let policy of filteredPolicies">
+                                <td class="ps-4 fw-bold text-dark">{{ policy.policyNumber }}</td>
+                                <td>
+                                    <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
+                                    </div>
+                                    <div class="small text-muted">{{ policy.customer.phone || '-' }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ policy.insuranceName }}</div>
+                                    <div class="small text-muted">{{ policy.productName }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                        [ngClass]="{'bg-success': policy.loginStatus === 'Issued', 'bg-warning text-dark': policy.loginStatus === 'Logged', 'bg-danger': policy.loginStatus === 'Cancelled'}">
+                                        {{ policy.loginStatus }}
+                                    </span>
+                                </td>
+                                <td><span class="fw-500">{{ policy.businessType }}</span></td>
+                                <td>{{ policy.branch || '-' }}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-light text-primary" (click)="viewDetails(policy)">
+                                        <i class="bi bi-eye"></i> View Full
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr *ngIf="filteredPolicies.length === 0 && !loading">
+                                <td colspan="7" class="text-center py-5 text-muted">
+                                    <i class="bi bi-check2-circle fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                    No updated records found.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal (Custom Overlay) -->
+<div class="custom-modal-overlay" *ngIf="selectedPolicy" (click)="selectedPolicy = null">
+    <div class="custom-modal-dialog" (click)="$event.stopPropagation()">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header premium-modal-header display-block">
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <!-- Left: Policy Identity -->
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white bg-opacity-25 rounded-3 p-2 d-flex align-items-center justify-content-center"
+                            style="width: 48px; height: 48px;">
+                            <i class="bi bi-file-earmark-text-fill fs-4 text-white"></i>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span class="text-white-50 text-uppercase fw-bold"
+                                style="font-size: 0.7rem; letter-spacing: 1px; line-height: 1;">Policy No</span>
+                            <span class="fs-4 fw-bold text-white tracking-wide" style="line-height: 1.2;">{{
+                                selectedPolicy.policyNumber }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Context & Close -->
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="text-end d-none d-md-block">
+                            <div class="fw-bold text-white tracking-wide" style="font-size: 1rem;">{{
+                                selectedPolicy.insuranceName
+                                }}</div>
+                            <div class="text-white opacity-75 small" style="font-size: 0.85rem;">{{
+                                selectedPolicy.productName
+                                }}</div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white ms-2"
+                            (click)="selectedPolicy = null"></button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body p-0">
+
+                <div class="p-4 pt-2">
+                    <!-- Dates Horizontal Stepper-like -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 p-4 rounded-3 bg-light-subtle">
+                        <div class="text-center">
+                            <small class="text-muted d-block text-uppercase"
+                                style="font-size: 0.65rem; letter-spacing: 1px;">Issue Date</small>
+                            <span class="fw-bold text-dark fs-5">{{ selectedPolicy.policyIssueDate | date:'mediumDate'
+                                }}</span>
+                        </div>
+                        <div class="text-muted opacity-25"><i class="bi bi-chevron-right fs-4"></i></div>
+                        <div class="text-center">
+                            <small class="text-muted d-block text-uppercase"
+                                style="font-size: 0.65rem; letter-spacing: 1px;">Start Date</small>
+                            <span class="fw-bold text-success fs-5">{{ selectedPolicy.policyStartDate |
+                                date:'mediumDate' }}</span>
+                        </div>
+                        <div class="text-muted opacity-25"><i class="bi bi-chevron-right fs-4"></i></div>
+                        <div class="text-center">
+                            <small class="text-muted d-block text-uppercase"
+                                style="font-size: 0.65rem; letter-spacing: 1px;">End Date</small>
+                            <span class="fw-bold text-danger fs-5">{{ selectedPolicy.policyEndDate | date:'mediumDate'
+                                }}</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <!-- Left Column: Details -->
+                        <div class="col-md-8">
+                            <div class="bg-white p-4 border rounded-3 shadow-sm">
+                                <h6 class="text-uppercase text-secondary fw-bold small mb-3 border-bottom pb-2">Policy &
+                                    Customer Details</h6>
+                                <div class="row g-3 mb-5">
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Customer Name</label>
+                                        <div class="fs-6 fw-bold text-dark">{{ selectedPolicy.customer.firstName }} {{
+                                            selectedPolicy.customer.lastName }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Contact</label>
+                                        <div class="fw-500"
+                                            *ngIf="selectedPolicy.customer.phone && selectedPolicy.customer.phone != 0 && selectedPolicy.customer.phone !== '0' && selectedPolicy.customer.phone !== 'null'">
+                                            {{ selectedPolicy.customer.phone }}</div>
+                                        <div class="small text-muted">{{ selectedPolicy.customer.email }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Vehicle / Asset</label>
+                                        <div class="fw-500 text-uppercase">{{ selectedPolicy.vehicleRegNo || 'N/A' }}
+                                        </div>
+                                        <div class="small text-muted">{{ selectedPolicy.vehicleModel }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Policy Type</label>
+                                        <div class="fw-500">{{ selectedPolicy.type }}</div>
+                                    </div>
+
+                                    <!-- Moved Customer MIS Fields -->
+                                    <div class="col-12">
+                                        <hr class="my-1 text-muted opacity-25">
+                                    </div>
+
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Date of Birth</label>
+                                        <div *ngIf="!isEditing" class="fw-500">{{ selectedPolicy.customer.dob |
+                                            date:'mediumDate' }}</div>
+                                        <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
+                                            [(ngModel)]="selectedPolicy.customer.dob">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Billing Freq.</label>
+                                        <div *ngIf="!isEditing" class="fw-500">{{
+                                            selectedPolicy.customer.billingFrequency
+                                            || '-' }}</div>
+                                        <select *ngIf="isEditing" class="form-select form-select-sm"
+                                            [(ngModel)]="selectedPolicy.customer.billingFrequency">
+                                            <option value="Monthly">Monthly</option>
+                                            <option value="Quarterly">Quarterly</option>
+                                            <option value="Half-YearLy">Half-Yearly</option>
+                                            <option value="Yearly">Yearly</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">PAN Number</label>
+                                        <div *ngIf="!isEditing" class="fw-500 text-uppercase">{{
+                                            selectedPolicy.customer.panNumber || '-' }}</div>
+                                        <input *ngIf="isEditing" type="text"
+                                            class="form-control form-control-sm text-uppercase"
+                                            [(ngModel)]="selectedPolicy.customer.panNumber" placeholder="PAN12345X">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">GST Number</label>
+                                        <div *ngIf="!isEditing" class="fw-500 text-uppercase">{{
+                                            selectedPolicy.customer.gstNumber || '-' }}</div>
+                                        <input *ngIf="isEditing" type="text"
+                                            class="form-control form-control-sm text-uppercase"
+                                            [(ngModel)]="selectedPolicy.customer.gstNumber" placeholder="GST123...">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="small text-muted text-uppercase fw-bold mb-1"
+                                            style="font-size: 0.7rem;">Address</label>
+                                        <div *ngIf="!isEditing">
+                                            <div class="fw-500">{{ selectedPolicy.customer.address || '-' }}</div>
+                                            <div class="fw-500 small text-muted"
+                                                *ngIf="selectedPolicy.customer.city || selectedPolicy.customer.state">
+                                                {{ selectedPolicy.customer.city }}{{ selectedPolicy.customer.state ? ',
+                                                ' +
+                                                selectedPolicy.customer.state : '' }}
+                                            </div>
+                                        </div>
+                                        <div *ngIf="isEditing" class="row g-2">
+                                            <div class="col-12">
+                                                <textarea class="form-control form-control-sm" rows="2"
+                                                    [(ngModel)]="selectedPolicy.customer.address"
+                                                    placeholder="Full Address"></textarea>
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="text" class="form-control form-control-sm"
+                                                    [(ngModel)]="selectedPolicy.customer.city" placeholder="City">
+                                            </div>
+                                            <div class="col-6">
+                                                <input type="text" class="form-control form-control-sm"
+                                                    [(ngModel)]="selectedPolicy.customer.state" placeholder="State">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <h6 class="text-uppercase text-secondary fw-bold small mb-3 border-bottom pb-2">Staff
+                                    Mapping</h6>
+                                <div class="row g-3">
+                                    <div class="col-4">
+                                        <label class="small text-muted mb-1">RM Name</label>
+                                        <div class="fw-500">{{ selectedPolicy.rmName || '-' }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="small text-muted mb-1">Associate Name</label>
+                                        <div class="fw-500">{{ selectedPolicy.associateName || '-' }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="small text-muted mb-1">Associate Code</label>
+                                        <div class="fw-500">{{ selectedPolicy.associateCode || '-' }}</div>
+                                    </div>
+                                </div>
+
+
+                                <!-- MIS Enrichment Section -->
+                                <h6 class="text-uppercase text-secondary fw-bold small mb-3 border-bottom pb-2 mt-4">MIS
+                                    Enrichment Details</h6>
+                                <div class="row g-3" *ngIf="!isEditing">
+                                    <!-- Read Only View -->
+                                    <div class="col-6">
+                                        <label class="small text-muted mb-1">Business Type</label>
+                                        <div class="fw-bold">{{ selectedPolicy.businessType || '-' }}</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted mb-1">Login Status</label>
+                                        <div class="fw-bold">
+                                            <span class="badge"
+                                                [ngClass]="{'bg-success': selectedPolicy.loginStatus === 'Issued', 'bg-warning text-dark': selectedPolicy.loginStatus === 'Logged', 'bg-danger': selectedPolicy.loginStatus === 'Cancelled', 'bg-secondary': !selectedPolicy.loginStatus}">
+                                                {{ selectedPolicy.loginStatus || 'Pending' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="small text-muted mb-1">Branch</label>
+                                        <div class="fw-500">{{ selectedPolicy.branch || '-' }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Edit Form -->
+                                <div class="row g-3" *ngIf="isEditing">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Business Type</label>
+                                        <select class="form-select form-select-sm"
+                                            [(ngModel)]="selectedPolicy.businessType">
+                                            <option value="Fresh">Fresh</option>
+                                            <option value="Renewal">Renewal</option>
+                                            <option value="Portability">Portability</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Login Status</label>
+                                        <select class="form-select form-select-sm"
+                                            [(ngModel)]="selectedPolicy.loginStatus">
+                                            <option value="Issued">Issued</option>
+                                            <option value="Logged">Logged</option>
+                                            <option value="Cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Branch</label>
+                                        <input type="text" class="form-control form-control-sm"
+                                            [(ngModel)]="selectedPolicy.branch" placeholder="Branch Name">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Financials -->
+                        <div class="col-md-4">
+                            <div class="p-3 bg-white border rounded-3 shadow-sm">
+                                <h6 class="text-uppercase text-primary fw-bold small mb-3">Financial Summary</h6>
+
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">Net Premium</span>
+                                    <span class="fw-bold">{{ selectedPolicy.netPremium | currency:'INR' }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted small">Sum Insured</span>
+                                    <span class="fw-bold">{{ selectedPolicy.sumInsured | currency:'INR' }}</span>
+                                </div>
+                                <hr class="my-2">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="text-dark fw-bold">Total Paid</span>
+                                    <span class="fw-bold text-success fs-5">{{ selectedPolicy.amount | currency:'INR'
+                                        }}</span>
+                                </div>
+
+                                <div class="alert alert-light border mb-0 small">
+                                    <div class="mb-1"><strong>Mode:</strong> {{ selectedPolicy.paymentMode }}</div>
+                                    <div class="mb-1"><strong>Ref:</strong> {{ selectedPolicy.paymentReference }}</div>
+                                    <div><strong>Bank:</strong> {{ selectedPolicy.paymentBank }}</div>
+                                </div>
+
+                                <div class="d-grid gap-2 mt-4">
+                                    <button class="btn btn-primary btn-sm"
+                                        (click)="downloadPaymentProof(selectedPolicy.id)">
+                                        <i class="bi bi-file-earmark-text me-2"></i> Payment Proof
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm"
+                                        (click)="downloadPolicyDocument(selectedPolicy.id)">
+                                        <i class="bi bi-file-earmark-pdf me-2"></i> Policy Doc
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Late Renewal Warning -->
+                    <div class="mt-4" *ngIf="selectedPolicy.lateRenewal">
+                        <div class="alert alert-warning border-warning d-flex align-items-center">
+                            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+                            <div>
+                                <div class="fw-bold">Late Renewal Case ({{ selectedPolicy.lateRenewalGap }} Days Gap)
+                                </div>
+                                <div class="small">{{ selectedPolicy.lateRenewalReason }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-top-0 d-flex justify-content-center py-3">
+                <button type="button" class="btn btn-outline-secondary px-4 rounded-pill me-2"
+                    (click)="selectedPolicy = null">Close</button>
+                <button type="button" class="btn px-4 rounded-pill"
+                    [ngClass]="isEditing ? 'btn-success' : 'btn-primary'"
+                    (click)="isEditing ? savePolicyChanges() : toggleEditMode()">
+                    {{ isEditing ? 'Save Changes' : 'Edit Details' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,97 @@
+<div class="app-container">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary" *ngIf="authService.isLoggedIn()">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <img src="assets/logo.png" alt="Share India" height="40" class="me-2 rounded bg-white p-1">
+        <span class="fw-bold tracking-wide">Share India</span>
+      </a>
+      <div class="d-flex align-items-center">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 flex-row">
+          <!-- Renewals: Visible only to RENEWER role -->
+          <li class="nav-item me-3" *ngIf="authService.hasRole('RENEWER')">
+            <a class="nav-link" routerLink="/" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">Renewals Dashboard</a>
+          </li>
+
+          <!-- Servicing: Visible only to SERVICING role -->
+          <li class="nav-item me-3" *ngIf="authService.hasRole('SERVICING')">
+            <a class="nav-link" routerLink="/servicing" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">Servicing Dashboard</a>
+          </li>
+
+          <!-- Admin Dashboard: Visible only to Admins -->
+          <li class="nav-item me-3" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/admin" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">Admin</a>
+          </li>
+
+
+          <!-- User Management: Visible only to Admins -->
+          <li class="nav-item me-3" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">Add User</a>
+          </li>
+
+          <!-- Policy Servicing: Visible to Admin -->
+          <li class="nav-item me-3" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/servicing" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">Policy Servicing</a>
+          </li>
+
+          <!-- MIS Dashboard: Visible only to MIS or Admin -->
+          <li class="nav-item me-3" *ngIf="authService.hasRole('MIS') || authService.isAdmin()">
+            <a class="nav-link" routerLink="/mis-dashboard" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">MIS Dashboard</a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center">
+          <button class="btn btn-sm btn-outline-light me-2" (click)="openPasswordModal()">
+            <i class="bi bi-key"></i> Pass
+          </button>
+          <button class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal-overlay" *ngIf="showPasswordModal" (click)="closePasswordModal()">
+  <div class="custom-modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Change Password</h3>
+      <button class="btn-close" (click)="closePasswordModal()"></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group mb-3">
+        <label>Current Password</label>
+        <input type="password" class="form-control" [(ngModel)]="passwordData.oldPassword"
+          placeholder="Enter current password">
+      </div>
+      <div class="form-group mb-3">
+        <label>New Password</label>
+        <input type="password" class="form-control" [(ngModel)]="passwordData.newPassword"
+          placeholder="Enter new password">
+        <small class="text-muted">Min 4 chars</small>
+      </div>
+      <div class="form-group mb-3">
+        <label>Confirm New Password</label>
+        <input type="password" class="form-control" [(ngModel)]="passwordData.confirmPassword"
+          placeholder="Confirm new password">
+      </div>
+
+      <div *ngIf="passwordMessage" class="alert mt-3" [class.alert-success]="passwordSuccess"
+        [class.alert-danger]="!passwordSuccess">
+        {{ passwordMessage }}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closePasswordModal()">Cancel</button>
+      <button class="btn btn-primary" (click)="changePassword()"
+        [disabled]="!passwordData.oldPassword || !passwordData.newPassword">Update Password</button>
+    </div>
+  </div>
+</div>

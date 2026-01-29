@@ -1,0 +1,521 @@
+<div class="customer-list-container">
+    <div *ngIf="loading" class="loading-spinner">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div *ngIf="!loading && policies.length === 0" class="no-data text-center py-5">
+        <p class="text-muted">No policies found for this timeline.</p>
+    </div>
+
+    <div *ngIf="!loading && policies.length > 0" class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Policy #</th>
+                    <th>Customer</th>
+                    <th>Phone</th>
+                    <th>Expiry Date</th>
+                    <th>Status</th>
+                    <th>Last Call</th>
+                    <th style="width: 200px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let policy of policies">
+                    <td class="fw-bold">{{ policy.policyNumber }}</td>
+                    <td>
+                        <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
+                        <small class="text-muted">{{ policy.type }} • {{ policy.amount | currency:'INR' }}</small>
+                    </td>
+                    <td>
+                        <a [href]="'tel:' + policy.customer.phone" class="phone-link">
+                            <i class="bi bi-telephone-fill me-1"></i>{{ policy.customer.phone }}
+                        </a>
+                    </td>
+                    <td>{{ policy.expiryDate | date:'mediumDate' }}</td>
+                    <td>
+                        <span class="badge rounded-pill" [class.bg-success]="getPolicyStatus(policy) === 'ACTIVE'"
+                            [class.bg-danger]="getPolicyStatus(policy) === 'EXPIRED'">
+                            {{ getPolicyStatus(policy) }}
+                        </span>
+                    </td>
+                    <td>
+                        <div *ngIf="policy.reminder?.lastCallOutcome">
+
+                            <!-- Details Modal -->
+                            <div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+                                <div class="custom-modal-content details-modal" (click)="$event.stopPropagation()">
+                                    <div class="modal-header bg-light">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="icon-circle bg-primary text-white">
+                                                <i class="bi bi-shield-check"></i>
+                                            </div>
+                                            <div>
+                                                <h3 class="mb-0">Policy Details</h3>
+                                                <div class="text-muted small">{{ selectedPolicyDetails?.policyNumber }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button class="btn-close" (click)="closeDetailsModal()"></button>
+                                    </div>
+
+                                    <div class="modal-body">
+                                        <div class="detail-grid">
+                                            <!-- Customer Section -->
+                                            <div class="detail-card">
+                                                <h4 class="section-title"><i class="bi bi-person"></i> Customer Info
+                                                </h4>
+                                                <div class="info-row">
+                                                    <label>Name:</label>
+                                                    <span>{{ selectedPolicyDetails?.customer.firstName }} {{
+                                                        selectedPolicyDetails?.customer.lastName }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Email:</label>
+                                                    <span>{{ selectedPolicyDetails?.customer.email }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Phone:</label>
+                                                    <span>{{ selectedPolicyDetails?.customer.phone }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Billing:</label>
+                                                    <span class="badge bg-secondary">{{
+                                                        selectedPolicyDetails?.customer.billingFrequency ||
+                                                        'N/A' }}</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Policy Section -->
+                                            <div class="detail-card">
+                                                <h4 class="section-title"><i class="bi bi-file-text"></i> Policy Info
+                                                </h4>
+                                                <div class="info-row">
+                                                    <label>Insurance:</label>
+                                                    <span class="fw-bold">{{ selectedPolicyDetails?.insuranceName ||
+                                                        'N/A' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Product:</label>
+                                                    <span>{{ selectedPolicyDetails?.productName || 'N/A' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Start Date:</label>
+                                                    <span>{{ selectedPolicyDetails?.policyStartDate | date:'mediumDate'
+                                                        }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>End Date:</label>
+                                                    <span>{{ selectedPolicyDetails?.policyEndDate | date:'mediumDate'
+                                                        }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Premium:</label>
+                                                    <span class="text-success fw-bold">{{
+                                                        selectedPolicyDetails?.duePremium | currency:'INR'
+                                                        }}</span>
+                                                </div>
+
+                                                <hr class="my-3 text-muted opacity-25">
+
+                                                <div class="info-row">
+                                                    <label>RM Name:</label>
+                                                    <span>{{ selectedPolicyDetails?.rmName || 'N/A' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Associate:</label>
+                                                    <span>{{ selectedPolicyDetails?.associateName || 'N/A' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Code:</label>
+                                                    <code
+                                                        class="text-muted">{{ selectedPolicyDetails?.associateCode || 'N/A' }}</code>
+                                                </div>
+                                            </div>
+
+                                            <!-- Vehicle Section (Only for Motor Insurance) -->
+                                            <div class="detail-card" *ngIf="isMotorPolicy">
+                                                <h4 class="section-title"><i class="bi bi-car-front"></i> Asset Details
+                                                </h4>
+                                                <div class="info-row">
+                                                    <label>Reg No:</label>
+                                                    <span class="fw-bold">{{ selectedPolicyDetails?.vehicleRegNo ||
+                                                        'N/A' }}</span>
+                                                </div>
+                                                <div class="info-row">
+                                                    <label>Model:</label>
+                                                    <span>{{ selectedPolicyDetails?.vehicleModel || 'N/A' }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer bg-light">
+                                        <button class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Log Call Modal -->
+                            <div class="modal-overlay" *ngIf="showLogCallModal" (click)="closeModal()">
+                                <div class="custom-modal-content log-call-modal" (click)="$event.stopPropagation()">
+                                    <div class="modal-header">
+                                        <h3>Log Call</h3>
+                                        <button class="btn-close" (click)="closeModal()"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-3">Logging call for <strong>{{ selectedPolicy?.customer.firstName
+                                                }} {{
+                                                selectedPolicy?.customer.lastName }}</strong></p>
+
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Outcome</label>
+                                            <select [(ngModel)]="callOutcome" class="form-select">
+                                                <option value="Interested">Interested</option>
+                                                <option value="Not Interested">Not Interested</option>
+                                                <option value="Call Back Later">Call Back Later</option>
+                                                <option value="Voicemail">Voicemail</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Notes</label>
+                                            <textarea [(ngModel)]="callNotes" class="form-control" rows="3"
+                                                placeholder="Enter call notes..."></textarea>
+                                        </div>
+
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </div>
+
+                                    <div *ngIf="!loading && policies.length === 0" class="no-data text-center py-5">
+                                        <p class="text-muted">No policies found for this timeline.</p>
+                                    </div>
+
+                                    <div *ngIf="!loading && policies.length > 0" class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Policy #</th>
+                                                    <th>Customer</th>
+                                                    <th>Phone</th>
+                                                    <th>Expiry Date</th>
+                                                    <th>Status</th>
+                                                    <th>Last Call</th>
+                                                    <th style="width: 200px;">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let policy of policies">
+                                                    <td class="fw-bold">{{ policy.policyNumber }}</td>
+                                                    <td>
+                                                        <div class="fw-bold">{{ policy.customer.firstName }} {{
+                                                            policy.customer.lastName }}
+                                                        </div>
+                                                        <small class="text-muted">{{ policy.type }} • {{ policy.amount |
+                                                            currency:'INR'
+                                                            }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <a [href]="'tel:' + policy.customer.phone" class="phone-link">
+                                                            <i class="bi bi-telephone-fill me-1"></i>{{
+                                                            policy.customer.phone }}
+                                                        </a>
+                                                    </td>
+                                                    <td>{{ policy.expiryDate | date:'mediumDate' }}</td>
+                                                    <td>
+                                                        <span class="badge rounded-pill"
+                                                            [class.bg-success]="getPolicyStatus(policy) === 'ACTIVE'"
+                                                            [class.bg-danger]="getPolicyStatus(policy) === 'EXPIRED'">
+                                                            {{ getPolicyStatus(policy) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div *ngIf="policy.reminder?.lastCallOutcome">
+                                                            <span class="badge bg-light text-dark border">{{
+                                                                policy.reminder.lastCallOutcome
+                                                                }}</span>
+                                                            <div class="small text-muted mt-1">{{
+                                                                policy.reminder.lastReminderSentAt |
+                                                                date:'short' }}
+                                                            </div>
+                                                        </div>
+                                                        <span *ngIf="!policy.reminder?.lastCallOutcome"
+                                                            class="text-muted">-</span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="d-flex gap-2">
+                                                            <button class="btn btn-sm btn-outline-info"
+                                                                (click)="openDetailsModal(policy)" title="View Details">
+                                                                <i class="bi bi-eye"></i> View
+                                                            </button>
+                                                            <button class="btn btn-sm btn-primary"
+                                                                (click)="openLogCall(policy)" title="Log Call">
+                                                                <i class="bi bi-telephone"></i> Log Call
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Details Modal -->
+                                    <div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+                                        <div class="custom-modal-content details-modal"
+                                            (click)="$event.stopPropagation()">
+                                            <div class="modal-header bg-light">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="icon-circle bg-primary text-white">
+                                                        <i class="bi bi-shield-check"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="mb-0">Policy Details</h3>
+                                                        <div class="text-muted small">{{
+                                                            selectedPolicyDetails?.policyNumber }}</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn-close" (click)="closeDetailsModal()"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <div class="detail-grid">
+                                                    <!-- Customer Section -->
+                                                    <div class="detail-card">
+                                                        <h4 class="section-title"><i class="bi bi-person"></i> Customer
+                                                            Info</h4>
+                                                        <div class="info-row">
+                                                            <label>Name:</label>
+                                                            <span>{{ selectedPolicyDetails?.customer.firstName }} {{
+                                                                selectedPolicyDetails?.customer.lastName }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Email:</label>
+                                                            <span>{{ selectedPolicyDetails?.customer.email }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Phone:</label>
+                                                            <span>{{ selectedPolicyDetails?.customer.phone }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Billing:</label>
+                                                            <span class="badge bg-secondary">{{
+                                                                selectedPolicyDetails?.customer.billingFrequency
+                                                                ||
+                                                                'N/A' }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Policy Section -->
+                                                    <div class="detail-card">
+                                                        <h4 class="section-title"><i class="bi bi-file-text"></i> Policy
+                                                            Info</h4>
+                                                        <div class="info-row">
+                                                            <label>Insurance:</label>
+                                                            <span class="fw-bold">{{
+                                                                selectedPolicyDetails?.insuranceName || 'N/A' }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Product:</label>
+                                                            <span>{{ selectedPolicyDetails?.productName || 'N/A'
+                                                                }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Start Date:</label>
+                                                            <span>{{ selectedPolicyDetails?.policyStartDate |
+                                                                date:'mediumDate' }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>End Date:</label>
+                                                            <span>{{ selectedPolicyDetails?.policyEndDate |
+                                                                date:'mediumDate' }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Premium:</label>
+                                                            <span class="text-success fw-bold">{{
+                                                                selectedPolicyDetails?.duePremium |
+                                                                currency:'INR'
+                                                                }}</span>
+                                                        </div>
+
+                                                        <hr class="my-3 text-muted opacity-25">
+
+                                                        <div class="info-row">
+                                                            <label>RM Name:</label>
+                                                            <span>{{ selectedPolicyDetails?.rmName || 'N/A' }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Associate:</label>
+                                                            <span>{{ selectedPolicyDetails?.associateName || 'N/A'
+                                                                }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Code:</label>
+                                                            <code
+                                                                class="text-muted">{{ selectedPolicyDetails?.associateCode || 'N/A' }}</code>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Vehicle Section (Only for Motor Insurance) -->
+                                                    <div class="detail-card" *ngIf="isMotorPolicy">
+                                                        <h4 class="section-title"><i class="bi bi-car-front"></i> Asset
+                                                            Details</h4>
+                                                        <div class="info-row">
+                                                            <label>Reg No:</label>
+                                                            <span class="fw-bold">{{ selectedPolicyDetails?.vehicleRegNo
+                                                                || 'N/A' }}</span>
+                                                        </div>
+                                                        <div class="info-row">
+                                                            <label>Model:</label>
+                                                            <span>{{ selectedPolicyDetails?.vehicleModel || 'N/A'
+                                                                }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="modal-footer bg-light">
+                                                <button class="btn btn-secondary"
+                                                    (click)="closeDetailsModal()">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Log Call Modal -->
+                                    <div class="modal-overlay" *ngIf="showLogCallModal" (click)="closeModal()">
+                                        <div class="custom-modal-content log-call-modal"
+                                            (click)="$event.stopPropagation()">
+                                            <div class="modal-header">
+                                                <h3>Log Call</h3>
+                                                <button class="btn-close" (click)="closeModal()"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="mb-3">Logging call for <strong>{{
+                                                        selectedPolicy?.customer.firstName }} {{
+                                                        selectedPolicy?.customer.lastName }}</strong></p>
+
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Outcome</label>
+                                                    <select [(ngModel)]="callOutcome" class="form-select">
+                                                        <option value="Interested">Interested</option>
+                                                        <option value="Not Interested">Not Interested</option>
+                                                        <option value="Call Back Later">Call Back Later</option>
+                                                        <option value="Voicemail">Voicemail</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Notes</label>
+                                                    <textarea [(ngModel)]="callNotes" class="form-control" rows="3"
+                                                        placeholder="Enter call notes..."></textarea>
+                                                </div>
+
+                                                <div class="form-group mb-3">
+                                                    <label class="form-label">Next Follow Up (Optional)</label>
+                                                    <input type="datetime-local" [(ngModel)]="nextFollowUp"
+                                                        [min]="minDate" class="form-control">
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+                                                <button *ngIf="callOutcome === 'Interested'" class="btn btn-success"
+                                                    (click)="openRenewalModal(selectedPolicy)">
+                                                    <i class="bi bi-arrow-repeat"></i> Renew Policy
+                                                </button>
+                                                <button class="btn btn-primary" (click)="submitLogCall()">Save
+                                                    Log</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Renewal Modal -->
+                                    <div class="modal-overlay" *ngIf="showRenewalModal" (click)="closeRenewalModal()">
+                                        <div class="custom-modal-content details-modal"
+                                            (click)="$event.stopPropagation()">
+                                            <div class="modal-header">
+                                                <h3>Renew Policy</h3>
+                                                <button class="btn-close" (click)="closeRenewalModal()"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div *ngIf="selectedPolicy">
+                                                    <div class="row g-3">
+                                                        <!-- Customer Details -->
+                                                        <div class="col-12">
+                                                            <h5 class="border-bottom pb-2">Customer Details</h5>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">First Name</label>
+                                                            <input type="text" class="form-control"
+                                                                [(ngModel)]="renewalForm.customer.firstName">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Last Name</label>
+                                                            <input type="text" class="form-control"
+                                                                [(ngModel)]="renewalForm.customer.lastName">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Email</label>
+                                                            <input type="email" class="form-control"
+                                                                [(ngModel)]="renewalForm.customer.email">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Phone</label>
+                                                            <input type="text" class="form-control"
+                                                                [(ngModel)]="renewalForm.customer.phone">
+                                                        </div>
+
+                                                        <!-- Policy Details -->
+                                                        <div class="col-12 mt-4">
+                                                            <h5 class="border-bottom pb-2">Policy Details</h5>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Policy Number</label>
+                                                            <input type="text" class="form-control"
+                                                                [(ngModel)]="renewalForm.policyNumber">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Insurance Name</label>
+                                                            <input type="text" class="form-control"
+                                                                [(ngModel)]="renewalForm.insuranceName">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Amount</label>
+                                                            <input type="number" class="form-control"
+                                                                [(ngModel)]="renewalForm.amount">
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Current Expiry</label>
+                                                            <input type="date" class="form-control"
+                                                                [(ngModel)]="renewalForm.expiryDate">
+                                                        </div>
+
+                                                        <!-- Renewal Action -->
+                                                        <div class="col-12 mt-4">
+                                                            <h5 class="border-bottom pb-2 text-primary">Renewal Action
+                                                            </h5>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <label class="form-label fw-bold">New Policy End
+                                                                Date</label>
+                                                            <input type="date" class="form-control border-primary"
+                                                                [(ngModel)]="newPolicyEndDate">
+                                                            <small class="text-muted">Select the end date for the
+                                                                renewed term.</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button class="btn btn-secondary"
+                                                    (click)="closeRenewalModal()">Cancel</button>
+                                                <button class="btn btn-primary" (click)="submitRenewal()"
+                                                    [disabled]="!newPolicyEndDate">
+                                                    Confirm Renewal
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>

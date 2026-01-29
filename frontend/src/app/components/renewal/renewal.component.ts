@@ -1,0 +1,449 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TimelineComponent } from '../timeline/timeline.component';
+import { CustomerListComponent } from '../customer-list/customer-list.component';
+import { ApiService } from '../../services/api.service';
+import { forkJoin, of } from 'rxjs';
+
+@Component({
+  selector: 'app-renewal',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TimelineComponent, CustomerListComponent],
+  template: `
+    <div class="container mt-4">
+      <div class="header-section d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2>Renewal Management Console</h2>
+          <p class="text-muted">Centralized hub for tracking policy expiries and managing client follow-ups</p>
+        </div>
+        <button class="btn btn-primary" (click)="openRenewalModal()">
+          <i class="bi bi-plus-circle"></i> Add / Edit Policy
+        </button>
+      </div>
+
+      <app-timeline (daySelected)="onDaySelected($event)"></app-timeline>
+      
+      <div class="row" *ngIf="selectedDay !== null">
+        <!-- Main List: Renewals OR Post-Expiry -->
+        <div class="col-12 mb-4">
+          <h3 class="section-title" [ngClass]="selectedDay >= 0 ? 'text-primary' : 'text-danger'">
+            {{ getSectionTitle() }}
+          </h3>
+          <app-customer-list [policies]="policies" [loading]="loading" (dataUpdated)="onDataUpdated()"></app-customer-list>
+        </div>
+        
+        <!-- Follow-ups List (Only visible for upcoming days, i.e., selectedDay >= 0) -->
+        <div class="col-12" *ngIf="selectedDay >= 0">
+          <h3 class="section-title text-warning">
+            <i class="bi bi-telephone-fill"></i> Scheduled Follow-ups (Due {{ getFollowUpDueText() }})
+          </h3>
+          <app-customer-list [policies]="followUps" [loading]="loading" (dataUpdated)="onDataUpdated()"></app-customer-list>
+        </div>
+      </div>
+      
+      <div *ngIf="selectedDay === null" class="text-center mt-5 empty-state">
+        <div class="empty-icon">📅</div>
+        <h3>Select a Timeline Bucket</h3>
+        <p class="text-muted">Click on a day above to view expiring policies and scheduled calls.</p>
+      </div>
+
+      <!-- Renewal Modal -->
+      <div class="modal-overlay" *ngIf="showRenewalModal" (click)="closeRenewalModal()">
+        <div class="custom-modal-content renewal-modal" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <h3>Add / Edit Policy</h3>
+            <button class="btn-close" (click)="closeRenewalModal()"></button>
+          </div>
+          <div class="modal-body">
+            <!-- Search -->
+            <div class="form-group mb-4 position-relative">
+              <label class="form-label">Search Existing Customer / Policy (Optional)</label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" placeholder="Type name or policy number to auto-fill..." 
+                       [(ngModel)]="renewalSearchTerm" (input)="searchPoliciesForRenewal()">
+              </div>
+              <!-- Dropdown -->
+              <div class="search-results" *ngIf="renewalSearchResults.length > 0">
+                <div class="search-item" *ngFor="let result of renewalSearchResults" (click)="selectPolicyForRenewal(result)">
+                  <strong>{{ result.customer.firstName }} {{ result.customer.lastName }}</strong>
+                  <small class="d-block text-muted">{{ result.policyNumber }} - {{ result.insuranceName }}</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Always show form -->
+            <div class="row g-3">
+              <!-- Customer Details -->
+              <div class="col-12"><h5 class="border-bottom pb-2">Customer Details</h5></div>
+              <div class="col-md-6">
+                <label class="form-label">First Name *</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.customer.firstName" placeholder="Enter first name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Last Name *</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.customer.lastName" placeholder="Enter last name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email *</label>
+                <input type="email" class="form-control" [(ngModel)]="renewalForm.customer.email" placeholder="Enter email">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Phone *</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.customer.phone" placeholder="Enter phone">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Billing Frequency</label>
+                <select class="form-select" [(ngModel)]="renewalForm.customer.billingFrequency">
+                  <option value="">Select frequency</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Quarterly">Quarterly</option>
+                  <option value="Half-Yearly">Half-Yearly</option>
+                  <option value="Yearly">Yearly</option>
+                </select>
+              </div>
+
+              <!-- Policy Details -->
+              <div class="col-12 mt-4"><h5 class="border-bottom pb-2">Policy Details</h5></div>
+              <div class="col-md-6">
+                <label class="form-label">Policy Number *</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.policyNumber" placeholder="Enter policy number">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Insurance Name *</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.insuranceName" placeholder="Enter insurance name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Product Name</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.productName" placeholder="Enter product name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Policy Type *</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.type" placeholder="e.g., Motor Insurance, Health">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Amount *</label>
+                <input type="number" class="form-control" [(ngModel)]="renewalForm.amount" placeholder="Enter amount">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Premium</label>
+                <input type="number" class="form-control" [(ngModel)]="renewalForm.duePremium" placeholder="Enter premium">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Policy Start Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="renewalForm.policyStartDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Policy End Date *</label>
+                <input type="date" class="form-control" [(ngModel)]="renewalForm.policyEndDate">
+              </div>
+
+              <!-- Additional Details -->
+              <div class="col-12 mt-4"><h5 class="border-bottom pb-2">Additional Details</h5></div>
+              <div class="col-md-6">
+                <label class="form-label">RM Name</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.rmName" placeholder="Enter RM name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">POSP Name</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.associateName" placeholder="Enter POSP name">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">POSP Code</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.associateCode" placeholder="Enter POSP code">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Vehicle Reg No</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.vehicleRegNo" placeholder="Enter vehicle reg no">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Vehicle Model</label>
+                <input type="text" class="form-control" [(ngModel)]="renewalForm.vehicleModel" placeholder="Enter vehicle model">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" (click)="closeRenewalModal()">Cancel</button>
+            <button class="btn btn-primary" (click)="submitRenewal()">
+              {{ selectedRenewalPolicy ? 'Update Policy' : 'Create Policy' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    .mt-4 { margin-top: 1.5rem; }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .header-section { 
+      margin-bottom: 35px; 
+      padding-bottom: 25px; 
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .header-section h2 { 
+      margin-bottom: 8px; 
+      color: #1e293b; 
+      font-weight: 800;
+      font-size: 2.2rem;
+      letter-spacing: -0.03em;
+    }
+    .header-section p {
+      font-size: 1.1rem;
+      color: #64748b;
+      margin: 0;
+    }
+    .section-title { 
+      border-bottom: 2px solid #dee2e6; 
+      padding-bottom: 10px; 
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .text-primary { color: #0d6efd; }
+    .text-danger { color: #dc3545; }
+    .text-warning { color: #4d3900ff; text-shadow: 0px 0px 1px #997404; }
+    
+    .empty-state {
+      padding: 40px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* Renewal Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1050;
+    }
+    .custom-modal-content {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+    .modal-header {
+      padding: 15px 25px;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f8f9fa;
+      position: relative;
+    }
+    .modal-header h3 { margin: 0; }
+    .modal-header .btn-close {
+      position: absolute;
+      right: 25px;
+      background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+      width: 1em; height: 1em; padding: 0.5rem; border: 0; opacity: 0.5; cursor: pointer;
+    }
+    .modal-body { padding: 25px; overflow-y: auto; }
+    .modal-footer {
+      padding: 15px 25px;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      justify-content: flex-end;
+      background-color: #f8f9fa;
+      gap: 10px;
+    }
+
+    .renewal-modal { width: 800px; max-width: 95%; }
+    .search-results {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ced4da;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .search-item {
+      padding: 10px 15px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f3f5;
+    }
+    .search-item:hover { background-color: #f8f9fa; }
+    .search-item:last-child { border-bottom: none; }
+  `]
+})
+export class RenewalComponent {
+  policies: any[] = [];
+  followUps: any[] = [];
+  loading: boolean = false;
+  selectedDay: number | null = null;
+
+  constructor(private apiService: ApiService) { }
+
+  onDaySelected(day: number) {
+    this.selectedDay = day;
+    this.loading = true;
+
+    forkJoin({
+      policies: this.apiService.getPoliciesForTimeline(day),
+      followUps: this.apiService.getFollowUpsForTimeline(day)
+    }).subscribe({
+      next: (data) => {
+        this.policies = data.policies;
+        this.followUps = (data.followUps as any[]).map((r: any) => {
+          const p = r.policy;
+          p.reminder = r;
+          return p;
+        });
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+      }
+    });
+  }
+
+  onDataUpdated() {
+    if (this.selectedDay !== null) {
+      this.onDaySelected(this.selectedDay);
+    }
+  }
+
+  getSectionTitle(): string {
+    if (this.selectedDay === null) return '';
+    if (this.selectedDay === 0) return 'Upcoming Renewals (Expiring Today)';
+    if (this.selectedDay > 0) {
+      return `Upcoming Renewals (Expiring in ${this.selectedDay} days)`;
+    } else {
+      return `Post-Expiry (Expired ${Math.abs(this.selectedDay)} days ago)`;
+    }
+  }
+
+  getFollowUpDueText(): string {
+    if (this.selectedDay === null) return '';
+    if (this.selectedDay === 0) return 'Today';
+    return this.selectedDay > 0 ? `in ${this.selectedDay} days` : `${Math.abs(this.selectedDay)} days ago`;
+  }
+
+  // Renewal Modal Logic
+  showRenewalModal: boolean = false;
+  renewalSearchTerm: string = '';
+  renewalSearchResults: any[] = [];
+  selectedRenewalPolicy: any = null;
+  renewalForm: any = {
+    customer: {}
+  };
+  newPolicyEndDate: string = '';
+
+  openRenewalModal() {
+    this.showRenewalModal = true;
+    this.resetRenewalForm();
+  }
+
+  closeRenewalModal() {
+    this.showRenewalModal = false;
+    this.resetRenewalForm();
+  }
+
+  resetRenewalForm() {
+    this.renewalSearchTerm = '';
+    this.renewalSearchResults = [];
+    this.selectedRenewalPolicy = null;
+    this.renewalForm = { customer: {} };
+    this.newPolicyEndDate = '';
+  }
+
+  searchPoliciesForRenewal() {
+    if (this.renewalSearchTerm.length < 2) {
+      this.renewalSearchResults = [];
+      return;
+    }
+    this.apiService.searchPolicies(this.renewalSearchTerm).subscribe(results => {
+      this.renewalSearchResults = results;
+    });
+  }
+
+  selectPolicyForRenewal(policy: any) {
+    this.selectedRenewalPolicy = policy;
+    this.renewalForm = JSON.parse(JSON.stringify(policy)); // Deep copy
+    this.renewalSearchResults = [];
+    this.renewalSearchTerm = ''; // Clear search to hide dropdown
+  }
+
+  submitRenewal() {
+    // Logic for Start Date based on Policy Type
+    if (this.renewalForm.type === 'Life Insurance') {
+      // Start date is next day of expiry (backend handles this, but we can pre-fill for UI)
+      // Actually, let's let backend handle it or force it here.
+      // If it's a new policy, user sets it. If it's renewal (edit), we might want to lock it?
+      // But this is "Add / Edit", so user can change it.
+    } else if (this.renewalForm.type === 'Health Insurance') {
+      // Health: Start date is today if not set
+      if (!this.renewalForm.policyStartDate) {
+        this.renewalForm.policyStartDate = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    // Validate required fields
+    if (!this.renewalForm.customer.firstName || !this.renewalForm.customer.lastName ||
+      !this.renewalForm.customer.email || !this.renewalForm.customer.phone ||
+      !this.renewalForm.policyNumber || !this.renewalForm.insuranceName ||
+      !this.renewalForm.type || !this.renewalForm.amount ||
+      !this.renewalForm.policyStartDate || !this.renewalForm.policyEndDate) {
+      alert('Please fill all required fields marked with *');
+      return;
+    }
+
+    // Calculate expiryDate from policyEndDate
+    this.renewalForm.expiryDate = this.renewalForm.policyEndDate;
+    this.renewalForm.status = 'ACTIVE';
+
+    if (this.selectedRenewalPolicy) {
+      // Update existing policy
+      const payload = { ...this.renewalForm };
+      delete payload.reminder; // Remove reminder to avoid backend deserialization issues
+
+      this.apiService.updatePolicy(this.selectedRenewalPolicy.id, payload).subscribe({
+        next: () => {
+          const newExpiryDate = new Date(this.renewalForm.policyEndDate);
+          const today = new Date();
+          const daysUntilExpiry = Math.floor((newExpiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+          alert(`Policy updated successfully!\n\nNew expiry date: ${newExpiryDate.toLocaleDateString()}\nDays until expiry: ${daysUntilExpiry}\n\nThe policy has been moved to the appropriate timeline bucket.`);
+          this.closeRenewalModal();
+          // Refresh current view
+          if (this.selectedDay !== null) {
+            this.onDaySelected(this.selectedDay);
+          }
+          // Also refresh the timeline buckets to update counts
+          window.location.reload();
+        },
+        error: (err: any) => alert('Error updating policy: ' + err.message)
+      });
+    } else {
+      // Create new policy
+      this.apiService.createPolicy(this.renewalForm).subscribe({
+        next: () => {
+          alert('Policy created successfully!');
+          this.closeRenewalModal();
+          // Refresh the page to update timeline buckets and counts
+          window.location.reload();
+        },
+        error: (err: any) => alert('Error creating policy: ' + err.message)
+      });
+    }
+  }
+}

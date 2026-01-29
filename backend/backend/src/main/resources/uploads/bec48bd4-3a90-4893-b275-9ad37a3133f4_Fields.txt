@@ -1,0 +1,214 @@
+health, gmc
+
+
+Sr. No.	
+Updation Date	
+Partner Name	
+Customer Name	
+Gender	
+Relation	
+DOB	
+Contact No	
+Email ID	
+Application No/Customer id	
+Policy No	
+Insurance Type	
+Insurer Name	
+Login Status	
+Login Date	
+Policy issue date	
+Start Date	
+expiry date	
+Login Month	
+Product Name	
+Cheque Amt	
+ Net Premium 	
+Enquiry Month	
+RM Name	
+Associate Name	
+Address	City	
+State	
+Pin Code	
+Nominee Name 	
+Relationship with Insured	
+Billing Frequency	
+PPT(Premium paying term)	
+PT(Policy Term)	
+Previous Policy No	
+Sum assured / Insured	
+New Login Status	
+Handle By	
+Business Type	
+Remark2	
+No. of lives coverd	
+Issued Month	
+Branch	
+Biz Type	
+Entered by	
+Policy copy status
+
+life
+
+Sr. No.
+Updation Date	
+Partner Name	
+Customer Name	
+Gender	
+Relation	
+DOB	
+Contact No	
+Email ID	
+Application No/Customer id	
+Policy No	
+Insurance Type	
+Insurer Name	
+Login Status	
+Login Date	
+Policy issue date	
+Start Date	
+expiry date	
+Login Month	
+Product Name	
+Cheque Amt	
+ Net Premium 	
+RM Name	
+Associate Name	
+Address	City	
+State	
+Pin Code	
+Nominee Name 	
+Relationship with Insured	
+Billing Frequency	
+PPT	
+PT	
+Sum assured / Insured	
+New Login Status	
+Handle By	
+Business Type	
+Remark2	
+Branch	
+No. of lives coverd	
+Issued Month	
+Biz Type	
+Entered by	
+Policy copy status
+
+
+
+
+
+
+motor
+
+Sr. No.	
+Updation Date	
+Partner Name	
+Customer Name	
+Gender	
+Relation	
+DOB	
+Contact No	
+Email ID	
+Application No/Customer id	
+Policy No	
+Insurance Type	
+Insurer Name	
+Login Status	
+Login Date	
+Policy issue date	
+Start Date	
+expiry date	
+Login Month	
+Product Name	
+Cheque Amt	
+Net od premium/Basic Premium	
+TP Amt / Terrorism	 
+Net Premium 	
+RM Name	
+RM Code	
+Associate Name	
+Address
+City	
+State	
+Pin Code	
+Nominee Name 	
+Relationship with Insured	
+Car/RegNo	
+Model Name	
+Mgf Year	
+Vehicle Type	
+Billing Frequency	
+PPT	
+PT	
+Previous Policy No	
+Sum assured / Insured	
+IDV	
+NCB %	
+Engine No	
+Chassis No	
+Discount %	
+Remark	
+Handle By	
+Business Type	
+Remark2	
+Issued Month	
+Branch	
+Biz Type	
+Entered by	
+Policy copy status
+
+
+
+
+
+
+Commerial, marien
+
+
+Sr. No.
+Updation Date	
+Partner Name	
+Customer Name	
+Gender	
+Relation	
+DOB	
+Contact No	
+Email ID	
+Application No/Customer id	
+Policy No	
+Insurance Type	
+Insurer Name	
+Login Status	
+Login Date	
+Policy issue date	
+Start Date	
+expiry date	
+Login Month	
+Product Name	
+Cheque Amt	
+Net od premium/Basic Premium	
+TP Amt / Terrorism	 
+Net Premium 	
+Enquiry Month	
+RM Name	
+RM Code	
+Associate Name	
+Address	
+City	
+State	
+Pin Code	
+Billing Frequency	
+PPT	
+PT	
+Sum assured / Insured	
+New Login Status	
+Handle By	
+Business Type	
+Remark2	
+GST No.	
+PAN Number	
+Issued Month	
+Branch	
+Biz Type	
+Entered by	
+Policy copy status

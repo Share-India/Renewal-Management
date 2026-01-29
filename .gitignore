@@ -1,0 +1,29 @@
+# User requested excludes
+backend/src/main/resources/data.sql
+backend/src/main/resources/data.sql.bak
+*.log
+**/*.log
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+*.class
+
+# Node / Angular
+node_modules/
+dist/
+.angular/
+package-lock.json
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
