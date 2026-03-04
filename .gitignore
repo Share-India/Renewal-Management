@@ -13,7 +13,6 @@ target/
 node_modules/
 dist/
 .angular/
-package-lock.json
 
 # IDEs
 .idea/
