@@ -14,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/renewals")
-@CrossOrigin(origins = "http://localhost:4200") // Allow Angular frontend
+@CrossOrigin(origins = { "http://localhost:4200", "http://localhost", "https://renewal.shareindiainsurance.com" }) // Allow Angular frontend and production domain
 public class RenewalController {
 
     @Autowired
