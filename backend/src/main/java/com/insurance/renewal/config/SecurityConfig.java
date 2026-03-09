@@ -42,7 +42,9 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/renewals/**").permitAll()
                         .requestMatchers("/api/renewals/**").permitAll()
                         .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults());
+                .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint((request, response, authException) -> {
+                    response.sendError(org.springframework.http.HttpStatus.UNAUTHORIZED.value(), org.springframework.http.HttpStatus.UNAUTHORIZED.getReasonPhrase());
+                }));
 
         return http.build();
     }
