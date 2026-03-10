@@ -36,7 +36,7 @@ export class CustomerListComponent {
 
     // Renewal Logic
     showRenewalModal: boolean = false;
-    renewalForm: any = { customer: {} };
+    renewalForm: any = { customer: { dob: '' } };
     selectedPaymentFile: File | null = null;
 
     onPaymentFileSelected(event: any) {
@@ -68,6 +68,17 @@ export class CustomerListComponent {
 
     get canEditPolicy(): boolean {
         return this.authService.hasRole('ADMIN') || this.authService.hasRole('MIS');
+    }
+
+    get canViewSensitiveInfo(): boolean {
+        // Hide PAN and GST for RENEWER role
+        if (this.authService.hasRole('RENEWER')) {
+            return false;
+        }
+        return this.authService.hasRole('ADMIN') ||
+            this.authService.hasRole('MIS') ||
+            this.authService.hasRole('POLICY_ISSUANCE') ||
+            this.authService.hasRole('POLICY ISSUANCE');
     }
 
     get isMotorPolicy(): boolean {
@@ -217,7 +228,7 @@ export class CustomerListComponent {
 
     closeRenewalModal() {
         this.showRenewalModal = false;
-        this.renewalForm = { customer: {} };
+        this.renewalForm = { customer: { dob: '' } };
         this.selectedPaymentFile = null;
     }
 
