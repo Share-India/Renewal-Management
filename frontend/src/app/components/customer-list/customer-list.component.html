@@ -185,13 +185,13 @@
                             <option value="Yearly">Yearly</option>
                         </select>
                     </div>
-                    <div class="info-row">
+                    <div class="info-row" *ngIf="canViewSensitiveInfo">
                         <label>PAN:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.panNumber || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm text-uppercase"
                             [(ngModel)]="selectedPolicyDetails.customer.panNumber">
                     </div>
-                    <div class="info-row">
+                    <div class="info-row" *ngIf="canViewSensitiveInfo">
                         <label>GST:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.gstNumber || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm text-uppercase"
@@ -301,7 +301,7 @@
                 </div>
 
                 <!-- Vehicle Section (Only for Motor Insurance) -->
-                <div class="detail-card">
+                <div class="detail-card" *ngIf="isMotorPolicy">
                     <h4 class="section-title"><i class="bi bi-car-front"></i> Asset Details</h4>
                     <div class="info-row">
                         <label>Reg No:</label>
@@ -490,6 +490,10 @@
                     <div class="col-md-6">
                         <label class="form-label">Phone</label>
                         <input type="text" class="form-control" [(ngModel)]="renewalForm.customer.phone">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">DOB</label>
+                        <input type="date" class="form-control" [(ngModel)]="renewalForm.customer.dob">
                     </div>
 
                     <!-- Policy Details -->

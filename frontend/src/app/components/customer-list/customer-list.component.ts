@@ -83,8 +83,21 @@ export class CustomerListComponent {
 
     get isMotorPolicy(): boolean {
         if (!this.selectedPolicyDetails) return false;
-        const type = this.selectedPolicyDetails.type?.toLowerCase() || '';
-        return ['motor insurance', 'auto', 'car', 'vehicle', 'two wheeler'].includes(type);
+
+        const type = (this.selectedPolicyDetails.type || '').toLowerCase();
+        const insurance = (this.selectedPolicyDetails.insuranceName || '').toLowerCase();
+        const product = (this.selectedPolicyDetails.productName || '').toLowerCase();
+
+        // Aggressively hide for known non-motor types
+        if (type.includes('life') || type.includes('health') ||
+            product.includes('life') || product.includes('health') ||
+            insurance.includes('lic') || insurance.includes('life') || insurance.includes('health')) {
+            return false;
+        }
+
+        // Return true if any of these keywords are in the type or product
+        const motorKeywords = ['motor', 'auto', 'car', 'vehicle', 'two wheeler', 'gcv', 'pcv', 'commercial'];
+        return motorKeywords.some(keyword => type.includes(keyword) || product.includes(keyword));
     }
 
     get minDate(): string {

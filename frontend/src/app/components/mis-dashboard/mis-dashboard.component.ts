@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-mis-dashboard',
@@ -25,10 +26,20 @@ export class MisDashboardComponent implements OnInit {
 
   selectedPolicy: any = null; // For modal
 
-  constructor(private apiService: ApiService, private router: Router, private http: HttpClient) { }
+  constructor(private apiService: ApiService, private router: Router, private http: HttpClient, public authService: AuthService) { }
 
   ngOnInit(): void {
     this.loadPolicies();
+  }
+
+  get canViewSensitiveInfo(): boolean {
+    if (this.authService.hasRole('RENEWER')) {
+      return false;
+    }
+    return this.authService.hasRole('ADMIN') ||
+      this.authService.hasRole('MIS') ||
+      this.authService.hasRole('POLICY_ISSUANCE') ||
+      this.authService.hasRole('POLICY ISSUANCE');
   }
 
   loadPolicies(): void {

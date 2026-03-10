@@ -43,12 +43,12 @@ export class AuthService {
 
     isAdmin(): boolean {
         const user = this.getCurrentUser();
-        return user && user.role === 'ADMIN';
+        return user && user.role && user.role.toUpperCase() === 'ADMIN';
     }
 
     hasRole(role: string): boolean {
         const user = this.getCurrentUser();
-        return user && user.role === role;
+        return user && user.role && user.role.toUpperCase() === role.toUpperCase();
     }
 
     getAuthHeaders(): HttpHeaders {

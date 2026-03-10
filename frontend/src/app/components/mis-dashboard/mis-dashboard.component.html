@@ -305,7 +305,7 @@
                                             <option value="Yearly">Yearly</option>
                                         </select>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-6" *ngIf="canViewSensitiveInfo">
                                         <label class="small text-muted text-uppercase fw-bold mb-1"
                                             style="font-size: 0.7rem;">PAN Number</label>
                                         <div *ngIf="!isEditing" class="fw-500 text-uppercase">{{
@@ -314,7 +314,7 @@
                                             class="form-control form-control-sm text-uppercase"
                                             [(ngModel)]="selectedPolicy.customer.panNumber" placeholder="PAN12345X">
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-6" *ngIf="canViewSensitiveInfo">
                                         <label class="small text-muted text-uppercase fw-bold mb-1"
                                             style="font-size: 0.7rem;">GST Number</label>
                                         <div *ngIf="!isEditing" class="fw-500 text-uppercase">{{
