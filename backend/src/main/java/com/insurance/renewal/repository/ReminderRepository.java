@@ -13,6 +13,7 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     java.util.Optional<Reminder> findByPolicyId(Long policyId);
 
     long countByReminderStatus(String reminderStatus);
+    long countByReminderStatusIgnoreCase(String reminderStatus);
 
     List<Reminder> findByLastReminderSentAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 

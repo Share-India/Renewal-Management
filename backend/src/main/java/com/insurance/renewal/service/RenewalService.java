@@ -54,7 +54,7 @@ public class RenewalService {
     public Map<String, Object> getAdminStats() {
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalPolicies", policyRepository.count());
-        stats.put("totalReminders", reminderRepository.countByReminderStatus("PENDING"));
+        stats.put("totalReminders", reminderRepository.countByReminderStatusIgnoreCase("PENDING"));
 
         // Calculate the remaining tasks for today to display in the stat card
         Map<String, Integer> progress = getTodaysWorkProgress();
