@@ -1,15 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TimelineComponent } from '../timeline/timeline.component';
 import { CustomerListComponent } from '../customer-list/customer-list.component';
+import { WorkProgressComponent } from '../work-progress/work-progress.component';
 import { ApiService } from '../../services/api.service';
 import { forkJoin, of } from 'rxjs';
 
 @Component({
   selector: 'app-renewal',
   standalone: true,
-  imports: [CommonModule, FormsModule, TimelineComponent, CustomerListComponent],
+  imports: [CommonModule, FormsModule, TimelineComponent, CustomerListComponent, WorkProgressComponent],
   template: `
     <div class="container mt-4">
       <div class="header-section d-flex justify-content-between align-items-center mb-4">
@@ -17,24 +18,32 @@ import { forkJoin, of } from 'rxjs';
           <h2>Renewal Management Console</h2>
           <p class="text-muted">Centralized hub for tracking policy expiries and managing client follow-ups</p>
         </div>
-        <button class="btn btn-primary" (click)="openRenewalModal()">
-          <i class="bi bi-plus-circle"></i> Add / Edit Policy
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-success" (click)="openTodaysWork()">
+            <i class="bi bi-briefcase"></i> Today's Work
+          </button>
+          <button class="btn btn-primary" (click)="openRenewalModal()">
+            <i class="bi bi-plus-circle"></i> Add / Edit Policy
+          </button>
+        </div>
       </div>
 
       <app-timeline (daySelected)="onDaySelected($event)"></app-timeline>
       
+      <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
+
       <div class="row" *ngIf="selectedDay !== null">
         <!-- Main List: Renewals OR Post-Expiry -->
         <div class="col-12 mb-4">
-          <h3 class="section-title" [ngClass]="selectedDay >= 0 ? 'text-primary' : 'text-danger'">
+          <h3 class="section-title" [ngClass]="isUpcoming() ? 'text-primary' : 'text-danger'">
             {{ getSectionTitle() }}
+            <span *ngIf="selectedDay === 'todays-work'" class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ policies.length }}</span>
           </h3>
           <app-customer-list [policies]="policies" [loading]="loading" (dataUpdated)="onDataUpdated()"></app-customer-list>
         </div>
         
         <!-- Follow-ups List (Only visible for upcoming days, i.e., selectedDay >= 0) -->
-        <div class="col-12" *ngIf="selectedDay >= 0">
+        <div class="col-12" *ngIf="showFollowUps()">
           <h3 class="section-title text-warning">
             <i class="bi bi-telephone-fill"></i> Scheduled Follow-ups (Due {{ getFollowUpDueText() }})
           </h3>
@@ -288,7 +297,9 @@ export class RenewalComponent {
   policies: any[] = [];
   followUps: any[] = [];
   loading: boolean = false;
-  selectedDay: number | null = null;
+  selectedDay: number | string | null = null;
+
+  @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
   constructor(private apiService: ApiService) { }
 
@@ -316,26 +327,63 @@ export class RenewalComponent {
     });
   }
 
+  openTodaysWork() {
+    this.selectedDay = 'todays-work';
+    this.loading = true;
+    this.apiService.getTodaysWork().subscribe({
+      next: (policies) => {
+        this.policies = policies;
+        this.followUps = [];
+        this.loading = false;
+        
+        if (this.workProgressComponent) {
+          this.workProgressComponent.refreshProgress();
+        }
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+      }
+    });
+  }
+
   onDataUpdated() {
-    if (this.selectedDay !== null) {
+    if (this.selectedDay === 'todays-work') {
+      this.openTodaysWork();
+    } else if (this.selectedDay !== null && typeof this.selectedDay === 'number') {
       this.onDaySelected(this.selectedDay);
     }
   }
 
+  isUpcoming(): boolean {
+    if (this.selectedDay === 'todays-work') return true;
+    return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
+  }
+
+  showFollowUps(): boolean {
+    return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
+  }
+
   getSectionTitle(): string {
     if (this.selectedDay === null) return '';
-    if (this.selectedDay === 0) return 'Upcoming Renewals (Expiring Today)';
-    if (this.selectedDay > 0) {
-      return `Upcoming Renewals (Expiring in ${this.selectedDay} days)`;
+    if (this.selectedDay === 'todays-work') return "Today's Work ";
+
+    const day = this.selectedDay as number;
+    if (day === 0) return 'Upcoming Renewals (Expiring Today)';
+    if (day > 0) {
+      return `Upcoming Renewals (Expiring in ${day} days)`;
     } else {
-      return `Post-Expiry (Expired ${Math.abs(this.selectedDay)} days ago)`;
+      return `Post-Expiry (Expired ${Math.abs(day)} days ago)`;
     }
   }
 
   getFollowUpDueText(): string {
     if (this.selectedDay === null) return '';
-    if (this.selectedDay === 0) return 'Today';
-    return this.selectedDay > 0 ? `in ${this.selectedDay} days` : `${Math.abs(this.selectedDay)} days ago`;
+    if (this.selectedDay === 'todays-work') return '';
+
+    const day = this.selectedDay as number;
+    if (day === 0) return 'Today';
+    return day > 0 ? `in ${day} days` : `${Math.abs(day)} days ago`;
   }
 
   // Renewal Modal Logic
@@ -425,8 +473,10 @@ export class RenewalComponent {
           alert(`Policy updated successfully!\n\nNew expiry date: ${newExpiryDate.toLocaleDateString()}\nDays until expiry: ${daysUntilExpiry}\n\nThe policy has been moved to the appropriate timeline bucket.`);
           this.closeRenewalModal();
           // Refresh current view
-          if (this.selectedDay !== null) {
-            this.onDaySelected(this.selectedDay);
+          if (this.selectedDay === 'todays-work') {
+            this.openTodaysWork();
+          } else if (this.selectedDay !== null) {
+            this.onDaySelected(this.selectedDay as number);
           }
           // Also refresh the timeline buckets to update counts
           window.location.reload();

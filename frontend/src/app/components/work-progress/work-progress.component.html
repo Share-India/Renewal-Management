@@ -1,0 +1,48 @@
+<div class="card mt-4 mb-4 feedback-card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="icon-circle shadow-sm" [ngClass]="feedbackClass">
+          <i class="bi" [ngClass]="iconClass"></i>
+        </div>
+        <div>
+          <h4 class="mb-1 fw-bold">{{ feedbackTitle }}</h4>
+          <p class="text-muted mb-0">{{ feedbackDescription }}</p>
+        </div>
+      </div>
+      <div class="text-end">
+        <h4 class="mb-0 fw-bold">{{ actualPercentage | number:'1.0-1' }}%</h4>
+        <small class="text-muted">{{ completedWork }} / {{ totalWork }} Tasks Completed</small>
+      </div>
+    </div>
+
+    <!-- Progress Bar Section -->
+    <div class="progress-wrapper">
+      <div class="d-flex justify-content-between mb-1">
+        <small class="text-muted fw-bold">Actual Progress</small>
+      </div>
+      <div class="progress mb-3" style="height: 12px; border-radius: 8px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+             [style.width.%]="actualPercentage" 
+             [attr.aria-valuenow]="actualPercentage" 
+             aria-valuemin="0" 
+             aria-valuemax="100"
+             [ngClass]="feedbackClass">
+        </div>
+      </div>
+      
+      <div class="d-flex justify-content-between mb-1">
+        <small class="text-muted fw-bold">Expected Target</small>
+        <small class="text-muted fw-bold">{{ expectedPercentage | number:'1.0-1' }}%</small>
+      </div>
+      <div class="progress" style="height: 6px; border-radius: 4px; background-color: #e9ecef;">
+        <div class="progress-bar bg-secondary opacity-50" role="progressbar" 
+             [style.width.%]="expectedPercentage" 
+             [attr.aria-valuenow]="expectedPercentage" 
+             aria-valuemin="0" 
+             aria-valuemax="100">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

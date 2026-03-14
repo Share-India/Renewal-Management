@@ -14,6 +14,10 @@ def convert_excel_to_sql():
         return
 
     sql_statements = []
+    
+    customers_vals = []
+    policies_vals = []
+    reminders_vals = []
     sql_statements.append("SET FOREIGN_KEY_CHECKS = 0;")
     sql_statements.append("SET UNIQUE_CHECKS = 0;") # Disable unique checks for speed/safety during bulk load?
     sql_statements.append("")
@@ -69,18 +73,29 @@ def convert_excel_to_sql():
             email = raw_email.replace("'", "")
         
         # Ensure Uniqueness
-        if email in seen_emails:
+        email_lower = email.lower()
+        if email_lower in seen_emails:
             email = f"{email.split('@')[0]}_{customer_id}@{email.split('@')[-1]}"
-        seen_emails.add(email)
+            email_lower = email.lower()
+        seen_emails.add(email_lower)
 
         phone = str(row.get('Contact Number', '')).replace("'", "").split('.')[0] # Remove decimal if float
         if len(phone) > 20: phone = phone[:20]
         
         billing_freq = str(row.get('Billing Frequency', 'Yearly')).replace("'", "")
+        
+        # DOB
+        dob_val = row.get('DOB')
+        dob_sql = "NULL"
+        if not pd.isna(dob_val):
+            try:
+                dob_sql = f"'{pd.to_datetime(dob_val).strftime('%Y-%m-%d')}'"
+            except:
+                pass
 
         # Address Mapping
         addr = str(row.get('Address 1', '')).replace("'", "''")
-        pin = str(row.get('Pin Code', '')).replace("'", "")
+        pin = str(row.get('Pin Code', '')).replace("'", "''")
         full_address = f"{addr}, {pin}".strip(", ")
         city = str(row.get('City', '')).replace("'", "''")
         state = str(row.get('State', '')).replace("'", "''")
@@ -124,32 +139,49 @@ def convert_excel_to_sql():
         # --- 5. Generate SQL ---
         
         # Customer INSERT
-        sql_statements.append(
-            f"INSERT INTO customers (id, first_name, last_name, email, phone, billing_frequency, address, city, state, created_at) "
-            f"VALUES ({customer_id}, '{first_name}', '{last_name}', '{email}', '{phone}', '{billing_freq}', '{full_address}', '{city}', '{state}', NOW()) "
-            f"ON DUPLICATE KEY UPDATE id=id;"
+        customers_vals.append(
+            f"({customer_id}, '{first_name}', '{last_name}', '{email}', '{phone}', '{billing_freq}', {dob_sql}, '{full_address}', '{city}', '{state}', NOW())"
         )
 
         # Policy INSERT
-        # Note: type='Comprehensive' hardcoded or map from 'Insurance Type'? 'Insurance Type' column exists.
         ins_type = str(row.get('Insurance Type', 'Comprehensive')).replace("'", "''")
 
-        sql_statements.append(
-            f"INSERT INTO policies (id, policy_number, customer_id, type, amount, expiry_date, status, policy_start_date, "
-            f"insurance_name, product_name, due_premium, rm_name, associate_name, associate_code, vehicle_reg_no, vehicle_model, created_at) "
-            f"VALUES ({policy_id}, '{policy_num}', {customer_id}, '{ins_type}', {amt_val}, '{expiry_date_str}', '{status}', {policy_start_date_sql}, "
-            f"'{ins_name}', '{prod_name}', {due_prem_val}, '{rm_name}', '{assoc_name}', '{assoc_code}', '{veh_reg}', '{veh_model}', NOW()) "
-            f"ON DUPLICATE KEY UPDATE id=id;"
+        policies_vals.append(
+            f"({policy_id}, '{policy_num}', {customer_id}, '{ins_type}', {amt_val}, '{expiry_date_str}', '{status}', {policy_start_date_sql}, "
+            f"'{ins_name}', '{prod_name}', {due_prem_val}, '{rm_name}', '{assoc_name}', '{assoc_code}', '{veh_reg}', '{veh_model}', NOW())"
         )
 
         # Reminder INSERT
-        sql_statements.append(
-            f"INSERT INTO reminders (policy_id, reminder_status, follow_up_required, created_at) "
-            f"VALUES ({policy_id}, 'PENDING', 0, NOW());"
+        reminders_vals.append(
+            f"({policy_id}, 'PENDING', 0, NOW())"
         )
 
         customer_id += 1
         policy_id += 1
+
+    def chunker(seq, size):
+        return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
+    for chunk in chunker(customers_vals, 1000):
+        sql_statements.append(
+            "INSERT INTO customers (id, first_name, last_name, email, phone, billing_frequency, dob, address, city, state, created_at) VALUES\n" + 
+            ",\n".join(chunk) + 
+            "\nON DUPLICATE KEY UPDATE dob=VALUES(dob), first_name=VALUES(first_name), last_name=VALUES(last_name), email=VALUES(email), phone=VALUES(phone), address=VALUES(address), city=VALUES(city), state=VALUES(state);"
+        )
+
+    for chunk in chunker(policies_vals, 1000):
+        sql_statements.append(
+            "INSERT INTO policies (id, policy_number, customer_id, type, amount, expiry_date, status, policy_start_date, insurance_name, product_name, due_premium, rm_name, associate_name, associate_code, vehicle_reg_no, vehicle_model, created_at) VALUES\n" + 
+            ",\n".join(chunk) + 
+            "\nON DUPLICATE KEY UPDATE id=id;"
+        )
+
+    for chunk in chunker(reminders_vals, 1000):
+        sql_statements.append(
+            "INSERT INTO reminders (policy_id, reminder_status, follow_up_required, created_at) VALUES\n" + 
+            ",\n".join(chunk) + 
+            "\nON DUPLICATE KEY UPDATE id=id;"
+        )
 
     sql_statements.append("")
     sql_statements.append("SET FOREIGN_KEY_CHECKS = 1;")

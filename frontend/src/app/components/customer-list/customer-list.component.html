@@ -13,20 +13,21 @@
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
-                    <th style="width: 15%;">Policy #</th>
+                    <th style="width: 20%;">Policy #</th>
                     <th style="width: 20%;">Customer</th>
                     <th style="width: 15%;">Phone</th>
-                    <th style="width: 10%;">Start Date</th>
-                    <th style="width: 10%;">End Date</th>
-                    <th style="width: 10%;">Expiry Date</th>
-                    <th style="width: 10%;" class="text-center">Status</th>
-                    <th style="width: 13%;">Last Call</th>
+                    <th style="width: 9%;">Start Date</th>
+                    <th style="width: 9%;">End Date</th>
+                    <th style="width: 9%;">Expiry Date</th>
+                    <th style="width: 9%;" class="text-center">Status</th>
+                    <th style="width: 9%;">Last Call</th>
                     <th style="width: 250px;" class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <tr *ngFor="let policy of policies">
-                    <td class="fw-bold">{{ policy.policyNumber }}</td>
+                    <td class="fw-bold text-break" style="max-width: 150px; word-break: break-word;">{{
+                        policy.policyNumber }}</td>
                     <td>
                         <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
                         <small class="text-muted">{{ policy.type }} • {{ policy.amount | currency:'INR' }}</small>
@@ -65,11 +66,14 @@
                                 [class.border]="!['Renewed', 'Externally Renewed', 'Late Renewed', 'Interested', 'Not Interested', 'Call Back Later', 'Pending Issuance'].includes(policy.reminder.lastCallOutcome)">
                                 {{ policy.reminder.lastCallOutcome }}
                             </span>
-                            <div class="small text-muted mt-1">
-                                <i class="bi bi-person-circle me-1"></i>{{ policy.reminder.lastUpdatedBy || 'System' }}
-                            </div>
-                            <div class="small text-muted">{{ policy.reminder.lastReminderSentAt | date:'short' }}
-                            </div>
+                            <ng-container
+                                *ngIf="policy.reminder.lastUpdatedBy && policy.reminder.lastUpdatedBy !== 'System'">
+                                <div class="small text-muted mt-1">
+                                    <i class="bi bi-person-circle me-1"></i>{{ policy.reminder.lastUpdatedBy }}
+                                </div>
+                                <div class="small text-muted">{{ policy.reminder.lastReminderSentAt | date:'short' }}
+                                </div>
+                            </ng-container>
                         </div>
                         <span *ngIf="!policy.reminder?.lastCallOutcome" class="text-muted">-</span>
                     </td>
@@ -641,9 +645,23 @@
                     <div class="timeline-marker"></div>
                     <div class="timeline-content">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge" [ngClass]="getOutcomeClass(record.callOutcome)">{{
-                                record.callOutcome
-                                }}</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge" [ngClass]="getOutcomeClass(record.callOutcome)">{{
+                                    record.callOutcome
+                                    }}</span>
+                                <!-- Copy Customer Email Template Icon -->
+                                <button class="btn btn-sm btn-outline-secondary py-0 px-2 d-flex align-items-center"
+                                    style="font-size: 0.75rem; border-radius: 4px;" (click)="copyEmailTemplate()"
+                                    title="Copy Customer Email Template">
+                                    <span class="fw-bold me-1">C</span><i class="bi bi-clipboard mt-1 mb-1"></i>
+                                </button>
+                                <!-- Copy RM Template Icon -->
+                                <button class="btn btn-sm btn-outline-info py-0 px-2 d-flex align-items-center"
+                                    style="font-size: 0.75rem; border-radius: 4px;" (click)="copyRMEmailTemplate()"
+                                    title="Copy RM Details Template">
+                                    <span class="fw-bold me-1">R</span><i class="bi bi-clipboard mt-1 mb-1"></i>
+                                </button>
+                            </div>
                             <small class="text-muted">{{ record.callDate | date:'medium' }}</small>
                         </div>
                         <p class="mb-2">{{ record.notes }}</p>

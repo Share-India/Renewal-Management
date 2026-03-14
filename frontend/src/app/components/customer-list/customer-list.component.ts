@@ -231,6 +231,60 @@ export class CustomerListComponent {
         this.selectedHistoryPolicy = null;
     }
 
+    copyEmailTemplate() {
+        if (!this.selectedHistoryPolicy) return;
+
+        const p = this.selectedHistoryPolicy;
+        const currentUser = this.authService.getCurrentUser();
+        const agentName = currentUser ? currentUser.username : 'Unknown';
+        const endDate = new Date(p.expiryDate).toLocaleDateString();
+
+        const emailText = `Dear ${p.customer.firstName} ${p.customer.lastName},
+
+This is ${agentName} from the Renewal Department, Share India Insurance Brokers Pvt. Ltd.
+
+We have been trying to reach you but were unable to connect. Kindly share a convenient time for us to connect and discuss the renewal of your ${p.type || 'Insurance'} policy to ensure there is no delay or break in coverage.
+
+Policy Details:
+
+Policy No.: ${p.policyNumber}
+Insurance Type: ${p.type || 'N/A'}
+Product: ${p.productName || 'N/A'}
+Renewal Due Date: ${endDate}
+
+Looking forward to your response to assist you with a smooth and timely renewal process.
+
+Warm regards,
+${agentName}
+Renewal Department
+Share India Insurance Brokers Pvt. Ltd.`;
+
+        navigator.clipboard.writeText(emailText).then(() => {
+            // Optional: could add an unobtrusive toast notification here, but user asked for no popup.
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
+
+    copyRMEmailTemplate() {
+        if (!this.selectedHistoryPolicy) return;
+
+        const p = this.selectedHistoryPolicy;
+        const endDate = p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : 'N/A';
+
+        const text = `Customer Name : ${p.customer.firstName} ${p.customer.lastName}
+Policy No : ${p.policyNumber}
+Insurance Type : ${p.type || 'N/A'}
+Insurer Name : ${p.insuranceName || 'N/A'}
+Product Name : ${p.productName || 'N/A'}
+Associate Name : ${p.associateName || p.associateCode || 'N/A'}
+Renewal Due Date : ${endDate}`;
+
+        navigator.clipboard.writeText(text).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
+
     openRenewalModal(policy: any) {
         this.selectedPolicy = policy;
         this.renewalForm = JSON.parse(JSON.stringify(policy)); // Deep copy

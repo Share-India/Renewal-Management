@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS customers (
     last_name VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     phone VARCHAR(20),
+    pincode VARCHAR(20),
     billing_frequency VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

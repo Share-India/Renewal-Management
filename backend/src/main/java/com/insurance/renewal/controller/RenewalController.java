@@ -21,7 +21,7 @@ public class RenewalController {
     private RenewalService renewalService;
 
     @GetMapping("/timeline/{days}")
-    public List<Policy> getTimelinePolicies(@PathVariable int days) {
+    public List<Policy> getTimelinePolicies(@PathVariable("days") int days) {
         System.out.println("API Request: /timeline/" + days);
         List<Policy> policies = renewalService.getPoliciesForTimeline(days);
 
@@ -52,7 +52,7 @@ public class RenewalController {
     }
 
     @GetMapping("/follow-ups/{days}")
-    public ResponseEntity<List<Reminder>> getFollowUpsByTimeline(@PathVariable int days) {
+    public ResponseEntity<List<Reminder>> getFollowUpsByTimeline(@PathVariable("days") int days) {
         return ResponseEntity.ok(renewalService.getFollowUpsForTimeline(days));
     }
 
@@ -61,10 +61,15 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getAdminStats());
     }
 
+    @GetMapping("/todays-work")
+    public ResponseEntity<List<Policy>> getTodaysWork() {
+        return ResponseEntity.ok(renewalService.getTodaysWork());
+    }
+
     @PostMapping("/policies")
     public ResponseEntity<Policy> createPolicy(@RequestBody Policy policy) {
         // Get current user
-        String agentName = org.springframework.security.core.context.SecurityContextHolder.getContext()
+        String agentName = org.springframework.security.core.context.SecurityContextHolder .getContext()
                 .getAuthentication().getName();
 
         if (agentName == null || agentName.equals("anonymousUser")) {
@@ -76,7 +81,7 @@ public class RenewalController {
 
     @PostMapping("/{policyId}/log-call")
     public ResponseEntity<Reminder> logCall(
-            @PathVariable Long policyId,
+            @PathVariable("policyId") Long policyId,
             @RequestBody Map<String, Object> payload) {
 
         String notes = (String) payload.get("notes");
@@ -104,7 +109,7 @@ public class RenewalController {
     }
 
     @GetMapping("/admin/records")
-    public ResponseEntity<Map<String, List<Policy>>> getRecordsForDate(@RequestParam String date) {
+    public ResponseEntity<Map<String, List<Policy>>> getRecordsForDate(@RequestParam("date") String date) {
         System.out.println("API Request: /admin/records?date=" + date);
         LocalDate selectedDate = LocalDate.parse(date);
         System.out.println("Parsed Date: " + selectedDate);
@@ -112,7 +117,7 @@ public class RenewalController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Policy>> searchPolicies(@RequestParam String query) {
+    public ResponseEntity<List<Policy>> searchPolicies(@RequestParam("query") String query) {
         return ResponseEntity.ok(renewalService.searchPolicies(query));
     }
 
@@ -123,7 +128,7 @@ public class RenewalController {
 
     @PostMapping(value = "/renew/{id}", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Policy> renewPolicy(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestPart("data") String payloadJson,
             @RequestPart(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
 
@@ -200,7 +205,7 @@ public class RenewalController {
 
     @PostMapping("/servicing/issue/{id}")
     public ResponseEntity<Policy> issuePolicy(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestPart("policy") String policyJson,
             @RequestPart(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
 
@@ -240,29 +245,34 @@ public class RenewalController {
 
     @PutMapping("/policies/{id}")
     public ResponseEntity<Policy> updatePolicyDetails(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody Policy policy) {
         return ResponseEntity.ok(renewalService.updatePolicyDetails(id, policy));
     }
 
     @GetMapping("/call-history/{policyId}")
-    public ResponseEntity<List<com.insurance.renewal.entity.CallHistory>> getCallHistory(@PathVariable Long policyId) {
+    public ResponseEntity<List<com.insurance.renewal.entity.CallHistory>> getCallHistory(@PathVariable("policyId") Long policyId) {
         return ResponseEntity.ok(renewalService.getCallHistory(policyId));
     }
 
     @DeleteMapping("/policies/{id}")
-    public ResponseEntity<Void> deletePolicy(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePolicy(@PathVariable("id") Long id) {
         renewalService.deletePolicy(id);
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/todays-work-progress")
+    public ResponseEntity<Map<String, Integer>> getTodaysWorkProgress() {
+        return ResponseEntity.ok(renewalService.getTodaysWorkProgress());
+    }
+
     @GetMapping("/{id}/audit-logs")
-    public ResponseEntity<List<AuditLog>> getAuditLogs(@PathVariable Long id) {
+    public ResponseEntity<List<AuditLog>> getAuditLogs(@PathVariable("id") Long id) {
         return ResponseEntity.ok(renewalService.getAuditLogs(id));
     }
 
     @GetMapping("/{id}/payment-proof")
-    public ResponseEntity<org.springframework.core.io.Resource> getPaymentProof(@PathVariable Long id) {
+    public ResponseEntity<org.springframework.core.io.Resource> getPaymentProof(@PathVariable("id") Long id) {
         try {
             java.io.File file = renewalService.getPaymentProofFile(id);
             if (!file.exists()) {
@@ -302,7 +312,7 @@ public class RenewalController {
     }
 
     @GetMapping("/{id}/policy-document")
-    public ResponseEntity<org.springframework.core.io.Resource> getPolicyDocument(@PathVariable Long id) {
+    public ResponseEntity<org.springframework.core.io.Resource> getPolicyDocument(@PathVariable("id") Long id) {
         try {
             java.io.File file = renewalService.getPolicyDocumentFile(id);
             if (!file.exists()) {

@@ -62,7 +62,7 @@ public class AuthController {
     }
 
     @DeleteMapping("/admin/users/{id}")
-    public ResponseEntity<User> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<User> deleteUser(@PathVariable("id") Long id) {
         // Soft delete: Toggle active status
         return userRepository.findById(id).map(user -> {
             user.setActive(!user.isActive());

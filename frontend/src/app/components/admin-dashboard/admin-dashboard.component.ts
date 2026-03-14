@@ -1,14 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { finalize } from 'rxjs/operators';
 import { CustomerListComponent } from '../customer-list/customer-list.component';
+import { WorkProgressComponent } from '../work-progress/work-progress.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomerListComponent],
+  imports: [CommonModule, FormsModule, CustomerListComponent, WorkProgressComponent],
   template: `
     <div class="admin-container">
       <div class="header-section d-flex justify-content-between align-items-center">
@@ -37,7 +38,7 @@ import { CustomerListComponent } from '../customer-list/customer-list.component'
             <p class="stat-value">{{ stats?.totalReminders || 0 }}</p>
           </div>
         </div>
-        <div class="stat-card success">
+        <div class="stat-card success" (click)="openTodaysWork()" style="cursor: pointer;">
           <div class="stat-icon">📅</div>
           <div class="stat-info">
             <h3>Today's Work Count</h3>
@@ -46,8 +47,7 @@ import { CustomerListComponent } from '../customer-list/customer-list.component'
         </div>
       </div>
 
-
-
+      <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
 
       <!-- Date Picker Section -->
       <div class="date-view-card mt-5">
@@ -71,37 +71,39 @@ import { CustomerListComponent } from '../customer-list/customer-list.component'
         </div>
 
         <div class="card-body">
-          <div *ngIf="!selectedDate && !isSearchMode" class="text-center py-5">
+          <div *ngIf="!selectedDate && !isSearchMode && selectedDay !== 'todays-work'" class="text-center py-5">
             <i class="bi bi-calendar-date display-4 text-muted mb-3"></i>
             <p class="text-muted lead">Please select a date to view scheduled tasks and expiring policies.</p>
           </div>
 
-          <div *ngIf="(selectedDate || isSearchMode) && loading" class="text-center py-5">
+          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work') && loading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
 
-          <div *ngIf="(selectedDate || isSearchMode) && !loading" class="records-content">
+          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work') && !loading" class="records-content">
             <!-- Expiring Policies -->
             <div class="record-section">
               <h4 class="section-header text-primary">
-                <span *ngIf="!isSearchMode">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
+                <span *ngIf="!isSearchMode && selectedDay !== 'todays-work'">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
                 <span *ngIf="isSearchMode">Search Results for "{{ adminSearchTerm }}"</span>
-                <span class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
+                <span *ngIf="selectedDay === 'todays-work'">Today's Work </span>
+                <span *ngIf="selectedDay === 'todays-work'" class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ selectedDateRecords.expiringPolicies.length }}</span>
+                <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
               </h4>
-              <app-customer-list [policies]="selectedDateRecords.expiringPolicies" [loading]="false" [isAdmin]="true"></app-customer-list>
+              <app-customer-list [policies]="selectedDateRecords.expiringPolicies" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
             </div>
             
             <hr class="divider">
 
-            <!-- Scheduled Follow-ups (Hide in Search Mode if empty) -->
-            <div class="record-section" *ngIf="!isSearchMode || selectedDateRecords.scheduledFollowUps.length > 0">
+            <!-- Scheduled Follow-ups (Hide in Search Mode or Todays Work mode) -->
+            <div class="record-section" *ngIf="(!isSearchMode && selectedDay !== 'todays-work') && selectedDateRecords.scheduledFollowUps.length > 0">
               <h4 class="section-header text-warning">
                 Follow-ups Scheduled for {{ selectedDate | date:'mediumDate' }}
                 <span class="badge bg-warning">{{ selectedDateRecords.scheduledFollowUps.length }}</span>
               </h4>
-              <app-customer-list [policies]="selectedDateRecords.scheduledFollowUps" [loading]="false" [isAdmin]="true"></app-customer-list>
+              <app-customer-list [policies]="selectedDateRecords.scheduledFollowUps" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
             </div>
           </div>
         </div>
@@ -700,12 +702,14 @@ import { CustomerListComponent } from '../customer-list/customer-list.component'
   `]
 })
 export class AdminDashboardComponent implements OnInit {
+  @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
   stats: any = {};
   selectedDate: string = '';
   selectedDateRecords: any = { expiringPolicies: [], scheduledFollowUps: [] };
   loading: boolean = false;
   adminSearchTerm: string = '';
   isSearchMode: boolean = false;
+  selectedDay: string | null = null;
 
   // Renewer Records
   renewerRecords: any[] = [];
@@ -737,6 +741,7 @@ export class AdminDashboardComponent implements OnInit {
 
     // Do not auto-select date. User must select manually.
     this.selectedDate = '';
+    this.selectedDay = null;
   }
 
   loadStats() {
@@ -794,6 +799,7 @@ export class AdminDashboardComponent implements OnInit {
     this.loading = true;
     this.isSearchMode = true;
     this.selectedDate = ''; // Clear date selection
+    this.selectedDay = null; // Clear todays-work mode
 
     this.apiService.searchPolicies(this.adminSearchTerm)
       .pipe(finalize(() => this.loading = false))
@@ -817,13 +823,16 @@ export class AdminDashboardComponent implements OnInit {
     this.isSearchMode = false;
     this.selectedDate = ''; // Reset date too? Or maybe keep it empty. 
     // Ideally, if a date was selected before, we might want to return to it, but for now reset.
-    this.onDateChange(); // This will just clear records if date is empty
+    if (this.selectedDay !== 'todays-work') {
+      this.onDateChange(); // This will just clear records if date is empty
+    }
   }
 
   onDateChange() {
     if (!this.selectedDate) return;
     this.isSearchMode = false;
     this.adminSearchTerm = ''; // Clear search term
+    this.selectedDay = null;
 
     this.loading = true;
     this.apiService.getRecordsForDate(this.selectedDate)
@@ -846,6 +855,47 @@ export class AdminDashboardComponent implements OnInit {
           this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
         }
       });
+  }
+
+  openTodaysWork() {
+    this.selectedDate = '';
+    this.isSearchMode = false;
+    this.adminSearchTerm = '';
+    this.selectedDay = 'todays-work';
+
+    this.loading = true;
+    this.apiService.getTodaysWork().subscribe({
+      next: (policies) => {
+        this.selectedDateRecords = {
+          expiringPolicies: policies,
+          scheduledFollowUps: [],
+          workedOnPolicies: []
+        };
+        this.loading = false;
+        if (this.workProgressComponent) {
+            this.workProgressComponent.refreshProgress();
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching todays work:', err);
+        this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
+        this.loading = false;
+      }
+    });
+  }
+
+  onDataUpdated() {
+    this.loadStats(); // Update the top-level stats like "Today's Work Count"
+    if (this.selectedDay === 'todays-work') {
+      this.openTodaysWork();
+      if (this.workProgressComponent) {
+          this.workProgressComponent.refreshProgress();
+      }
+    } else if (this.selectedDate) {
+      this.onDateChange();
+    } else if (this.isSearchMode) {
+      this.searchAdminDailyRecords();
+    }
   }
 
   getBadgeClass(outcome: string): string {

@@ -32,6 +32,14 @@ export class ApiService {
         return this.http.get<any>(`${this.baseUrl}/renewals/admin/stats`, { headers: this.getHeaders() });
     }
 
+    getTodaysWork(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders() });
+    }
+
+    getTodaysWorkProgress(): Observable<{total: number, completed: number}> {
+        return this.http.get<{total: number, completed: number}>(`${this.baseUrl}/renewals/todays-work-progress`, { headers: this.getHeaders() });
+    }
+
     logCall(policyId: number, data: any): Observable<any> {
         return this.http.post<any>(`${this.baseUrl}/renewals/${policyId}/log-call`, data, { headers: this.getHeaders() });
     }

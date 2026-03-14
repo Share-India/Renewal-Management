@@ -56,13 +56,9 @@ public class RenewalService {
         stats.put("totalPolicies", policyRepository.count());
         stats.put("totalReminders", reminderRepository.countByReminderStatus("PENDING"));
 
-        // Calculate Today's Work Count (Specific buckets only)
-        List<Integer> buckets = java.util.Arrays.asList(
-                75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
-                -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
-        );
-        stats.put("todaysWorkCount", policyRepository.countPoliciesForTimelineBuckets(LocalDate.now(),
-                buckets));
+        // Calculate the remaining tasks for today to display in the stat card
+        Map<String, Integer> progress = getTodaysWorkProgress();
+        stats.put("todaysWorkCount", progress.get("total") - progress.get("completed"));
 
         return stats;
     }
@@ -90,7 +86,7 @@ public class RenewalService {
         reminder.setReminderStatus("PENDING");
         reminder.setLastCallOutcome("Pending");
         reminder.setLastUpdatedBy(agentName != null ? agentName : "System");
-        reminder.setLastReminderSentAt(java.time.LocalDateTime.now());
+        reminder.setLastReminderSentAt(null);
         reminderRepository.save(reminder);
 
         savedPolicy.setReminder(reminder);
@@ -123,7 +119,7 @@ public class RenewalService {
                     reminder.setReminderStatus("PENDING");
                     reminder.setLastCallOutcome("Pending");
                     reminder.setLastUpdatedBy("System");
-                    reminder.setLastReminderSentAt(java.time.LocalDateTime.now());
+                    reminder.setLastReminderSentAt(null);
 
                     policy.setReminder(reminder); // Link both ways if needed for JPA context
                     reminderRepository.save(reminder);
@@ -405,7 +401,7 @@ public class RenewalService {
         java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
         System.out.println("Fetching follow-ups between " + start + " and " + end);
 
-        List<Reminder> reminders = reminderRepository.findByFollowUpDateBetween(start, end);
+        List<Reminder> reminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(start, end);
         System.out.println("Found " + reminders.size() + " follow-ups.");
 
         List<Policy> scheduledFollowUps = reminders.stream()
@@ -430,7 +426,7 @@ public class RenewalService {
         records.put("expiringPolicies", filteredExpiring);
 
         // 3. Worked on Policies (Renewed/Called today)
-        List<Reminder> workedOn = reminderRepository.findByLastReminderSentAtBetween(
+        List<Reminder> workedOn = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(
                 date.atStartOfDay(), date.atTime(23, 59, 59));
 
         List<Policy> workedOnPolicies = workedOn.stream()
@@ -446,7 +442,9 @@ public class RenewalService {
     }
 
     public List<Reminder> getAllCallRecords() {
-        return reminderRepository.findAll();
+        // Fetch only the 500 most recent records to prevent freezing the Admin Dashboard
+        org.springframework.data.domain.Pageable top500 = org.springframework.data.domain.PageRequest.of(0, 500);
+        return reminderRepository.findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(top500);
     }
 
     @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * ?") // Run at midnight
@@ -707,5 +705,113 @@ public class RenewalService {
         log.setUpdatedBy(updatedBy);
         log.setUpdatedAt(java.time.LocalDateTime.now());
         auditLogRepository.save(log);
+    }
+
+    public List<Policy> getTodaysWork() {
+        return getTodaysWork(LocalDate.now(), true);
+    }
+
+    private List<Policy> getTodaysWork(LocalDate today, boolean filterCompleted) {
+        List<Integer> buckets = java.util.Arrays.asList(
+                75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
+                -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
+        );
+
+        List<LocalDate> targetDates = buckets.stream()
+                .map(days -> today.plusDays((long) days))
+                .collect(java.util.stream.Collectors.toList());
+
+        // Fetch policies
+        List<Policy> expiring = policyRepository.findPoliciesForTodaysWork(targetDates);
+        
+        // Fetch reminders
+        List<Reminder> reminders = reminderRepository.findByFollowUpDateInWithValidPolicy(targetDates);
+
+        java.util.Set<Long> processedPolicyIds = new java.util.HashSet<>();
+        List<Policy> todaysWork = new java.util.ArrayList<>();
+
+        // Filter out policies that have ALREADY been worked on today
+        java.time.LocalDateTime startOfDay = today.atStartOfDay();
+
+        // Add policies from reminders
+        for (Reminder r : reminders) {
+            Policy p = r.getPolicy();
+            if (p != null) {
+                p.setReminder(r); // ensure reminder is attached
+                if (!filterCompleted || r.getLastReminderSentAt() == null || r.getLastReminderSentAt().isBefore(startOfDay)) {
+                    if (processedPolicyIds.add(p.getId())) {
+                        todaysWork.add(p);
+                    }
+                }
+            }
+        }
+
+        // Add policies from expiring
+        for (Policy p : expiring) {
+            Reminder r = p.getReminder();
+            boolean workedOnToday = false;
+            if (r != null && r.getLastReminderSentAt() != null && !r.getLastReminderSentAt().isBefore(startOfDay)) {
+                workedOnToday = true;
+            }
+
+            if (!filterCompleted || !workedOnToday) {
+                if (processedPolicyIds.add(p.getId())) {
+                    todaysWork.add(p);
+                }
+            }
+        }
+
+        // Sort them
+        todaysWork.sort((p1, p2) -> {
+            int score1 = getPriorityScore(p1, today);
+            int score2 = getPriorityScore(p2, today);
+            return Integer.compare(score1, score2);
+        });
+
+        return todaysWork;
+    }
+
+    private int getPriorityScore(Policy p, LocalDate today) {
+        LocalDate targetDate = p.getExpiryDate();
+        if (p.getReminder() != null && p.getReminder().getFollowUpDate() != null) {
+            targetDate = p.getReminder().getFollowUpDate().toLocalDate();
+        }
+        
+        if (targetDate == null) return Integer.MAX_VALUE; // Fallback
+
+        long diff = java.time.temporal.ChronoUnit.DAYS.between(today, targetDate);
+
+        // Today (0) = 0, +1 = 1... +75 = 75, -1 = 76, -2 = 77... -75 = 150
+        if (diff >= 0) {
+            return (int) diff;
+        } else {
+            return 75 + Math.abs((int) diff);
+        }
+    }
+
+    public Map<String, Integer> getTodaysWorkProgress() {
+        LocalDate today = LocalDate.now();
+        
+        // 1. Get the remaining tasks for today (excludes anything already completed today)
+        List<Policy> remainingTodaysWork = getTodaysWork(today, true); 
+        
+        // 2. Count everything that was completed today
+        java.time.LocalDateTime startOfDay = today.atStartOfDay();
+        java.time.LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        
+        List<Reminder> completedRemindersToday = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay);
+        
+        long completed = completedRemindersToday.stream()
+            .filter(r -> r.getPolicy() != null)
+            .map(r -> r.getPolicy().getId())
+            .distinct()
+            .count();
+            
+        int total = remainingTodaysWork.size() + (int) completed;
+
+        Map<String, Integer> progress = new HashMap<>();
+        progress.put("total", total);
+        progress.put("completed", (int) completed);
+        return progress;
     }
 }
