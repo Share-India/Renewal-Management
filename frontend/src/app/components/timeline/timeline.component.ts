@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -10,6 +10,8 @@ import { CommonModule } from '@angular/common';
 })
 export class TimelineComponent {
     @Output() daySelected = new EventEmitter<number>();
+    @Input() counts: { [key: number]: number } = {};
+    @Input() adminMode: boolean = false;
 
     days: number[] = [75, 60, 45, 30, 15, 7, 3, 2, 1];
     postExpiryDays: number[] = [-1, -2, -3, -7, -15, -30, -45, -60, -75];

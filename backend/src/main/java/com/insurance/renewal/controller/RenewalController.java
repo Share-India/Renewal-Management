@@ -61,6 +61,11 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getAdminStats());
     }
 
+    @GetMapping("/timeline-counts")
+    public ResponseEntity<Map<Integer, Long>> getTimelineCounts() {
+        return ResponseEntity.ok(renewalService.getTimelineCounts());
+    }
+
     @GetMapping("/todays-work")
     public ResponseEntity<List<Policy>> getTodaysWork() {
         return ResponseEntity.ok(renewalService.getTodaysWork());

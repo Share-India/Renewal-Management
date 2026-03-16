@@ -32,6 +32,10 @@ export class ApiService {
         return this.http.get<any>(`${this.baseUrl}/renewals/admin/stats`, { headers: this.getHeaders() });
     }
 
+    getTimelineCounts(): Observable<{ [key: number]: number }> {
+        return this.http.get<{ [key: number]: number }>(`${this.baseUrl}/renewals/timeline-counts`, { headers: this.getHeaders() });
+    }
+
     getTodaysWork(): Observable<any[]> {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders() });
     }

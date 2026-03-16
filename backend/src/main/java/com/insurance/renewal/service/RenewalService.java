@@ -63,6 +63,32 @@ public class RenewalService {
         return stats;
     }
 
+    public Map<Integer, Long> getTimelineCounts() {
+        List<Integer> buckets = java.util.Arrays.asList(
+                75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
+                -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
+        );
+
+        Map<Integer, Long> counts = new HashMap<>();
+        LocalDate today = LocalDate.now();
+
+        for (Integer offset : buckets) {
+            LocalDate targetDate = today.plusDays(offset);
+            
+            // For a specific day bucket, we count policies expiring that day
+            // (excluding those pending issuance or already scheduled for a follow-up)
+            List<Policy> expiringPolicies = policyRepository.findPoliciesForTimeline(targetDate);
+            long expiringCount = expiringPolicies.size();
+            
+            // And we count reminders scheduled for that specific date
+            long reminderCount = reminderRepository.countByFollowUpDateTarget(targetDate);
+
+            counts.put(offset, expiringCount + reminderCount);
+        }
+
+        return counts;
+    }
+
     @org.springframework.transaction.annotation.Transactional
     public Policy createPolicy(Policy policy, String agentName) {
         if (policy.getStatus() == null) {

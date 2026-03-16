@@ -11,6 +11,7 @@ import java.util.List;
 @Repository
 public interface PolicyRepository extends JpaRepository<Policy, Long> {
         List<Policy> findByExpiryDate(LocalDate expiryDate);
+        long countByExpiryDate(LocalDate expiryDate);
 
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL")
         List<Policy> findPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate);

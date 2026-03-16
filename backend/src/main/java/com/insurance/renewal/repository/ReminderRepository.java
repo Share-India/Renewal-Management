@@ -12,6 +12,9 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
 
     java.util.Optional<Reminder> findByPolicyId(Long policyId);
 
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Reminder r JOIN r.policy p WHERE FUNCTION('DATE', r.followUpDate) = :date")
+    long countByFollowUpDateTarget(@org.springframework.data.repository.query.Param("date") LocalDate date);
+
     long countByReminderStatus(String reminderStatus);
     long countByReminderStatusIgnoreCase(String reminderStatus);
 

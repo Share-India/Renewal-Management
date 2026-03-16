@@ -5,11 +5,12 @@ import { ApiService } from '../../services/api.service';
 import { finalize } from 'rxjs/operators';
 import { CustomerListComponent } from '../customer-list/customer-list.component';
 import { WorkProgressComponent } from '../work-progress/work-progress.component';
+import { TimelineComponent } from '../timeline/timeline.component';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, CustomerListComponent, WorkProgressComponent],
+  imports: [CommonModule, FormsModule, CustomerListComponent, WorkProgressComponent, TimelineComponent],
   template: `
     <div class="admin-container">
       <div class="header-section d-flex justify-content-between align-items-center">
@@ -48,6 +49,10 @@ import { WorkProgressComponent } from '../work-progress/work-progress.component'
       </div>
 
       <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
+
+      <div class="mt-4 mb-3">
+        <app-timeline [counts]="timelineCounts" [adminMode]="true" (daySelected)="onDaySelected($event)"></app-timeline>
+      </div>
 
       <!-- Date Picker Section -->
       <div class="date-view-card mt-5">
@@ -709,7 +714,8 @@ export class AdminDashboardComponent implements OnInit {
   loading: boolean = false;
   adminSearchTerm: string = '';
   isSearchMode: boolean = false;
-  selectedDay: string | null = null;
+  selectedDay: number | string | null = null;
+  timelineCounts: { [key: number]: number } = {};
 
   // Renewer Records
   renewerRecords: any[] = [];
@@ -736,6 +742,7 @@ export class AdminDashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadStats();
+    this.refreshTimelineCounts();
     this.loadRenewerRecords();
     // this.loadLateRenewals(); // Not needed as separate section is removed
 
@@ -748,6 +755,13 @@ export class AdminDashboardComponent implements OnInit {
     this.apiService.getAdminStats().subscribe({
       next: (data) => this.stats = data,
       error: (err) => console.error('Error loading stats:', err)
+    });
+  }
+
+  refreshTimelineCounts() {
+    this.apiService.getTimelineCounts().subscribe({
+      next: (counts) => this.timelineCounts = counts,
+      error: (err) => console.error('Error fetching timeline counts for admin', err)
     });
   }
 
@@ -828,11 +842,29 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
+
   onDateChange() {
-    if (!this.selectedDate) return;
+    if (!this.selectedDate) {
+      this.selectedDay = null;
+      return;
+    }
+
+    // Reverse calc the timeline day highlight
+    const selected = new Date(this.selectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = selected.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const validBuckets = [75, 60, 45, 30, 15, 7, 3, 2, 1, 0, -1, -2, -3, -7, -15, -30, -45, -60, -75];
+    if (validBuckets.includes(diffDays)) {
+      this.selectedDay = diffDays;
+    } else {
+      this.selectedDay = null;
+    }
+
     this.isSearchMode = false;
-    this.adminSearchTerm = ''; // Clear search term
-    this.selectedDay = null;
+    this.adminSearchTerm = '';
 
     this.loading = true;
     this.apiService.getRecordsForDate(this.selectedDate)
@@ -855,6 +887,23 @@ export class AdminDashboardComponent implements OnInit {
           this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
         }
       });
+  }
+
+  onDaySelected(day: number) {
+    this.selectedDay = day;
+    this.isSearchMode = false;
+    this.adminSearchTerm = '';
+
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + day);
+
+    // Format YYYY-MM-DD local
+    const yyyy = targetDate.getFullYear();
+    const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(targetDate.getDate()).padStart(2, '0');
+
+    this.selectedDate = `${yyyy}-${mm}-${dd}`;
+    this.onDateChange(); // fetch records
   }
 
   openTodaysWork() {
@@ -885,6 +934,7 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onDataUpdated() {
+    this.refreshTimelineCounts();
     this.loadStats(); // Update the top-level stats like "Today's Work Count"
     if (this.selectedDay === 'todays-work') {
       this.openTodaysWork();
@@ -973,6 +1023,7 @@ export class AdminDashboardComponent implements OnInit {
       this.apiService.deletePolicy(id).subscribe({
         next: () => {
           alert('Policy deleted successfully');
+          this.refreshTimelineCounts();
           this.loadRenewerRecords();
           if (this.selectedDate) {
             this.onDateChange();
@@ -1088,6 +1139,7 @@ export class AdminDashboardComponent implements OnInit {
         this.selectedViewPolicy = updatedPolicy; // Update view
         this.isEditing = false;
         // Refresh lists if needed
+        this.refreshTimelineCounts();
         this.loadRenewerRecords();
         if (this.selectedDate) this.onDateChange();
       },

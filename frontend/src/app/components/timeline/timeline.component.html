@@ -1,7 +1,8 @@
-<div class="timeline-container">
+<div class="timeline-container" [class.admin-mode]="adminMode">
   <h3>Renewal Timeline</h3>
   <div class="timeline-scroll">
     <div *ngFor="let day of days" class="timeline-item" [class.active]="selectedDay === day" (click)="selectDay(day)">
+      <span *ngIf="counts[day] !== undefined" class="timeline-badge">{{ counts[day] }}</span>
       <span class="day-number">{{ day === 0 ? 'Today' : day }}</span>
       <span class="day-label">{{ day === 0 ? '' : 'Days Left' }}</span>
     </div>
@@ -9,6 +10,7 @@
 
   <div class="today-section d-flex justify-content-center my-1">
     <div class="timeline-item today-item" [class.active]="selectedDay === 0" (click)="selectDay(0)">
+      <span *ngIf="counts[0] !== undefined" class="timeline-badge today-badge">{{ counts[0] }}</span>
       <span class="day-number">Today</span>
     </div>
   </div>
@@ -17,6 +19,7 @@
   <div class="timeline-scroll post-expiry">
     <div *ngFor="let day of postExpiryDays" class="timeline-item warning" [class.active]="selectedDay === day"
       (click)="selectDay(day)">
+      <span *ngIf="counts[day] !== undefined" class="timeline-badge warning-badge">{{ counts[day] }}</span>
       <span class="day-number">{{ day }}</span>
       <span class="day-label">Days Overdue</span>
     </div>

@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TimelineComponent } from '../timeline/timeline.component';
@@ -28,7 +28,7 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
 
-      <app-timeline (daySelected)="onDaySelected($event)"></app-timeline>
+      <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)"></app-timeline>
       
       <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
 
@@ -293,15 +293,29 @@ import { forkJoin, of } from 'rxjs';
     .search-item:last-child { border-bottom: none; }
   `]
 })
-export class RenewalComponent {
+export class RenewalComponent implements OnInit {
   policies: any[] = [];
   followUps: any[] = [];
   loading: boolean = false;
   selectedDay: number | string | null = null;
+  timelineCounts: { [key: number]: number } = {};
 
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
   constructor(private apiService: ApiService) { }
+
+  ngOnInit() {
+    this.refreshTimelineCounts();
+  }
+
+  refreshTimelineCounts() {
+    this.apiService.getTimelineCounts().subscribe({
+      next: (counts) => {
+        this.timelineCounts = counts;
+      },
+      error: (err) => console.error('Error fetching timeline counts', err)
+    });
+  }
 
   onDaySelected(day: number) {
     this.selectedDay = day;
@@ -348,6 +362,7 @@ export class RenewalComponent {
   }
 
   onDataUpdated() {
+    this.refreshTimelineCounts();
     if (this.selectedDay === 'todays-work') {
       this.openTodaysWork();
     } else if (this.selectedDay !== null && typeof this.selectedDay === 'number') {
