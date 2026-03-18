@@ -170,10 +170,9 @@ public class RenewalService {
             totalReminders = reminderRepository.countByReminderStatusIgnoreCase("PENDING");
         }
 
-        // Today's Work Count needs to match the new filter system
-        LocalDate today = LocalDate.now();    
-        List<Integer> todaysWorkBuckets = Arrays.asList(0, -1, -2, -3, -7, -15, -30, -45, -60, -75);
-        long startCount = policyRepository.countPoliciesForTimelineBuckets(today, todaysWorkBuckets, branch);
+        // Today's Work Count needs to match the exact same logic as the Action Required Progress Bar
+        Map<String, Integer> progress = getTodaysWorkProgress(branch);
+        long startCount = progress.get("total");
 
         stats.put("totalPolicies", totalPolicies);
         stats.put("totalReminders", totalReminders);
