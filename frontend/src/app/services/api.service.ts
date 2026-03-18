@@ -28,12 +28,16 @@ export class ApiService {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/follow-ups/${days}`, { headers: this.getHeaders() });
     }
 
-    getAdminStats(): Observable<any> {
-        return this.http.get<any>(`${this.baseUrl}/renewals/admin/stats`, { headers: this.getHeaders() });
+    getAdminStats(branch?: string): Observable<any> {
+        let url = `${this.baseUrl}/renewals/admin/stats`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<any>(url, { headers: this.getHeaders() });
     }
 
-    getTimelineCounts(): Observable<{ [key: number]: number }> {
-        return this.http.get<{ [key: number]: number }>(`${this.baseUrl}/renewals/timeline-counts`, { headers: this.getHeaders() });
+    getTimelineCounts(branch?: string): Observable<{ [key: number]: number }> {
+        let url = `${this.baseUrl}/renewals/timeline-counts`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<{ [key: number]: number }>(url, { headers: this.getHeaders() });
     }
 
     getTodaysWork(): Observable<any[]> {
@@ -48,12 +52,16 @@ export class ApiService {
         return this.http.post<any>(`${this.baseUrl}/renewals/${policyId}/log-call`, data, { headers: this.getHeaders() });
     }
 
-    getRecordsForDate(date: string): Observable<any> {
-        return this.http.get<any>(`${this.baseUrl}/renewals/admin/records?date=${date}`, { headers: this.getHeaders() });
+    getRecordsForDate(date: string, branch?: string): Observable<any> {
+        let url = `${this.baseUrl}/renewals/admin/records?date=${date}`;
+        if (branch) url += `&branch=${encodeURIComponent(branch)}`;
+        return this.http.get<any>(url, { headers: this.getHeaders() });
     }
 
-    getAllCallRecords(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/admin/call-records`, { headers: this.getHeaders() });
+    getAllCallRecords(branch?: string): Observable<any[]> {
+        let url = `${this.baseUrl}/renewals/admin/call-records`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<any[]>(url, { headers: this.getHeaders() });
     }
 
     searchPolicies(query: string): Observable<any[]> {
@@ -92,12 +100,16 @@ export class ApiService {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/call-history/${policyId}`, { headers: this.getHeaders() });
     }
 
-    getPendingIssuancePolicies(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/servicing/pending`, { headers: this.getHeaders() });
+    getPendingIssuancePolicies(branch?: string): Observable<any[]> {
+        let url = `${this.baseUrl}/renewals/servicing/pending`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<any[]>(url, { headers: this.getHeaders() });
     }
 
-    getServicedHistory(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/servicing/history`, { headers: this.getHeaders() });
+    getServicedHistory(branch?: string): Observable<any[]> {
+        let url = `${this.baseUrl}/renewals/servicing/history`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<any[]>(url, { headers: this.getHeaders() });
     }
 
     issuePolicy(id: number, formData: FormData): Observable<any> {
@@ -132,6 +144,14 @@ export class ApiService {
 
     changePassword(data: any): Observable<any> {
         return this.http.post<any>(`${this.baseUrl}/auth/change-password`, data, { headers: this.getHeaders(), responseType: 'text' as 'json' });
+    }
+
+    getBranches(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.baseUrl}/renewals/branches`, { headers: this.getHeaders() });
+    }
+
+    createBranch(branch: {name: string}): Observable<any> {
+        return this.http.post<any>(`${this.baseUrl}/renewals/branches`, branch, { headers: this.getHeaders() });
     }
 }
 

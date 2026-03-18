@@ -14,9 +14,15 @@ import { ApiService } from '../../services/api.service';
           <h2>Policy Servicing Dashboard</h2>
           <p class="text-muted">Verify payment details and issue policies</p>
         </div>
-        <button class="btn btn-outline-primary" (click)="loadPendingPolicies()">
-          <i class="bi bi-arrow-clockwise"></i> Refresh
-        </button>
+        <div class="d-flex gap-2 align-items-center">
+            <select [(ngModel)]="selectedBranch" (change)="onBranchChange()" class="form-select form-select-sm" style="width: auto;">
+                <option value="">All Branches Globally</option>
+                <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
+            </select>
+            <button class="btn btn-outline-primary" (click)="loadPendingPolicies()">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
       </div>
 
       <!-- Top Action Buttons -->
@@ -386,14 +392,14 @@ import { ApiService } from '../../services/api.service';
                     <input type="text" class="form-control" [(ngModel)]="issueForm.insuranceName">
                 </div>
                  <div class="col-md-6">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" class="form-control" [(ngModel)]="issueForm.productName">
+                </div>
+                 <div class="col-md-12">
                     <label class="form-label">Previous Policy No</label>
                     <input type="text" class="form-control" [(ngModel)]="issueForm.previousPolicyNumber">
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label">Policy Issue Date *</label>
-                    <input type="date" class="form-control" [(ngModel)]="issueForm.policyIssueDate">
-                </div>
                 <div class="col-md-4">
                     <label class="form-label">Start Date *</label>
                     <input type="date" class="form-control" [(ngModel)]="issueForm.policyStartDate">
@@ -401,6 +407,10 @@ import { ApiService } from '../../services/api.service';
                 <div class="col-md-4">
                     <label class="form-label">Expiry Date *</label>
                     <input type="date" class="form-control" [(ngModel)]="issueForm.expiryDate">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Policy Issue Date *</label>
+                    <input type="date" class="form-control" [(ngModel)]="issueForm.policyIssueDate">
                 </div>
 
                 <div class="col-md-6">
@@ -580,16 +590,31 @@ export class PolicyServicingComponent implements OnInit {
   // History Modal
   showHistoryModal = false;
   history: any[] = [];
+  
+  // Filtering
+  selectedBranch: string = '';
+  availableBranches: string[] = [];
 
   constructor(private apiService: ApiService) { }
 
   ngOnInit() {
+    this.apiService.getBranches().subscribe(branches => {
+      this.availableBranches = branches;
+    });
     this.loadPendingPolicies();
+  }
+
+  onBranchChange() {
+      if (this.viewMode === 'pending') {
+          this.loadPendingPolicies();
+      } else {
+          this.loadHistory();
+      }
   }
 
   loadPendingPolicies() {
     this.loading = true;
-    this.apiService.getPendingIssuancePolicies().subscribe({
+    this.apiService.getPendingIssuancePolicies(this.selectedBranch).subscribe({
       next: (data) => {
         this.pendingPolicies = data;
         this.loading = false;
@@ -643,7 +668,7 @@ export class PolicyServicingComponent implements OnInit {
 
   loadHistory() {
     this.loading = true;
-    this.apiService.getServicedHistory().subscribe({
+    this.apiService.getServicedHistory(this.selectedBranch).subscribe({
       next: (data) => {
         this.servicedPolicies = data;
         this.loading = false;
@@ -715,6 +740,7 @@ export class PolicyServicingComponent implements OnInit {
     this.issueForm = {
       policyNumber: '', // Blank for user to enter new policy number
       insuranceName: policy.insuranceName,
+      productName: policy.productName || '',
       previousPolicyNumber: policy.policyNumber || '', // Current policy becomes previous
       policyIssueDate: new Date().toISOString().split('T')[0], // Today
       policyStartDate: newStartDate.toISOString().split('T')[0],
@@ -749,6 +775,7 @@ export class PolicyServicingComponent implements OnInit {
     const policyDetails = {
       policyNumber: this.issueForm.policyNumber,
       insuranceName: this.issueForm.insuranceName,
+      productName: this.issueForm.productName,
       previousPolicyNumber: this.issueForm.previousPolicyNumber,
       policyIssueDate: this.issueForm.policyIssueDate,
       policyStartDate: this.issueForm.policyStartDate,

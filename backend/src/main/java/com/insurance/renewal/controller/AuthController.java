@@ -32,6 +32,13 @@ public class AuthController {
         Map<String, String> response = new HashMap<>();
         response.put("username", auth.getName());
         response.put("role", role);
+
+        userRepository.findByUsername(auth.getName()).ifPresent(user -> {
+            if (user.getAssignedBranch() != null) response.put("assignedBranch", user.getAssignedBranch());
+            if (user.getAssignedProductType() != null) response.put("assignedProductType", user.getAssignedProductType());
+            if (user.getAssignedPremiumRange() != null) response.put("assignedPremiumRange", user.getAssignedPremiumRange());
+        });
+
         return ResponseEntity.ok(response);
     }
 
@@ -49,6 +56,12 @@ public class AuthController {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
         user.setRole(role.startsWith("ROLE_") ? role : "ROLE_" + role);
+
+        if (role.contains("RENEWER")) {
+            user.setAssignedBranch(payload.get("assignedBranch"));
+            user.setAssignedProductType(payload.get("assignedProductType"));
+            user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
+        }
 
         return ResponseEntity.ok(userRepository.save(user));
     }

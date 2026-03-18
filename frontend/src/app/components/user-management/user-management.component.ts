@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-user-management',
@@ -55,6 +56,63 @@ import { AuthService } from '../../services/auth.service';
                 </select>
               </div>
             </div>
+
+            <!-- Optional Branch Filter for Agents -->
+            <ng-container *ngIf="['RENEWER', 'SERVICING', 'MIS'].includes(newUser.role)">
+              <div class="form-group">
+                <label>Assigned Branch</label>
+                <div class="input-group">
+                  <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+                  <select [(ngModel)]="newUser.assignedBranch" class="form-select">
+                    <option value="">All Branches Globally (Select All)</option>
+                    <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
+                  </select>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- Optional RENEWER Product Filters -->
+            <ng-container *ngIf="newUser.role === 'RENEWER'">
+              <div class="form-group">
+                <label>Assigned Product Types</label>
+                <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
+                  <div class="form-check border-bottom pb-2 mb-2">
+                    <input class="form-check-input" type="checkbox" id="selectAllProducts" 
+                           [checked]="allProductTypesSelected" (change)="toggleAllProductTypes($event)">
+                    <label class="form-check-label fw-bold" for="selectAllProducts">
+                      All Products
+                    </label>
+                  </div>
+                  <div class="form-check" *ngFor="let type of availableProductTypes; let i = index">
+                    <input class="form-check-input" type="checkbox" [id]="'type_' + i" 
+                           [checked]="selectedProductTypes.includes(type)" (change)="toggleProductType(type, $event)">
+                    <label class="form-check-label" [for]="'type_' + i">
+                      {{ type }}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label>Assigned Premium Range</label>
+                  <div style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; background: #fff;">
+                    <div class="form-check border-bottom pb-2 mb-2">
+                      <input class="form-check-input" type="checkbox" id="premium_all" 
+                             [checked]="allPremiumRangesSelected" (change)="toggleAllPremiumRanges($event)">
+                      <label class="form-check-label fw-bold" for="premium_all">
+                        All Premium Ranges
+                      </label>
+                    </div>
+                    <div class="form-check" *ngFor="let range of availablePremiumRanges; let i = index">
+                      <input class="form-check-input" type="checkbox" [id]="'premium_' + i" 
+                             [checked]="selectedPremiumRanges.includes(range)" (change)="togglePremiumRange(range, $event)">
+                      <label class="form-check-label" [for]="'premium_' + i">
+                        {{ range }}
+                      </label>
+                    </div>
+                  </div>
+              </div>
+            </ng-container>
           </div>
 
           <button class="btn btn-primary w-100 mt-4" (click)="createUser()" [disabled]="loading">
@@ -197,19 +255,89 @@ import { AuthService } from '../../services/auth.service';
     .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
   `]
 })
-export class UserManagementComponent {
-  newUser = { username: '', password: '', role: 'RENEWER' };
+export class UserManagementComponent implements OnInit {
+  newUser: any = { 
+    username: '', 
+    password: '', 
+    role: 'RENEWER',
+    assignedBranch: '',
+    assignedProductType: '',
+    assignedPremiumRange: ''
+  };
   confirmPassword = '';
   message = '';
   success = false;
   loading = false;
 
+  availableProductTypes = [
+    'Engineering Policy', 'GMC', 'GPA', 'GTL', 'Health Insurance',
+    'Home/Property Insurance', 'Life Insurance', 'Marine Insurance',
+    'Miscellaneous Insurance', 'Motor Insurance', 'PA',
+    'Professional Indemnity', 'Stock Broker Indemnity', 'Travel Insurance',
+    'Workmen Compensation'
+  ];
+  selectedProductTypes: string[] = [];
+
+  get allProductTypesSelected(): boolean {
+    return this.selectedProductTypes.length === this.availableProductTypes.length;
+  }
+
+  toggleProductType(type: string, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedProductTypes.includes(type)) {
+        this.selectedProductTypes.push(type);
+      }
+    } else {
+      this.selectedProductTypes = this.selectedProductTypes.filter(t => t !== type);
+    }
+  }
+
+  toggleAllProductTypes(event: any) {
+    if (event.target.checked) {
+      this.selectedProductTypes = [...this.availableProductTypes];
+    } else {
+      this.selectedProductTypes = [];
+    }
+  }
+
+  availablePremiumRanges = ['<50,000', '50,000-1,00,000', '>1,00,000'];
+  selectedPremiumRanges: string[] = [];
+
+  get allPremiumRangesSelected(): boolean {
+    return this.selectedPremiumRanges.length === this.availablePremiumRanges.length;
+  }
+
+  togglePremiumRange(range: string, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedPremiumRanges.includes(range)) {
+        this.selectedPremiumRanges.push(range);
+      }
+    } else {
+      this.selectedPremiumRanges = this.selectedPremiumRanges.filter(r => r !== range);
+    }
+  }
+
+  toggleAllPremiumRanges(event: any) {
+    if (event.target.checked) {
+      this.selectedPremiumRanges = [...this.availablePremiumRanges];
+    } else {
+      this.selectedPremiumRanges = [];
+    }
+  }
+
   // User List
   showUserList = false;
   users: any[] = [];
   loadingUsers = false;
+  availableBranches: string[] = [];
 
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService, private apiService: ApiService) { }
+
+  ngOnInit() {
+    this.apiService.getBranches().subscribe(branches => {
+      this.availableBranches = branches;
+    });
+  }
 
   openUserList() {
     this.showUserList = true;
@@ -248,12 +376,25 @@ export class UserManagementComponent {
       return;
     }
 
+    if (this.newUser.role === 'RENEWER') {
+      this.newUser.assignedProductType = this.selectedProductTypes.join(',');
+      this.newUser.assignedPremiumRange = this.selectedPremiumRanges.join(',');
+    } else {
+      this.newUser.assignedProductType = '';
+      this.newUser.assignedPremiumRange = '';
+    }
+
     this.authService.createUser(this.newUser).subscribe({
       next: () => {
         this.message = 'User created successfully!';
         this.success = true;
-        this.newUser = { username: '', password: '', role: 'RENEWER' };
+        this.newUser = { 
+          username: '', password: '', role: 'RENEWER',
+          assignedBranch: '', assignedProductType: '', assignedPremiumRange: ''
+        };
         this.confirmPassword = '';
+        this.selectedProductTypes = [];
+        this.selectedPremiumRanges = [];
         this.loading = false;
       },
       error: (err) => {

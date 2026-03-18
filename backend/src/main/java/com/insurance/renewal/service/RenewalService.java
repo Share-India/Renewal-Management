@@ -11,6 +11,7 @@ import com.insurance.renewal.repository.CallHistoryRepository;
 import com.insurance.renewal.repository.CustomerRepository;
 import com.insurance.renewal.repository.AuditLogRepository;
 import com.insurance.renewal.entity.AuditLog;
+import com.insurance.renewal.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Arrays;
 
 @Service
 public class RenewalService {
@@ -37,53 +39,171 @@ public class RenewalService {
     @Autowired
     private AuditLogRepository auditLogRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private List<Policy> applyRenewerFilters(List<Policy> policies) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return policies;
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null || user.getRole() == null || !user.getRole().contains("RENEWER")) return policies;
+
+        return policies.stream().filter(p -> {
+            if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty() && !user.getAssignedBranch().equals("null")) {
+                if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch())) return false;
+            }
+            if (user.getAssignedProductType() != null && !user.getAssignedProductType().isEmpty() && !user.getAssignedProductType().equals("null")) {
+                if (p.getType() == null) return false;
+                String[] allowedTypes = user.getAssignedProductType().split("\\s*,\\s*");
+                boolean match = false;
+                for (String t : allowedTypes) {
+                    if (t.equalsIgnoreCase(p.getType())) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) return false;
+            }
+            if (user.getAssignedPremiumRange() != null && !user.getAssignedPremiumRange().isEmpty() && !user.getAssignedPremiumRange().equals("null")) {
+                double amount = p.getAmount() != null ? p.getAmount().doubleValue() : 0;
+                String range = user.getAssignedPremiumRange().trim();
+                boolean matchesAnyRange = false;
+                
+                if (range.contains("<50,000") && amount < 50000) {
+                    matchesAnyRange = true;
+                }
+                if (range.contains("50,000-1,00,000") && amount >= 50000 && amount <= 100000) {
+                    matchesAnyRange = true;
+                }
+                if (range.contains(">1,00,000") && amount > 100000) {
+                    matchesAnyRange = true;
+                }
+                
+                if (!matchesAnyRange) return false;
+            }
+            return true;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
+    private List<Reminder> applyRenewerFiltersToReminders(List<Reminder> reminders) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return reminders;
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null || user.getRole() == null || !user.getRole().contains("RENEWER")) return reminders;
+
+        return reminders.stream().filter(r -> {
+            Policy p = r.getPolicy();
+            if (p == null) return false;
+            
+            if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty() && !user.getAssignedBranch().equals("null")) {
+                if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch())) return false;
+            }
+            if (user.getAssignedProductType() != null && !user.getAssignedProductType().isEmpty() && !user.getAssignedProductType().equals("null")) {
+                if (p.getType() == null) return false;
+                String[] allowedTypes = user.getAssignedProductType().split("\\s*,\\s*");
+                boolean match = false;
+                for (String t : allowedTypes) {
+                    if (t.equalsIgnoreCase(p.getType())) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match) return false;
+            }
+            if (user.getAssignedPremiumRange() != null && !user.getAssignedPremiumRange().isEmpty() && !user.getAssignedPremiumRange().equals("null")) {
+                double amount = p.getAmount() != null ? p.getAmount().doubleValue() : 0;
+                String range = user.getAssignedPremiumRange().trim();
+                boolean matchesAnyRange = false;
+                
+                if (range.contains("<50,000") && amount < 50000) {
+                    matchesAnyRange = true;
+                }
+                if (range.contains("50,000-1,00,000") && amount >= 50000 && amount <= 100000) {
+                    matchesAnyRange = true;
+                }
+                if (range.contains(">1,00,000") && amount > 100000) {
+                    matchesAnyRange = true;
+                }
+                
+                if (!matchesAnyRange) return false;
+            }
+            return true;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
+
     // Get policies expiring in exactly 'days' from now
     // If days is negative, it means expired 'days' ago
     public List<Policy> getPoliciesForTimeline(int days) {
         LocalDate targetDate = LocalDate.now().plusDays(days);
         // Use the new method that excludes policies with future follow-ups
-        return policyRepository.findPoliciesForTimeline(targetDate);
+        return applyRenewerFilters(policyRepository.findPoliciesForTimeline(targetDate));
     }
 
     // Get reminders scheduled for follow-up in 'days'
     public List<Reminder> getFollowUpsForTimeline(int days) {
         LocalDate targetDate = LocalDate.now().plusDays(days);
-        return reminderRepository.findByFollowUpDateBetween(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59));
+        return applyRenewerFiltersToReminders(reminderRepository.findByFollowUpDateBetween(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59)));
     }
 
-    public Map<String, Object> getAdminStats() {
+    public Map<String, Object> getAdminStats(String branch) {
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalPolicies", policyRepository.count());
-        stats.put("totalReminders", reminderRepository.countByReminderStatusIgnoreCase("PENDING"));
+        
+        long totalPolicies;
+        long totalReminders;
+        
+        if (branch != null && !branch.trim().isEmpty()) {
+            // Count manually for specific branch since these methods are very generic
+            totalPolicies = policyRepository.findAll().stream().filter(p -> branch.equalsIgnoreCase(p.getBranch())).count();
+            
+            // To be accurate with branch filtering for pending reminders, it's safer to join or stream.
+            // Using a stream for now as the table might not be massive enough to strictly enforce custom queries for every stat.
+            totalReminders = reminderRepository.findAllWithValidPolicy().stream()
+                .filter(r -> "PENDING".equalsIgnoreCase(r.getReminderStatus()) && r.getPolicy() != null && branch.equalsIgnoreCase(r.getPolicy().getBranch()))
+                .count();
+        } else {
+            totalPolicies = policyRepository.count();
+            totalReminders = reminderRepository.countByReminderStatusIgnoreCase("PENDING");
+        }
 
-        // Calculate the remaining tasks for today to display in the stat card
-        Map<String, Integer> progress = getTodaysWorkProgress();
-        stats.put("todaysWorkCount", progress.get("total") - progress.get("completed"));
+        // Today's Work Count needs to match the new filter system
+        LocalDate today = LocalDate.now();    
+        List<Integer> todaysWorkBuckets = Arrays.asList(0, -1, -2, -3, -7, -15, -30, -45, -60, -75);
+        long startCount = policyRepository.countPoliciesForTimelineBuckets(today, todaysWorkBuckets, branch);
+
+        stats.put("totalPolicies", totalPolicies);
+        stats.put("totalReminders", totalReminders);
+        stats.put("todaysWorkCount", startCount);
 
         return stats;
     }
 
-    public Map<Integer, Long> getTimelineCounts() {
-        List<Integer> buckets = java.util.Arrays.asList(
-                75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
-                -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
-        );
-
+    public Map<Integer, Long> getTimelineCounts(String branch) {
         Map<Integer, Long> counts = new HashMap<>();
         LocalDate today = LocalDate.now();
 
-        for (Integer offset : buckets) {
+        // Specific day offsets requested by user
+        List<Integer> specificDays = Arrays.asList(75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
+                -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
+        );
+
+        for (Integer offset : specificDays) {
             LocalDate targetDate = today.plusDays(offset);
             
             // For a specific day bucket, we count policies expiring that day
             // (excluding those pending issuance or already scheduled for a follow-up)
-            List<Policy> expiringPolicies = policyRepository.findPoliciesForTimeline(targetDate);
+            List<Policy> expiringPolicies = applyRenewerFilters(policyRepository.findAdminPoliciesForTimeline(targetDate, branch));
             long expiringCount = expiringPolicies.size();
             
             // And we count reminders scheduled for that specific date
-            long reminderCount = reminderRepository.countByFollowUpDateTarget(targetDate);
+            List<Reminder> scheduledReminders = applyRenewerFiltersToReminders(reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch));
+            long followUpCount = scheduledReminders.size();
 
-            counts.put(offset, expiringCount + reminderCount);
+            counts.put(offset, expiringCount + followUpCount);
         }
 
         return counts;
@@ -280,13 +400,35 @@ public class RenewalService {
 
     }
 
-    public List<Policy> getPoliciesForServicing() {
-        return policyRepository.findByStatus("PENDING_ISSUANCE");
+    private String resolveEffectiveBranch(String requestedBranch) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return requestedBranch;
+        
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        if (user == null || "ADMIN".equals(user.getRole())) {
+            return requestedBranch;
+        }
+        
+        // If the user is restricted by an assigned branch, enforce their branch instead of requested branch.
+        String assignedBranch = user.getAssignedBranch();
+        if (assignedBranch != null && !assignedBranch.trim().isEmpty() && !assignedBranch.equals("null")) {
+            return assignedBranch;
+        }
+        
+        // If no assigned branch restricts them (i.e. empty = "All Branches Globally"), they may query by the requested dropdown branch.
+        return requestedBranch;
     }
 
-    public List<Policy> getServicedPolicies() {
+    public List<Policy> getPoliciesForServicing(String branch) {
+        branch = resolveEffectiveBranch(branch);
+        return policyRepository.findByStatus("PENDING_ISSUANCE", branch);
+    }
+
+    public List<Policy> getServicedPolicies(String branch) {
+        branch = resolveEffectiveBranch(branch);
         // Return policies that are ACTIVE and have an Issue Date (Serviced)
-        return policyRepository.findByStatusAndPolicyIssueDateIsNotNullOrderByPolicyIssueDateDesc("ACTIVE");
+        return policyRepository.findByStatusAndPolicyIssueDateIsNotNullOrderByPolicyIssueDateDesc("ACTIVE", branch);
     }
 
     @org.springframework.transaction.annotation.Transactional
@@ -351,6 +493,8 @@ public class RenewalService {
             policy.setPolicyIssueDate(details.getPolicyIssueDate());
         if (details.getPreviousPolicyNumber() != null)
             policy.setPreviousPolicyNumber(details.getPreviousPolicyNumber());
+        if (details.getProductName() != null)
+            policy.setProductName(details.getProductName());
 
         if (documentPath != null) {
             policy.setPolicyDocumentPath(documentPath);
@@ -411,12 +555,12 @@ public class RenewalService {
         return new java.io.File(path);
     }
 
-    public Map<String, List<Policy>> getRecordsForDate(LocalDate date) {
-        System.out.println("DEBUG: getRecordsForDate called for date: " + date);
+    public Map<String, List<Policy>> getRecordsForDate(LocalDate date, String branch) {
+        System.out.println("DEBUG: getRecordsForDate called for date: " + date + " branch: " + branch);
         Map<String, List<Policy>> records = new HashMap<>();
 
         // 1. Expiring Policies on this date
-        List<Policy> expiring = policyRepository.findAdminPoliciesForTimeline(date);
+        List<Policy> expiring = policyRepository.findAdminPoliciesForTimeline(date, branch);
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for date: " + date);
         expiring.forEach(p -> System.out.println(" - Policy: " + p.getPolicyNumber() + ", Status: " + p.getStatus()));
 
@@ -427,7 +571,7 @@ public class RenewalService {
         java.time.LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
         System.out.println("Fetching follow-ups between " + start + " and " + end);
 
-        List<Reminder> reminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(start, end);
+        List<Reminder> reminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(start, end, branch);
         System.out.println("Found " + reminders.size() + " follow-ups.");
 
         List<Policy> scheduledFollowUps = reminders.stream()
@@ -453,7 +597,7 @@ public class RenewalService {
 
         // 3. Worked on Policies (Renewed/Called today)
         List<Reminder> workedOn = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(
-                date.atStartOfDay(), date.atTime(23, 59, 59));
+                date.atStartOfDay(), date.atTime(23, 59, 59), branch);
 
         List<Policy> workedOnPolicies = workedOn.stream()
                 .map(reminder -> {
@@ -467,10 +611,10 @@ public class RenewalService {
         return records;
     }
 
-    public List<Reminder> getAllCallRecords() {
+    public List<Reminder> getAllCallRecords(String branch) {
         // Fetch only the 500 most recent records to prevent freezing the Admin Dashboard
         org.springframework.data.domain.Pageable top500 = org.springframework.data.domain.PageRequest.of(0, 500);
-        return reminderRepository.findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(top500);
+        return reminderRepository.findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(branch, top500);
     }
 
     @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * ?") // Run at midnight
@@ -489,11 +633,11 @@ public class RenewalService {
     }
 
     public List<Policy> searchPolicies(String query) {
-        return policyRepository.searchPolicies(query);
+        return applyRenewerFilters(policyRepository.searchPolicies(query));
     }
 
     public List<Policy> getLateRenewals() {
-        return policyRepository.findByLateRenewalTrue();
+        return applyRenewerFilters(policyRepository.findByLateRenewalTrue());
     }
 
     @org.springframework.transaction.annotation.Transactional
@@ -548,6 +692,19 @@ public class RenewalService {
             logChange(policyId, "End Date", String.valueOf(existingPolicy.getPolicyEndDate()),
                     String.valueOf(updatedPolicy.getPolicyEndDate()), agentName);
             existingPolicy.setPolicyEndDate(updatedPolicy.getPolicyEndDate());
+            
+            // Sync Expiry Date when End Date changes
+            if (!updatedPolicy.getPolicyEndDate().equals(existingPolicy.getExpiryDate())) {
+                logChange(policyId, "Expiry Date (Synced)", String.valueOf(existingPolicy.getExpiryDate()),
+                        String.valueOf(updatedPolicy.getPolicyEndDate()), agentName);
+                existingPolicy.setExpiryDate(updatedPolicy.getPolicyEndDate());
+            }
+        }
+        if (updatedPolicy.getPolicyIssueDate() != null
+                && !updatedPolicy.getPolicyIssueDate().equals(existingPolicy.getPolicyIssueDate())) {
+            logChange(policyId, "Issue Date", String.valueOf(existingPolicy.getPolicyIssueDate()),
+                    String.valueOf(updatedPolicy.getPolicyIssueDate()), agentName);
+            existingPolicy.setPolicyIssueDate(updatedPolicy.getPolicyIssueDate());
         }
         if (updatedPolicy.getProductName() != null
                 && !updatedPolicy.getProductName().equals(existingPolicy.getProductName())) {
@@ -733,11 +890,11 @@ public class RenewalService {
         auditLogRepository.save(log);
     }
 
-    public List<Policy> getTodaysWork() {
-        return getTodaysWork(LocalDate.now(), true);
+    public List<Policy> getTodaysWork(String branch) {
+        return getTodaysWork(LocalDate.now(), true, branch);
     }
 
-    private List<Policy> getTodaysWork(LocalDate today, boolean filterCompleted) {
+    private List<Policy> getTodaysWork(LocalDate today, boolean filterCompleted, String branch) {
         List<Integer> buckets = java.util.Arrays.asList(
                 75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
                 -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
@@ -794,7 +951,7 @@ public class RenewalService {
             return Integer.compare(score1, score2);
         });
 
-        return todaysWork;
+        return applyRenewerFilters(todaysWork);
     }
 
     private int getPriorityScore(Policy p, LocalDate today) {
@@ -815,17 +972,18 @@ public class RenewalService {
         }
     }
 
-    public Map<String, Integer> getTodaysWorkProgress() {
+    public Map<String, Integer> getTodaysWorkProgress(String branch) {
         LocalDate today = LocalDate.now();
         
         // 1. Get the remaining tasks for today (excludes anything already completed today)
-        List<Policy> remainingTodaysWork = getTodaysWork(today, true); 
+        List<Policy> remainingTodaysWork = getTodaysWork(today, true, branch); 
         
         // 2. Count everything that was completed today
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
         java.time.LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
         
-        List<Reminder> completedRemindersToday = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay);
+        List<Reminder> completedRemindersToday = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay, branch);
+        completedRemindersToday = applyRenewerFiltersToReminders(completedRemindersToday);
         
         long completed = completedRemindersToday.stream()
             .filter(r -> r.getPolicy() != null)

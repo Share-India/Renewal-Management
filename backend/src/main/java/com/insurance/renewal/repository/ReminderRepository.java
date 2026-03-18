@@ -20,15 +20,17 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
 
     List<Reminder> findByLastReminderSentAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.lastReminderSentAt BETWEEN :start AND :end")
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.lastReminderSentAt BETWEEN :start AND :end AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
     List<Reminder> findByLastReminderSentAtBetweenWithValidPolicy(
         @org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, 
-        @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end);
+        @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end,
+        @org.springframework.data.repository.query.Param("branch") String branch);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate BETWEEN :start AND :end")
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate BETWEEN :start AND :end AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
     List<Reminder> findByFollowUpDateBetweenWithValidPolicy(
         @org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, 
-        @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end);
+        @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end,
+        @org.springframework.data.repository.query.Param("branch") String branch);
 
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy")
     List<Reminder> findAllWithValidPolicy();
@@ -36,8 +38,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE FUNCTION('DATE', r.followUpDate) IN :targetDates")
     List<Reminder> findByFollowUpDateInWithValidPolicy(@org.springframework.data.repository.query.Param("targetDates") List<LocalDate> targetDates);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p JOIN FETCH p.customer ORDER BY r.lastReminderSentAt DESC")
-    List<Reminder> findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(org.springframework.data.domain.Pageable pageable);
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p JOIN FETCH p.customer WHERE (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY r.lastReminderSentAt DESC")
+    List<Reminder> findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(
+        @org.springframework.data.repository.query.Param("branch") String branch, 
+        org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query(value = "DELETE FROM reminders WHERE id NOT IN (SELECT id FROM (SELECT MAX(id) AS id FROM reminders GROUP BY policy_id) AS keep_ids)", nativeQuery = true)

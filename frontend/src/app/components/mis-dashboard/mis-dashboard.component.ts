@@ -22,13 +22,19 @@ export class MisDashboardComponent implements OnInit {
   loading: boolean = false;
   errorMessage: string = '';
 
-  viewMode: 'pending' | 'updated' = 'pending';
+  viewMode: 'pending' | 'updated' | 'pendingIssuance' = 'pending';
+  pendingIssuancePolicies: any[] = [];
+  selectedBranch: string = '';
+  availableBranches: string[] = [];
 
   selectedPolicy: any = null; // For modal
 
   constructor(private apiService: ApiService, private router: Router, private http: HttpClient, public authService: AuthService) { }
 
   ngOnInit(): void {
+    this.apiService.getBranches().subscribe(branches => {
+      this.availableBranches = branches;
+    });
     this.loadPolicies();
   }
 
@@ -44,25 +50,36 @@ export class MisDashboardComponent implements OnInit {
 
   loadPolicies(): void {
     this.loading = true;
-    this.apiService.getServicedHistory().subscribe({
-      next: (data) => {
-        this.policies = data;
-        // Split data based on businessType presence
-        this.pendingPolicies = data.filter(p => !p.businessType);
-        this.updatedPolicies = data.filter(p => p.businessType);
+    
+    // Fetch both serviced history and pending issuance concurrently
+    import('rxjs').then(({ forkJoin }) => {
+      forkJoin({
+        history: this.apiService.getServicedHistory(this.selectedBranch),
+        issuance: this.apiService.getPendingIssuancePolicies(this.selectedBranch)
+      }).subscribe({
+        next: (data) => {
+          this.policies = data.history;
+          
+          // Split history data based on businessType presence
+          this.pendingPolicies = data.history.filter((p: any) => !p.businessType);
+          this.updatedPolicies = data.history.filter((p: any) => p.businessType);
+          
+          // Pending issuance policies
+          this.pendingIssuancePolicies = data.issuance;
 
-        this.applyFilter();
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error loading MIS data', err);
-        this.errorMessage = 'Failed to load MIS data.';
-        this.loading = false;
-      }
+          this.applyFilter();
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Error loading MIS data', err);
+          this.errorMessage = 'Failed to load MIS data.';
+          this.loading = false;
+        }
+      });
     });
   }
 
-  toggleView(mode: 'pending' | 'updated'): void {
+  toggleView(mode: 'pending' | 'updated' | 'pendingIssuance'): void {
     this.viewMode = mode;
     this.searchTerm = ''; // Clear search on toggle? Or keep it? Let's clear for clarity.
     this.applyFilter();
@@ -73,7 +90,9 @@ export class MisDashboardComponent implements OnInit {
   }
 
   applyFilter(): void {
-    const source = this.viewMode === 'pending' ? this.pendingPolicies : this.updatedPolicies;
+    let source = this.pendingPolicies;
+    if (this.viewMode === 'updated') source = this.updatedPolicies;
+    if (this.viewMode === 'pendingIssuance') source = this.pendingIssuancePolicies;
 
     if (!this.searchTerm) {
       this.filteredPolicies = source;

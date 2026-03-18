@@ -22,4 +22,13 @@ public class User {
 
     @Column(nullable = false)
     private boolean active = true; // Default to active
+
+    @Column(name = "assigned_branch")
+    private String assignedBranch;
+
+    @Column(name = "assigned_product_type")
+    private String assignedProductType;
+
+    @Column(name = "assigned_premium_range")
+    private String assignedPremiumRange;
 }

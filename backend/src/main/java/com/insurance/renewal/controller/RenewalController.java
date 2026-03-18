@@ -57,18 +57,18 @@ public class RenewalController {
     }
 
     @GetMapping("/admin/stats")
-    public ResponseEntity<Map<String, Object>> getAdminStats() {
-        return ResponseEntity.ok(renewalService.getAdminStats());
+    public ResponseEntity<Map<String, Object>> getAdminStats(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getAdminStats(branch));
     }
 
     @GetMapping("/timeline-counts")
-    public ResponseEntity<Map<Integer, Long>> getTimelineCounts() {
-        return ResponseEntity.ok(renewalService.getTimelineCounts());
+    public ResponseEntity<Map<Integer, Long>> getTimelineCounts(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getTimelineCounts(branch));
     }
 
     @GetMapping("/todays-work")
-    public ResponseEntity<List<Policy>> getTodaysWork() {
-        return ResponseEntity.ok(renewalService.getTodaysWork());
+    public ResponseEntity<List<Policy>> getTodaysWork(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getTodaysWork(branch));
     }
 
     @PostMapping("/policies")
@@ -109,16 +109,17 @@ public class RenewalController {
     }
 
     @GetMapping("/admin/call-records")
-    public ResponseEntity<List<Reminder>> getAllCallRecords() {
-        return ResponseEntity.ok(renewalService.getAllCallRecords());
+    public ResponseEntity<List<Reminder>> getAllCallRecords(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getAllCallRecords(branch));
     }
 
     @GetMapping("/admin/records")
-    public ResponseEntity<Map<String, List<Policy>>> getRecordsForDate(@RequestParam("date") String date) {
-        System.out.println("API Request: /admin/records?date=" + date);
+    public ResponseEntity<Map<String, List<Policy>>> getRecordsForDate(
+            @RequestParam("date") String date, 
+            @RequestParam(value = "branch", required = false) String branch) {
+        System.out.println("API Request: /admin/records?date=" + date + "&branch=" + branch);
         LocalDate selectedDate = LocalDate.parse(date);
-        System.out.println("Parsed Date: " + selectedDate);
-        return ResponseEntity.ok(renewalService.getRecordsForDate(selectedDate));
+        return ResponseEntity.ok(renewalService.getRecordsForDate(selectedDate, branch));
     }
 
     @GetMapping("/search")
@@ -199,13 +200,13 @@ public class RenewalController {
     }
 
     @GetMapping("/servicing/pending")
-    public ResponseEntity<List<Policy>> getPendingIssuancePolicies() {
-        return ResponseEntity.ok(renewalService.getPoliciesForServicing());
+    public ResponseEntity<List<Policy>> getPendingIssuancePolicies(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getPoliciesForServicing(branch));
     }
 
     @GetMapping("/servicing/history")
-    public ResponseEntity<List<Policy>> getServicedHistory() {
-        return ResponseEntity.ok(renewalService.getServicedPolicies());
+    public ResponseEntity<List<Policy>> getServicedHistory(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getServicedPolicies(branch));
     }
 
     @PostMapping("/servicing/issue/{id}")
@@ -267,8 +268,8 @@ public class RenewalController {
     }
 
     @GetMapping("/todays-work-progress")
-    public ResponseEntity<Map<String, Integer>> getTodaysWorkProgress() {
-        return ResponseEntity.ok(renewalService.getTodaysWorkProgress());
+    public ResponseEntity<Map<String, Integer>> getTodaysWorkProgress(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getTodaysWorkProgress(branch));
     }
 
     @GetMapping("/{id}/audit-logs")

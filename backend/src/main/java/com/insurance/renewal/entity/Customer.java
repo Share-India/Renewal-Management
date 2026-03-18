@@ -39,6 +39,9 @@ public class Customer {
     @Column(name = "state")
     private String state;
 
+    @Column(name = "location")
+    private String location;
+
     @Column(name = "gst_number")
     private String gstNumber;
 

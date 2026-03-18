@@ -11,13 +11,14 @@ import java.util.List;
 @Repository
 public interface PolicyRepository extends JpaRepository<Policy, Long> {
         List<Policy> findByExpiryDate(LocalDate expiryDate);
-        long countByExpiryDate(LocalDate expiryDate);
+        @Query("SELECT COUNT(p) FROM Policy p WHERE p.expiryDate = :expiryDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        long countByExpiryDate(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);
 
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL")
         List<Policy> findPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate = :expiryDate")
-        List<Policy> findAdminPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate);
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate = :expiryDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> findAdminPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);
 
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate IN :targetDates AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL")
         List<Policy> findPoliciesForTodaysWork(@Param("targetDates") List<LocalDate> targetDates);
@@ -28,9 +29,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         @Query("SELECT COUNT(p) FROM Policy p LEFT JOIN p.reminder r WHERE " +
                         "(FUNCTION('DATEDIFF', p.expiryDate, :currentDate) IN :offsets) " +
-                        "AND (r.followUpDate IS NULL)")
+                        "AND (r.followUpDate IS NULL) AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         long countPoliciesForTimelineBuckets(@Param("currentDate") LocalDate currentDate,
-                        @Param("offsets") List<Integer> offsets);
+                        @Param("offsets") List<Integer> offsets, @Param("branch") String branch);
 
         @Query("SELECT p FROM Policy p WHERE " +
                         "LOWER(p.policyNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
@@ -40,11 +41,11 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         List<Policy> findByLateRenewalTrue();
 
-        List<Policy> findByStatus(String status);
+        @Query("SELECT p FROM Policy p WHERE p.status = :status AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> findByStatus(@Param("status") String status, @Param("branch") String branch);
 
-        // Fetch ACTIVE policies that have an Issue Date (implying they were
-        // serviced/issued)
-        List<Policy> findByStatusAndPolicyIssueDateIsNotNullOrderByPolicyIssueDateDesc(String status);
+        @Query("SELECT p FROM Policy p WHERE p.status = :status AND p.policyIssueDate IS NOT NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY p.policyIssueDate DESC")
+        List<Policy> findByStatusAndPolicyIssueDateIsNotNullOrderByPolicyIssueDateDesc(@Param("status") String status, @Param("branch") String branch);
 
         @Query("SELECT p FROM Policy p WHERE p.id NOT IN (SELECT r.policy.id FROM Reminder r)")
         List<Policy> findPoliciesWithoutReminders();

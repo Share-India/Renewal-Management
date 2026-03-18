@@ -18,9 +18,28 @@ import { TimelineComponent } from '../timeline/timeline.component';
           <h2>Administrative Dashboard</h2>
           <p class="text-muted">Real-time insights into system performance and daily administrative tasks</p>
         </div>
-        <button class="btn btn-primary" (click)="openRenewalModal()">
-          <i class="bi bi-plus-circle"></i> Add / Edit Policy
-        </button>
+        
+        <div class="d-flex gap-3 align-items-center">
+          <div class="branch-selector shadow-sm">
+            <div class="input-group">
+              <span class="input-group-text bg-transparent border-0 pe-1">
+                <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                  <i class="bi bi-geo-alt-fill"></i>
+                </div>
+              </span>
+              <select class="form-select border-0 bg-transparent fw-bold shadow-none" [(ngModel)]="selectedAdminBranch" (change)="onBranchChange()">
+                <option value="">All Branches Globally</option>
+                <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
+            <i class="bi bi-diagram-3-fill me-2 text-primary"></i> Manage
+          </button>
+          <button class="btn btn-primary shadow-sm px-4" (click)="openRenewalModal()">
+            <i class="bi bi-plus-circle me-2"></i> Add / Edit Policy
+          </button>
+        </div>
       </div>
       
       <!-- Stats Cards -->
@@ -536,10 +555,153 @@ import { TimelineComponent } from '../timeline/timeline.component';
           </div>
         </div>
       </div>
+
+    </div>
+
+    <!-- Branch Modal -->
+    <div class="modal-overlay" *ngIf="showBranchModal" (click)="closeBranchModal()">
+      <div class="custom-modal-content premium-branch-modal" style="max-width: 450px;" (click)="$event.stopPropagation()">
+        <div class="modal-header border-0 pb-0 mt-2">
+          <div class="d-flex align-items-center w-100">
+            <div class="header-icon bg-primary bg-opacity-10 text-primary me-3">
+              <i class="bi bi-buildings-fill fs-4"></i>
+            </div>
+            <h3 class="mb-0 fw-bold">Manage Branches</h3>
+            <button class="btn-close ms-auto" (click)="closeBranchModal()"></button>
+          </div>
+        </div>
+        <div class="modal-body px-4 pt-4">
+          <div class="branch-list-container mb-4">
+            <label class="form-label text-muted fw-bold small text-uppercase tracking-wide mb-3">Active Branches</label>
+            <div class="branch-list border rounded-3 overflow-hidden shadow-sm">
+              <div class="list-group list-group-flush">
+                <div class="list-group-item d-flex align-items-center py-3 branch-item" *ngFor="let b of availableBranches">
+                   <div class="branch-indicator me-3"></div>
+                   <span class="fw-semibold text-dark">{{ b }}</span>
+                   <i class="bi bi-check-circle-fill ms-auto text-success opacity-75"></i>
+                </div>
+                <div class="list-group-item text-muted text-center py-4" *ngIf="availableBranches.length === 0">
+                  <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
+                  No branches configured
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="add-branch-section p-4 bg-light rounded-4 border border-light shadow-sm mb-2">
+            <label class="form-label fw-bold text-dark mb-2">Add New Region</label>
+            <div class="input-group shadow-sm new-branch-group">
+              <span class="input-group-text bg-white border-end-0 border-primary-focus"><i class="bi bi-plus text-primary"></i></span>
+              <input type="text" [(ngModel)]="newBranchName" class="form-control border-start-0 border-primary-focus shadow-none" placeholder="e.g. Kolkata" (keyup.enter)="saveBranch()">
+              <button class="btn btn-primary px-4 fw-bold" (click)="saveBranch()">
+                Add 
+              </button>
+            </div>
+            <small class="text-muted mt-2 d-block"><i class="bi bi-info-circle me-1"></i> Instantly activates cross-dashboard routing.</small>
+          </div>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
     .admin-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
+
+    /* Branch Selector Redesign */
+    .branch-selector {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 50px;
+      width: 280px;
+      transition: all 0.2s ease-in-out;
+    }
+    .branch-selector:hover {
+      box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15) !important;
+      border-color: #0d6efd;
+    }
+    .branch-selector .input-group-text {
+      border-radius: 50px 0 0 50px;
+    }
+    .branch-selector .icon-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .branch-selector select {
+      cursor: pointer;
+      border-radius: 0 50px 50px 0;
+    }
+    .branch-selector select:focus {
+      box-shadow: none !important;
+    }
+    .btn-branch {
+      border-radius: 50px;
+      font-weight: 600;
+      border: 1px solid #e2e8f0;
+      background: white;
+      transition: all 0.2s;
+      color: #334155;
+    }
+    .btn-branch:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    
+    /* Premium Branch Modal */
+    .premium-branch-modal {
+      border-radius: 20px !important;
+      animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalSlideUp {
+      from { opacity: 0; transform: translateY(20px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .tracking-wide {
+      letter-spacing: 0.05em;
+    }
+    .branch-list {
+      max-height: 250px;
+      overflow-y: auto;
+      border-color: #f1f5f9 !important;
+    }
+    .branch-item {
+      transition: background 0.2s;
+      cursor: default;
+    }
+    .branch-item:hover {
+      background: #f8fafc;
+    }
+    .branch-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #0d6efd;
+      box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+    }
+    .new-branch-group {
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .new-branch-group:focus-within {
+      box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15) !important;
+    }
+    .new-branch-group .form-control {
+      background: white;
+    }
+    .border-primary-focus:focus-within {
+      border-color: #86b7fe !important;
+    }
     .header-section { 
       margin-bottom: 35px; 
       padding-bottom: 25px; 
@@ -716,6 +878,10 @@ export class AdminDashboardComponent implements OnInit {
   isSearchMode: boolean = false;
   selectedDay: number | string | null = null;
   timelineCounts: { [key: number]: number } = {};
+  selectedAdminBranch: string = ''; // Supports "All Branches" by default empty
+  availableBranches: string[] = [];
+  showBranchModal: boolean = false;
+  newBranchName: string = '';
 
   // Renewer Records
   renewerRecords: any[] = [];
@@ -749,20 +915,65 @@ export class AdminDashboardComponent implements OnInit {
     // Do not auto-select date. User must select manually.
     this.selectedDate = '';
     this.selectedDay = null;
+
+    this.loadBranches();
+  }
+
+  loadBranches() {
+    this.apiService.getBranches().subscribe(branches => {
+      this.availableBranches = branches;
+    });
+  }
+
+  openBranchModal() {
+    this.showBranchModal = true;
+  }
+
+  closeBranchModal() {
+    this.showBranchModal = false;
+    this.newBranchName = '';
+  }
+
+  saveBranch() {
+    if (!this.newBranchName || !this.newBranchName.trim()) return;
+    this.apiService.createBranch({ name: this.newBranchName.trim() }).subscribe({
+      next: (res) => {
+         this.loadBranches();
+         this.newBranchName = '';
+      },
+      error: (err) => {
+         alert('Error creating branch: ' + (err.error || err.message));
+      }
+    });
   }
 
   loadStats() {
-    this.apiService.getAdminStats().subscribe({
+    this.apiService.getAdminStats(this.selectedAdminBranch).subscribe({
       next: (data) => this.stats = data,
       error: (err) => console.error('Error loading stats:', err)
     });
   }
 
   refreshTimelineCounts() {
-    this.apiService.getTimelineCounts().subscribe({
-      next: (counts) => this.timelineCounts = counts,
+    this.apiService.getTimelineCounts(this.selectedAdminBranch).subscribe({
+      next: (counts) => {
+          this.timelineCounts = counts;
+          // Refresh Timeline View to trigger a re-render map layout
+          this.timelineCounts = { ...this.timelineCounts };
+      },
       error: (err) => console.error('Error fetching timeline counts for admin', err)
     });
+  }
+
+  onBranchChange() {
+      this.loadStats();
+      this.refreshTimelineCounts();
+      this.loadRenewerRecords();
+      if (this.selectedDate) {
+          this.onDateChange();
+      } else if (this.selectedDay === 'todays-work') {
+          this.openTodaysWork();
+      }
   }
 
   // loadLateRenewals removed as per user request
@@ -791,7 +1002,7 @@ export class AdminDashboardComponent implements OnInit {
 
   loadRenewerRecords() {
     this.loadingRecords = true;
-    this.apiService.getAllCallRecords().subscribe({
+    this.apiService.getAllCallRecords(this.selectedAdminBranch).subscribe({
       next: (reminders) => {
         this.renewerRecords = reminders.map(r => ({
           policyNumber: r.policy.policyNumber,
@@ -867,7 +1078,7 @@ export class AdminDashboardComponent implements OnInit {
     this.adminSearchTerm = '';
 
     this.loading = true;
-    this.apiService.getRecordsForDate(this.selectedDate)
+    this.apiService.getRecordsForDate(this.selectedDate, this.selectedAdminBranch)
       .pipe(finalize(() => this.loading = false))
       .subscribe({
         next: (data) => {
