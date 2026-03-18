@@ -172,7 +172,7 @@ public class RenewalService {
 
         // Today's Work Count needs to match the exact same logic as the Action Required Progress Bar
         Map<String, Integer> progress = getTodaysWorkProgress(branch);
-        long startCount = progress.get("total");
+        long startCount = progress.get("total") - progress.get("completed");
 
         stats.put("totalPolicies", totalPolicies);
         stats.put("totalReminders", totalReminders);
