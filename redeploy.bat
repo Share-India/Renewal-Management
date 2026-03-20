@@ -1,6 +1,6 @@
 @echo off
 echo Stopping and removing containers and volumes...
-docker-compose down -v
+docker-compose down
 
 echo.
 echo Rebuilding and starting application...

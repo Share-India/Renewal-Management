@@ -29,7 +29,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/insurance_renewal?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
-      SPRING_SQL_INIT_MODE: always
+      SPRING_SQL_INIT_MODE: never
       SPRING_SQL_INIT_CONTINUE_ON_ERROR: true
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_JDBC_DATASOURCE_INIT: DEBUG
       LOGGING_LEVEL_ORG_HIBERNATE_SQL: DEBUG
