@@ -182,6 +182,11 @@ export class CustomerListComponent {
     submitLogCall() {
         if (!this.selectedPolicy) return;
 
+        if (!this.nextFollowUp) {
+            alert('Please select a Next Follow-up date and time.');
+            return;
+        }
+
         const currentUser = this.authService.getCurrentUser();
         const agentName = currentUser ? currentUser.username : 'Unknown';
 

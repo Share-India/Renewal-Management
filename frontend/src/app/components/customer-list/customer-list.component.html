@@ -454,13 +454,13 @@
                     placeholder="Enter call notes..."></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Next Follow-up</label>
+                <label class="form-label">Next Follow-up <span class="text-danger">*</span></label>
                 <input type="datetime-local" class="form-control" [(ngModel)]="nextFollowUp" [min]="minDate">
             </div>
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-            <button class="btn btn-primary" (click)="submitLogCall()">Save Log</button>
+            <button class="btn btn-primary" [disabled]="!nextFollowUp" (click)="submitLogCall()">Save Log</button>
         </div>
     </div>
 </div>
