@@ -907,7 +907,9 @@ public class RenewalService {
         List<Policy> expiring = policyRepository.findPoliciesForTodaysWork(targetDates);
         
         // Fetch reminders
-        List<Reminder> reminders = reminderRepository.findByFollowUpDateInWithValidPolicy(targetDates);
+        java.time.LocalDateTime endOfToday = today.plusDays(1).atStartOfDay();
+        List<Reminder> reminders = reminderRepository.findPendingFollowUpsUpTo(endOfToday, branch);
+        System.out.println("DEBUG TODAY'S WORK: Found " + reminders.size() + " pending followUps up to: " + endOfToday);
 
         java.util.Set<Long> processedPolicyIds = new java.util.HashSet<>();
         List<Policy> todaysWork = new java.util.ArrayList<>();
@@ -915,15 +917,13 @@ public class RenewalService {
         // Filter out policies that have ALREADY been worked on today
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
 
-        // Add policies from reminders
+        // Add policies from reminders (Always include if it has an active follow-up for today/overdue)
         for (Reminder r : reminders) {
             Policy p = r.getPolicy();
             if (p != null) {
                 p.setReminder(r); // ensure reminder is attached
-                if (!filterCompleted || r.getLastReminderSentAt() == null || r.getLastReminderSentAt().isBefore(startOfDay)) {
-                    if (processedPolicyIds.add(p.getId())) {
-                        todaysWork.add(p);
-                    }
+                if (processedPolicyIds.add(p.getId())) {
+                    todaysWork.add(p);
                 }
             }
         }

@@ -38,6 +38,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE FUNCTION('DATE', r.followUpDate) IN :targetDates")
     List<Reminder> findByFollowUpDateInWithValidPolicy(@org.springframework.data.repository.query.Param("targetDates") List<LocalDate> targetDates);
 
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate < :endOfTargetDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+    List<Reminder> findPendingFollowUpsUpTo(
+        @org.springframework.data.repository.query.Param("endOfTargetDate") java.time.LocalDateTime endOfTargetDate, 
+        @org.springframework.data.repository.query.Param("branch") String branch);
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p JOIN FETCH p.customer WHERE (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY r.lastReminderSentAt DESC")
     List<Reminder> findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(
         @org.springframework.data.repository.query.Param("branch") String branch, 

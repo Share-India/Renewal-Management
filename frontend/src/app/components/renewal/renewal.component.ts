@@ -36,9 +36,20 @@ import { forkJoin, of } from 'rxjs';
         <!-- Main List: Renewals OR Post-Expiry -->
         <div class="col-12 mb-4">
           <h3 class="section-title" [ngClass]="isUpcoming() ? 'text-primary' : 'text-danger'">
-            {{ getSectionTitle() }}
-            <span *ngIf="selectedDay === 'todays-work'" class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ policies.length }}</span>
+            <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
+            <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
+            <span *ngIf="selectedDay !== 'todays-work'">{{ getSectionTitle() }}</span>
           </h3>
+
+          <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex gap-2">
+            <button class="btn" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary'" (click)="setTodaysWorkTab('expiring')">
+               Expiring Policies <span class="badge bg-light text-primary ms-1">{{ todaysExpiring.length }}</span>
+            </button>
+            <button class="btn" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'" (click)="setTodaysWorkTab('followups')">
+               Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
+            </button>
+          </div>
+
           <app-customer-list [policies]="policies" [loading]="loading" (dataUpdated)="onDataUpdated()"></app-customer-list>
         </div>
         
@@ -341,12 +352,39 @@ export class RenewalComponent implements OnInit {
     });
   }
 
+  todaysWorkTab: 'expiring' | 'followups' = 'expiring';
+  todaysExpiring: any[] = [];
+  todaysFollowUps: any[] = [];
+
+  setTodaysWorkTab(tab: 'expiring' | 'followups') {
+    this.todaysWorkTab = tab;
+    this.policies = tab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+  }
+
   openTodaysWork() {
     this.selectedDay = 'todays-work';
     this.loading = true;
     this.apiService.getTodaysWork().subscribe({
       next: (policies) => {
-        this.policies = policies;
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        const normalizeDate = (val: any) => {
+            if (!val) return '';
+            if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+            return String(val).substring(0, 10);
+        };
+
+        this.todaysFollowUps = policies.filter((p: any) => {
+           if (!p.reminder || !p.reminder.followUpDate) return false;
+           return normalizeDate(p.reminder.followUpDate) <= todayStr;
+        });
+        
+        this.todaysExpiring = policies.filter((p: any) => {
+           if (!p.reminder || !p.reminder.followUpDate) return true;
+           return normalizeDate(p.reminder.followUpDate) > todayStr;
+        });
+
+        this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
         this.followUps = [];
         this.loading = false;
         

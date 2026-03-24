@@ -112,10 +112,20 @@ import { TimelineComponent } from '../timeline/timeline.component';
               <h4 class="section-header text-primary">
                 <span *ngIf="!isSearchMode && selectedDay !== 'todays-work'">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
                 <span *ngIf="isSearchMode">Search Results for "{{ adminSearchTerm }}"</span>
-                <span *ngIf="selectedDay === 'todays-work'">Today's Work </span>
-                <span *ngIf="selectedDay === 'todays-work'" class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ selectedDateRecords.expiringPolicies.length }}</span>
+                <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
+                <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
                 <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
               </h4>
+
+              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex gap-2">
+                <button class="btn" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary'" (click)="setAdminTodaysWorkTab('expiring')">
+                   Expiring Policies <span class="badge bg-light text-primary ms-1">{{ todaysExpiring.length }}</span>
+                </button>
+                <button class="btn" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'" (click)="setAdminTodaysWorkTab('followups')">
+                   Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
+                </button>
+              </div>
+
               <app-customer-list [policies]="selectedDateRecords.expiringPolicies" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
             </div>
             
@@ -1117,6 +1127,17 @@ export class AdminDashboardComponent implements OnInit {
     this.onDateChange(); // fetch records
   }
 
+  todaysWorkTab: 'expiring' | 'followups' = 'expiring';
+  todaysExpiring: any[] = [];
+  todaysFollowUps: any[] = [];
+
+  setAdminTodaysWorkTab(tab: 'expiring' | 'followups') {
+    this.todaysWorkTab = tab;
+    if (this.selectedDateRecords) {
+        this.selectedDateRecords.expiringPolicies = tab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+    }
+  }
+
   openTodaysWork() {
     this.selectedDate = '';
     this.isSearchMode = false;
@@ -1126,8 +1147,26 @@ export class AdminDashboardComponent implements OnInit {
     this.loading = true;
     this.apiService.getTodaysWork().subscribe({
       next: (policies) => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        const normalizeDate = (val: any) => {
+            if (!val) return '';
+            if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+            return String(val).substring(0, 10);
+        };
+
+        this.todaysFollowUps = policies.filter((p: any) => {
+           if (!p.reminder || !p.reminder.followUpDate) return false;
+           return normalizeDate(p.reminder.followUpDate) <= todayStr;
+        });
+        
+        this.todaysExpiring = policies.filter((p: any) => {
+           if (!p.reminder || !p.reminder.followUpDate) return true;
+           return normalizeDate(p.reminder.followUpDate) > todayStr;
+        });
+
         this.selectedDateRecords = {
-          expiringPolicies: policies,
+          expiringPolicies: this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps,
           scheduledFollowUps: [],
           workedOnPolicies: []
         };
