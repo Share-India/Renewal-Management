@@ -117,13 +117,25 @@ import { TimelineComponent } from '../timeline/timeline.component';
                 <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
               </h4>
 
-              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex gap-2">
-                <button class="btn" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary'" (click)="setAdminTodaysWorkTab('expiring')">
-                   Expiring Policies <span class="badge bg-light text-primary ms-1">{{ todaysExpiring.length }}</span>
-                </button>
-                <button class="btn" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'" (click)="setAdminTodaysWorkTab('followups')">
-                   Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
-                </button>
+              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex gap-2">
+                  <button class="btn" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary'" (click)="setAdminTodaysWorkTab('expiring')">
+                     Expiring Policies <span class="badge bg-light text-primary ms-1">{{ todaysExpiring.length }}</span>
+                  </button>
+                  <button class="btn" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'" (click)="setAdminTodaysWorkTab('followups')">
+                     Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
+                  </button>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <label class="fw-bold mb-0 text-nowrap">Premium Range:</label>
+                  <select class="form-select form-select-sm w-auto" [(ngModel)]="selectedPremiumRange" (change)="applyPremiumFilter()">
+                    <option value="all">All</option>
+                    <option value="0-1">0 to 1 Lac</option>
+                    <option value="1-3">1 Lac to 3 Lac</option>
+                    <option value="3-5">3 Lac to 5 Lac</option>
+                    <option value="5+">> 5 Lac</option>
+                  </select>
+                </div>
               </div>
 
               <app-customer-list [policies]="selectedDateRecords.expiringPolicies" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
@@ -1130,6 +1142,28 @@ export class AdminDashboardComponent implements OnInit {
   todaysWorkTab: 'expiring' | 'followups' = 'expiring';
   todaysExpiring: any[] = [];
   todaysFollowUps: any[] = [];
+  allTodaysExpiring: any[] = [];
+  allTodaysFollowUps: any[] = [];
+  selectedPremiumRange: string = 'all';
+
+  applyPremiumFilter() {
+    const filterFn = (p: any) => {
+      if (this.selectedPremiumRange === 'all') return true;
+      const amt = p.amount || 0;
+      if (this.selectedPremiumRange === '0-1') return amt >= 0 && amt <= 100000;
+      if (this.selectedPremiumRange === '1-3') return amt > 100000 && amt <= 300000;
+      if (this.selectedPremiumRange === '3-5') return amt > 300000 && amt <= 500000;
+      if (this.selectedPremiumRange === '5+') return amt > 500000;
+      return true;
+    };
+    
+    this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
+    this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
+
+    if (this.selectedDateRecords) {
+        this.selectedDateRecords.expiringPolicies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+    }
+  }
 
   setAdminTodaysWorkTab(tab: 'expiring' | 'followups') {
     this.todaysWorkTab = tab;
@@ -1155,15 +1189,18 @@ export class AdminDashboardComponent implements OnInit {
             return String(val).substring(0, 10);
         };
 
-        this.todaysFollowUps = policies.filter((p: any) => {
+        this.allTodaysFollowUps = policies.filter((p: any) => {
            if (!p.reminder || !p.reminder.followUpDate) return false;
            return normalizeDate(p.reminder.followUpDate) <= todayStr;
         });
         
-        this.todaysExpiring = policies.filter((p: any) => {
+        this.allTodaysExpiring = policies.filter((p: any) => {
            if (!p.reminder || !p.reminder.followUpDate) return true;
            return normalizeDate(p.reminder.followUpDate) > todayStr;
         });
+
+        // Apply filter initially
+        this.applyPremiumFilter();
 
         this.selectedDateRecords = {
           expiringPolicies: this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps,
