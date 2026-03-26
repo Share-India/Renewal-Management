@@ -117,23 +117,27 @@ import { TimelineComponent } from '../timeline/timeline.component';
                 <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
               </h4>
 
-              <div *ngIf="selectedDay === 'todays-work'" class="mb-4">
-                <div class="d-flex gap-2 mb-3">
-                  <button class="btn" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary'" (click)="setAdminTodaysWorkTab('expiring')">
-                     Expiring Policies <span class="badge bg-light text-primary ms-1">{{ todaysExpiring.length }}</span>
+              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex gap-2">
+                  <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setAdminTodaysWorkTab('expiring')">
+                     Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white text-primary' : 'bg-light text-primary'">{{ todaysExpiring.length }}</span>
                   </button>
-                  <button class="btn" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'" (click)="setAdminTodaysWorkTab('followups')">
+                  <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white'" (click)="setAdminTodaysWorkTab('followups')">
                      Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
                   </button>
                 </div>
-                <!-- Sleek Filter Pills -->
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <span class="text-secondary small fw-bold text-uppercase me-2" style="letter-spacing: 0.5px;">Premium Filter:</span>
-                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('all')">All</button>
-                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('0-1')">0 to 1 Lac</button>
-                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('1-3')">1 Lac to 3 Lac</button>
-                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('3-5')">3 Lac to 5 Lac</button>
-                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('5+')">&gt; 5 Lac</button>
+                
+                <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
+                  <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                    <i class="bi bi-funnel-fill me-1"></i> Premium
+                  </span>
+                  <div class="btn-group h-100" role="group">
+                    <button class="btn btn-sm rounded-0 border-0 py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('all')">All</button>
+                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('0-1')">0-1L</button>
+                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('1-3')">1L-3L</button>
+                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('3-5')">3L-5L</button>
+                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
+                  </div>
                 </div>
               </div>
 
