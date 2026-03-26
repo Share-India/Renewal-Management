@@ -117,8 +117,8 @@ import { TimelineComponent } from '../timeline/timeline.component';
                 <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
               </h4>
 
-              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div class="d-flex gap-2">
+              <div *ngIf="selectedDay === 'todays-work'" class="mb-4">
+                <div class="d-flex gap-2 mb-3">
                   <button class="btn" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary'" (click)="setAdminTodaysWorkTab('expiring')">
                      Expiring Policies <span class="badge bg-light text-primary ms-1">{{ todaysExpiring.length }}</span>
                   </button>
@@ -126,15 +126,14 @@ import { TimelineComponent } from '../timeline/timeline.component';
                      Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
                   </button>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                  <label class="fw-bold mb-0 text-nowrap">Premium Range:</label>
-                  <select class="form-select form-select-sm w-auto" [(ngModel)]="selectedPremiumRange" (change)="applyPremiumFilter()">
-                    <option value="all">All</option>
-                    <option value="0-1">0 to 1 Lac</option>
-                    <option value="1-3">1 Lac to 3 Lac</option>
-                    <option value="3-5">3 Lac to 5 Lac</option>
-                    <option value="5+">> 5 Lac</option>
-                  </select>
+                <!-- Sleek Filter Pills -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="text-secondary small fw-bold text-uppercase me-2" style="letter-spacing: 0.5px;">Premium Filter:</span>
+                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('all')">All</button>
+                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('0-1')">0 to 1 Lac</button>
+                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('1-3')">1 Lac to 3 Lac</button>
+                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('3-5')">3 Lac to 5 Lac</button>
+                  <button class="btn btn-sm rounded-pill px-3" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark shadow-sm' : 'btn-light border text-muted'" (click)="setPremiumRange('5+')">&gt; 5 Lac</button>
                 </div>
               </div>
 
@@ -1163,6 +1162,11 @@ export class AdminDashboardComponent implements OnInit {
     if (this.selectedDateRecords) {
         this.selectedDateRecords.expiringPolicies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     }
+  }
+
+  setPremiumRange(range: string) {
+    this.selectedPremiumRange = range;
+    this.applyPremiumFilter();
   }
 
   setAdminTodaysWorkTab(tab: 'expiring' | 'followups') {
