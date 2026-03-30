@@ -41,8 +41,10 @@ import { forkJoin, of } from 'rxjs';
             <span *ngIf="selectedDay !== 'todays-work'">{{ getSectionTitle() }}</span>
           </h3>
 
-          <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div class="d-flex gap-2">
+          <!-- Controls Container: Shown for all days, but some parts are today-only -->
+          <div class="mb-4 d-flex flex-wrap gap-3 justify-content-between align-items-center">
+            
+            <div class="d-flex gap-2" *ngIf="selectedDay === 'todays-work'">
               <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setTodaysWorkTab('expiring')">
                  Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white text-primary' : 'bg-light text-primary'">{{ todaysExpiring.length }}</span>
               </button>
@@ -50,17 +52,33 @@ import { forkJoin, of } from 'rxjs';
                  Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
               </button>
             </div>
+
+            <div class="d-flex flex-grow-1" *ngIf="selectedDay !== 'todays-work'"></div>
             
-            <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
-              <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
-                <i class="bi bi-funnel-fill me-1"></i> Premium
-              </span>
-              <div class="btn-group h-100" role="group">
-                <button class="btn btn-sm rounded-0 border-0 py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('all')">All</button>
-                <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('0-1')">0-1L</button>
-                <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('1-3')">1L-3L</button>
-                <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('3-5')">3L-5L</button>
-                <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
+            <div class="d-flex gap-3 align-items-center">
+              <!-- Search Bar -->
+              <div class="input-group shadow-sm" style="width: 350px;">
+                <select class="form-select border-secondary-subtle text-muted" style="max-width: 160px; background-color: #f8f9fa;" [(ngModel)]="searchBy" (change)="applyFilters()">
+                  <option value="customer">Customer/Policy</option>
+                  <option value="rm">RM Name</option>
+                </select>
+                <input type="text" class="form-control border-secondary-subtle ps-3" 
+                       [placeholder]="searchBy === 'customer' ? 'Search customer or policy #...' : 'Search by RM Name...'" 
+                       [(ngModel)]="listSearchTerm" (input)="applyFilters()">
+              </div>
+
+              <!-- Premium Filter (Today Only) -->
+              <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
+                <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                  <i class="bi bi-funnel-fill me-1"></i> Premium
+                </span>
+                <div class="btn-group h-100" role="group">
+                  <button class="btn btn-sm rounded-0 border-0 py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('all')">All</button>
+                  <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('0-1')">0-1L</button>
+                  <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('1-3')">1L-3L</button>
+                  <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('3-5')">3L-5L</button>
+                  <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
+                </div>
               </div>
             </div>
           </div>
@@ -352,12 +370,13 @@ export class RenewalComponent implements OnInit {
       followUps: this.apiService.getFollowUpsForTimeline(day)
     }).subscribe({
       next: (data) => {
-        this.policies = data.policies;
-        this.followUps = (data.followUps as any[]).map((r: any) => {
+        this.basePolicies = data.policies;
+        this.baseFollowUps = (data.followUps as any[]).map((r: any) => {
           const p = r.policy;
           p.reminder = r;
           return p;
         });
+        this.applyFilters();
         this.loading = false;
       },
       error: (err) => {
@@ -372,10 +391,29 @@ export class RenewalComponent implements OnInit {
   todaysFollowUps: any[] = [];
   allTodaysExpiring: any[] = [];
   allTodaysFollowUps: any[] = [];
+  listSearchTerm: string = '';
+  searchBy: 'customer' | 'rm' = 'customer';
+  basePolicies: any[] = [];
+  baseFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
 
-  applyPremiumFilter() {
-    const filterFn = (p: any) => {
+  applyFilters() {
+    const term = this.listSearchTerm.toLowerCase().trim();
+    
+    const searchFilterFn = (p: any) => {
+      if (!term) return true;
+      if (this.searchBy === 'rm') {
+        return p.rmName && p.rmName.toLowerCase().includes(term);
+      } else {
+        const policyMatch = p.policyNumber && p.policyNumber.toLowerCase().includes(term);
+        const firstMatch = p.customer && p.customer.firstName && p.customer.firstName.toLowerCase().includes(term);
+        const lastMatch = p.customer && p.customer.lastName && p.customer.lastName.toLowerCase().includes(term);
+        return policyMatch || firstMatch || lastMatch;
+      }
+    };
+
+    const premiumFilterFn = (p: any) => {
+      if (this.selectedDay !== 'todays-work') return true;
       if (this.selectedPremiumRange === 'all') return true;
       const amt = p.amount || 0;
       if (this.selectedPremiumRange === '0-1') return amt >= 0 && amt <= 100000;
@@ -384,16 +422,22 @@ export class RenewalComponent implements OnInit {
       if (this.selectedPremiumRange === '5+') return amt > 500000;
       return true;
     };
-    
-    this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
-    this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
 
-    this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+    const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p);
+    
+    if (this.selectedDay === 'todays-work') {
+      this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
+      this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
+      this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+    } else {
+      this.policies = this.basePolicies.filter(filterFn);
+      this.followUps = this.baseFollowUps.filter(filterFn);
+    }
   }
 
   setPremiumRange(range: string) {
     this.selectedPremiumRange = range;
-    this.applyPremiumFilter();
+    this.applyFilters();
   }
 
   setTodaysWorkTab(tab: 'expiring' | 'followups') {
@@ -425,7 +469,7 @@ export class RenewalComponent implements OnInit {
         });
 
         // Apply filter initially
-        this.applyPremiumFilter();
+        this.applyFilters();
 
         this.followUps = [];
         this.loading = false;
