@@ -565,7 +565,9 @@ export class RenewalComponent implements OnInit {
 
   selectPolicyForRenewal(policy: any) {
     this.selectedRenewalPolicy = policy;
-    this.renewalForm = JSON.parse(JSON.stringify(policy)); // Deep copy
+    const safePolicy = { ...policy };
+    delete safePolicy.reminder; // Prevent circular JSON error
+    this.renewalForm = JSON.parse(JSON.stringify(safePolicy)); // Deep copy
     this.renewalSearchResults = [];
     this.renewalSearchTerm = ''; // Clear search to hide dropdown
   }

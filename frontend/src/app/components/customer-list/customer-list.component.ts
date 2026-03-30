@@ -292,7 +292,9 @@ Renewal Due Date : ${endDate}`;
 
     openRenewalModal(policy: any) {
         this.selectedPolicy = policy;
-        this.renewalForm = JSON.parse(JSON.stringify(policy)); // Deep copy
+        const safePolicy = { ...policy };
+        delete safePolicy.reminder; // Prevent circular JSON error
+        this.renewalForm = JSON.parse(JSON.stringify(safePolicy)); // Deep copy
         this.renewalForm.policyStartDate = ''; // Clear start date for renewal
         this.showRenewalModal = true;
         this.showLogCallModal = false; // Close log call modal if open
