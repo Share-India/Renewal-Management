@@ -68,12 +68,10 @@ import { forkJoin, of } from 'rxjs';
               </div>
 
               <!-- Type Filter (Today Only) -->
-              <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center shadow-sm" style="width: 140px;">
-                <select class="form-select text-muted border-secondary-subtle bg-white" [(ngModel)]="selectedPolicyType" (change)="applyFilters()">
+              <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center shadow-sm" style="min-width: 160px;">
+                <select class="form-select text-muted border-secondary-subtle bg-white rounded" [(ngModel)]="selectedPolicyType" (change)="applyFilters()">
                   <option value="all">All Types</option>
-                  <option value="Life Insurance">Life</option>
-                  <option value="Health Insurance">Health</option>
-                  <option value="Motor Insurance">Motor</option>
+                  <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
                 </select>
               </div>
 
@@ -407,6 +405,7 @@ export class RenewalComponent implements OnInit {
   baseFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
   selectedPolicyType: string = 'all';
+  availablePolicyTypes: string[] = [];
 
   applyFilters() {
     const term = this.listSearchTerm.toLowerCase().trim();
@@ -437,7 +436,7 @@ export class RenewalComponent implements OnInit {
     const typeFilterFn = (p: any) => {
       if (this.selectedDay !== 'todays-work') return true;
       if (this.selectedPolicyType === 'all') return true;
-      return p.type && p.type.toLowerCase().includes(this.selectedPolicyType.toLowerCase().replace(' insurance', '')); // Robust matching
+      return p.type === this.selectedPolicyType;
     };
 
     const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p);
@@ -484,6 +483,13 @@ export class RenewalComponent implements OnInit {
            if (!p.reminder || !p.reminder.followUpDate) return true;
            return normalizeDate(p.reminder.followUpDate) > todayStr;
         });
+
+        // Extract available types
+        const typesSet = new Set<string>();
+        [...this.allTodaysExpiring, ...this.allTodaysFollowUps].forEach(p => {
+          if (p.type) typesSet.add(p.type);
+        });
+        this.availablePolicyTypes = Array.from(typesSet).sort();
 
         // Apply filter initially
         this.applyFilters();

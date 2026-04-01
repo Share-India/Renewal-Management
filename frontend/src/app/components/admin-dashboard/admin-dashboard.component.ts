@@ -127,15 +127,15 @@ import { TimelineComponent } from '../timeline/timeline.component';
                   </button>
                 </div>
                 
-                <!-- Type Filter (Today Only) -->
-                <div class="d-flex align-items-center shadow-sm" style="width: 140px;">
-                  <select class="form-select text-muted border-secondary-subtle bg-white" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()">
-                    <option value="all">All Types</option>
-                    <option value="Life Insurance">Life</option>
-                    <option value="Health Insurance">Health</option>
-                    <option value="Motor Insurance">Motor</option>
-                  </select>
-                </div>
+                <!-- Filters Container -->
+                <div class="d-flex align-items-center flex-wrap gap-3">
+                  <!-- Type Filter (Today Only) -->
+                  <div class="d-flex align-items-center shadow-sm" style="min-width: 160px;">
+                    <select class="form-select text-muted border-secondary-subtle bg-white rounded" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()">
+                      <option value="all">All Types</option>
+                      <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
+                    </select>
+                  </div>
 
                 <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
                   <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
@@ -1159,6 +1159,7 @@ export class AdminDashboardComponent implements OnInit {
   allTodaysFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
   selectedPolicyType: string = 'all';
+  availablePolicyTypes: string[] = [];
 
   applyPremiumFilter() {
     const filterFn = (p: any) => {
@@ -1173,7 +1174,7 @@ export class AdminDashboardComponent implements OnInit {
 
       let isTypeMatch = true;
       if (this.selectedPolicyType !== 'all') {
-        isTypeMatch = !!(p.type && p.type.toLowerCase().includes(this.selectedPolicyType.toLowerCase().replace(' insurance', '')));
+        isTypeMatch = p.type === this.selectedPolicyType;
       }
 
       return isPremiumMatch && isTypeMatch;
@@ -1225,6 +1226,13 @@ export class AdminDashboardComponent implements OnInit {
            if (!p.reminder || !p.reminder.followUpDate) return true;
            return normalizeDate(p.reminder.followUpDate) > todayStr;
         });
+
+        // Extract available types
+        const typesSet = new Set<string>();
+        [...this.allTodaysExpiring, ...this.allTodaysFollowUps].forEach(p => {
+          if (p.type) typesSet.add(p.type);
+        });
+        this.availablePolicyTypes = Array.from(typesSet).sort();
 
         // Apply filter initially
         this.applyPremiumFilter();
