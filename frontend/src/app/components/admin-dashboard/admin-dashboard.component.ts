@@ -127,6 +127,16 @@ import { TimelineComponent } from '../timeline/timeline.component';
                   </button>
                 </div>
                 
+                <!-- Type Filter (Today Only) -->
+                <div class="d-flex align-items-center shadow-sm" style="width: 140px;">
+                  <select class="form-select text-muted border-secondary-subtle bg-white" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()">
+                    <option value="all">All Types</option>
+                    <option value="Life Insurance">Life</option>
+                    <option value="Health Insurance">Health</option>
+                    <option value="Motor Insurance">Motor</option>
+                  </select>
+                </div>
+
                 <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
                   <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                     <i class="bi bi-funnel-fill me-1"></i> Premium
@@ -1148,16 +1158,25 @@ export class AdminDashboardComponent implements OnInit {
   allTodaysExpiring: any[] = [];
   allTodaysFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
+  selectedPolicyType: string = 'all';
 
   applyPremiumFilter() {
     const filterFn = (p: any) => {
-      if (this.selectedPremiumRange === 'all') return true;
-      const amt = p.amount || 0;
-      if (this.selectedPremiumRange === '0-1') return amt >= 0 && amt <= 100000;
-      if (this.selectedPremiumRange === '1-3') return amt > 100000 && amt <= 300000;
-      if (this.selectedPremiumRange === '3-5') return amt > 300000 && amt <= 500000;
-      if (this.selectedPremiumRange === '5+') return amt > 500000;
-      return true;
+      let isPremiumMatch = true;
+      if (this.selectedPremiumRange !== 'all') {
+        const amt = p.amount || 0;
+        if (this.selectedPremiumRange === '0-1') isPremiumMatch = amt >= 0 && amt <= 100000;
+        else if (this.selectedPremiumRange === '1-3') isPremiumMatch = amt > 100000 && amt <= 300000;
+        else if (this.selectedPremiumRange === '3-5') isPremiumMatch = amt > 300000 && amt <= 500000;
+        else if (this.selectedPremiumRange === '5+') isPremiumMatch = amt > 500000;
+      }
+
+      let isTypeMatch = true;
+      if (this.selectedPolicyType !== 'all') {
+        isTypeMatch = !!(p.type && p.type.toLowerCase().includes(this.selectedPolicyType.toLowerCase().replace(' insurance', '')));
+      }
+
+      return isPremiumMatch && isTypeMatch;
     };
     
     this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
