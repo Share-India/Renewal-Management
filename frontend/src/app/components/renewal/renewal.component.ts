@@ -67,6 +67,16 @@ import { forkJoin, of } from 'rxjs';
                        [(ngModel)]="listSearchTerm" (input)="applyFilters()">
               </div>
 
+              <!-- Type Filter (Today Only) -->
+              <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center shadow-sm" style="width: 140px;">
+                <select class="form-select text-muted border-secondary-subtle bg-white" [(ngModel)]="selectedPolicyType" (change)="applyFilters()">
+                  <option value="all">All Types</option>
+                  <option value="Life Insurance">Life</option>
+                  <option value="Health Insurance">Health</option>
+                  <option value="Motor Insurance">Motor</option>
+                </select>
+              </div>
+
               <!-- Premium Filter (Today Only) -->
               <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
@@ -396,6 +406,7 @@ export class RenewalComponent implements OnInit {
   basePolicies: any[] = [];
   baseFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
+  selectedPolicyType: string = 'all';
 
   applyFilters() {
     const term = this.listSearchTerm.toLowerCase().trim();
@@ -423,7 +434,13 @@ export class RenewalComponent implements OnInit {
       return true;
     };
 
-    const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p);
+    const typeFilterFn = (p: any) => {
+      if (this.selectedDay !== 'todays-work') return true;
+      if (this.selectedPolicyType === 'all') return true;
+      return p.type && p.type.toLowerCase().includes(this.selectedPolicyType.toLowerCase().replace(' insurance', '')); // Robust matching
+    };
+
+    const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p);
     
     if (this.selectedDay === 'todays-work') {
       this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
