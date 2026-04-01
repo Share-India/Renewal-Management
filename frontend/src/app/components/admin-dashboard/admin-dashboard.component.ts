@@ -109,24 +109,25 @@ import { TimelineComponent } from '../timeline/timeline.component';
           <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work') && !loading" class="records-content">
             <!-- Expiring Policies -->
             <div class="record-section">
-              <h4 class="section-header text-primary">
-                <span *ngIf="!isSearchMode && selectedDay !== 'todays-work'">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
-                <span *ngIf="isSearchMode">Search Results for "{{ adminSearchTerm }}"</span>
-                <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
-                <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
-                <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
-              </h4>
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                <div class="d-flex flex-column gap-2">
+                  <h4 class="section-header text-primary mb-0">
+                    <span *ngIf="!isSearchMode && selectedDay !== 'todays-work'">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
+                    <span *ngIf="isSearchMode">Search Results for "{{ adminSearchTerm }}"</span>
+                    <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
+                    <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
+                    <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
+                  </h4>
 
-              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-3">
-                <div class="d-flex gap-2">
-                  <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setAdminTodaysWorkTab('expiring')">
-                     Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white text-primary' : 'bg-light text-primary'">{{ todaysExpiring.length }}</span>
-                  </button>
-                  <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white'" (click)="setAdminTodaysWorkTab('followups')">
-                     Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
-                  </button>
+                  <div *ngIf="selectedDay === 'todays-work'" class="d-flex gap-2">
+                    <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setAdminTodaysWorkTab('expiring')">
+                       Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white text-primary' : 'bg-light text-primary'">{{ todaysExpiring.length }}</span>
+                    </button>
+                    <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white'" (click)="setAdminTodaysWorkTab('followups')">
+                       Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
+                    </button>
+                  </div>
                 </div>
-                
                 <!-- Filters Container -->
                 <div class="d-flex flex-column align-items-end gap-2">
                   <!-- Type Filter (Today Only) -->
