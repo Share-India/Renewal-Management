@@ -341,9 +341,21 @@ public class RenewalService {
             }
         }
 
-        // DATES ARE NOT UPDATED HERE.
+        // DATES ARE NOT UPDATED HERE for most policies.
         // They will be updated by the Service Team during 'issuePolicy'.
-        // This ensures the policy shows old dates while in 'PENDING_ISSUANCE'.
+        // However, Life Insurance bypasses Servicing and goes straight to MIS.
+        boolean isLife = "Life Insurance".equalsIgnoreCase(type);
+        
+        if (isLife) {
+            if (policy.getLastExpiryDate() == null) {
+                policy.setLastExpiryDate(oldExpiryDate);
+            }
+            // Enforce Start Date = Old Expiry + 1 Day, and extend 1 Year
+            policy.setPolicyStartDate(oldExpiryDate.plusDays(1));
+            policy.setExpiryDate(oldExpiryDate.plusYears(1));
+            policy.setPolicyEndDate(oldExpiryDate.plusYears(1));
+            policy.setPolicyIssueDate(LocalDate.now());
+        }
 
         // --- Payment & Status Logic ---
         policy.setPaymentMode(paymentMode);
@@ -355,7 +367,11 @@ public class RenewalService {
             policy.setPaymentDocumentPath(paymentDocumentPath);
         }
 
-        policy.setStatus("PENDING_ISSUANCE"); // Changed from ACTIVE
+        String newStatus = isLife ? "ACTIVE" : "PENDING_ISSUANCE";
+        String outcome = isLife ? "Renewed" : "Pending Issuance";
+        String reminderStatus = isLife ? "Renewed" : "PENDING";
+
+        policy.setStatus(newStatus); // Changed from unconditional PENDING_ISSUANCE
 
         // Reset reminder for the new cycle
         Reminder reminder = policy.getReminder();
@@ -367,14 +383,13 @@ public class RenewalService {
         // Update who performed the renewal
         reminder.setLastUpdatedBy(agentName);
 
-        // Set outcome to Pending Issuance
-        String outcome = "Pending Issuance";
+        // Set outcome
         reminder.setLastCallOutcome(outcome);
 
         reminder.setLastReminderSentAt(java.time.LocalDateTime.now()); // Update timestamp
         reminder.setFollowUpDate(null);
         reminder.setFollowUpRequired(false);
-        reminder.setReminderStatus("PENDING");
+        reminder.setReminderStatus(reminderStatus);
 
         policy.setReminder(reminder);
 
@@ -383,7 +398,7 @@ public class RenewalService {
         history.setPolicy(policy);
         history.setCallDate(java.time.LocalDateTime.now());
         history.setCallOutcome(outcome);
-        String notes = "Policy renewed. Status: Pending Issuance. Payment Mode: " + paymentMode + ". Ref: "
+        String notes = "Policy renewed. Status: " + outcome + ". Payment Mode: " + paymentMode + ". Ref: "
                 + paymentReference;
         if (lateRenewalReason != null && !lateRenewalReason.trim().isEmpty()) {
             notes += ". Late Reason: " + lateRenewalReason;
