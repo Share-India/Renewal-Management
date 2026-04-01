@@ -130,8 +130,11 @@ import { TimelineComponent } from '../timeline/timeline.component';
                 <!-- Filters Container -->
                 <div class="d-flex align-items-center flex-wrap gap-3">
                   <!-- Type Filter (Today Only) -->
-                  <div class="d-flex align-items-center shadow-sm" style="min-width: 160px;">
-                    <select class="form-select text-muted border-secondary-subtle bg-white rounded" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()">
+                  <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
+                    <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                      <i class="bi bi-tags-fill me-1"></i> Type
+                    </span>
+                    <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
                       <option value="all">All Types</option>
                       <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
                     </select>
