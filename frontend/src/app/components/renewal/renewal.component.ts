@@ -42,7 +42,7 @@ import { forkJoin, of } from 'rxjs';
           </h3>
 
           <!-- Controls Container: Shown for all days, but some parts are today-only -->
-          <div class="mb-4 d-flex flex-wrap gap-3 justify-content-between align-items-center">
+          <div class="mb-4 d-flex flex-wrap gap-3 justify-content-between align-items-start">
             
             <div class="d-flex gap-2" *ngIf="selectedDay === 'todays-work'">
               <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setTodaysWorkTab('expiring')">

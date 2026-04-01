@@ -117,7 +117,7 @@ import { TimelineComponent } from '../timeline/timeline.component';
                 <span *ngIf="selectedDay !== 'todays-work'" class="badge bg-primary">{{ selectedDateRecords.expiringPolicies.length }}</span>
               </h4>
 
-              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+              <div *ngIf="selectedDay === 'todays-work'" class="mb-4 d-flex justify-content-between align-items-start flex-wrap gap-3">
                 <div class="d-flex gap-2">
                   <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setAdminTodaysWorkTab('expiring')">
                      Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white text-primary' : 'bg-light text-primary'">{{ todaysExpiring.length }}</span>
