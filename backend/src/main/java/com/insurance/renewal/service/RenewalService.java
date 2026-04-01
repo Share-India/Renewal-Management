@@ -285,6 +285,47 @@ public class RenewalService {
         }
     }
 
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    @org.springframework.transaction.annotation.Transactional
+    public void autoIssueStuckLifeInsurancePolicies() {
+        try {
+            List<Policy> allPolicies = policyRepository.findAll();
+            int count = 0;
+            for (Policy policy : allPolicies) {
+                if ("PENDING_ISSUANCE".equals(policy.getStatus()) && "Life Insurance".equalsIgnoreCase(policy.getType())) {
+                    // Update dates
+                    LocalDate oldExpiryDate = policy.getExpiryDate();
+                    if (policy.getLastExpiryDate() == null) {
+                        policy.setLastExpiryDate(oldExpiryDate);
+                    }
+                    if (oldExpiryDate != null) {
+                        policy.setPolicyStartDate(oldExpiryDate.plusDays(1));
+                        policy.setExpiryDate(oldExpiryDate.plusYears(1));
+                        policy.setPolicyEndDate(oldExpiryDate.plusYears(1));
+                    }
+                    policy.setPolicyIssueDate(LocalDate.now());
+                    policy.setStatus("ACTIVE");
+
+                    // Update reminder
+                    Reminder reminder = policy.getReminder();
+                    if (reminder != null) {
+                        reminder.setReminderStatus("Renewed");
+                        reminder.setLastCallOutcome("Renewed");
+                        reminderRepository.save(reminder);
+                    }
+                    
+                    policyRepository.save(policy);
+                    count++;
+                }
+            }
+            if (count > 0) {
+                System.out.println("Retroactively auto-issued " + count + " stuck Life Insurance policies directly to MIS.");
+            }
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to retroactively issue Life Insurance policies: " + e.getMessage());
+        }
+    }
+
     @org.springframework.transaction.annotation.Transactional
     public Policy renewPolicy(Long policyId, LocalDate newEndDate, LocalDate newStartDate, String agentName,
             String lateRenewalReason, String paymentMode, String paymentReference, java.math.BigDecimal paymentAmount,
