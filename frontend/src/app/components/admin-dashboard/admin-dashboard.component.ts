@@ -128,7 +128,7 @@ import { TimelineComponent } from '../timeline/timeline.component';
                 </div>
                 
                 <!-- Filters Container -->
-                <div class="d-flex align-items-center flex-wrap gap-3">
+                <div class="d-flex flex-column align-items-end gap-2">
                   <!-- Type Filter (Today Only) -->
                   <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
                     <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">

@@ -67,8 +67,10 @@ import { forkJoin, of } from 'rxjs';
                        [(ngModel)]="listSearchTerm" (input)="applyFilters()">
               </div>
 
-              <!-- Type Filter (Today Only) -->
-              <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
+              <!-- Filters Stack -->
+              <div *ngIf="selectedDay === 'todays-work'" class="d-flex flex-column align-items-end gap-2">
+                <!-- Type Filter (Today Only) -->
+                <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
@@ -79,7 +81,7 @@ import { forkJoin, of } from 'rxjs';
               </div>
 
               <!-- Premium Filter (Today Only) -->
-              <div *ngIf="selectedDay === 'todays-work'" class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-funnel-fill me-1"></i> Premium
                 </span>
@@ -91,6 +93,7 @@ import { forkJoin, of } from 'rxjs';
                   <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
                 </div>
               </div>
+              </div> <!-- close flex-column stack -->
             </div>
           </div>
 
