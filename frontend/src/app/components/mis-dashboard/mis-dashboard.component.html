@@ -58,16 +58,24 @@
         </ul>
 
         <!-- Stats / Search Bar -->
-        <div class="row mb-4">
-            <div class="col-md-4">
+        <div class="row mb-4 align-items-center gy-3">
+            <div class="col-md-3">
                 <div class="input-group shadow-sm">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                     <input type="text" class="form-control border-start-0 ps-0"
-                        placeholder="Search (Policy No, Customer, Vehicle...)" [(ngModel)]="searchTerm"
+                        placeholder="Search (Policy No, Customer...)" [(ngModel)]="searchTerm"
                         (input)="filterPolicies()">
                 </div>
             </div>
-            <div class="col-md-8 text-end d-flex justify-content-end align-items-center gap-2">
+            <div class="col-md-4">
+                <div class="d-flex align-items-center gap-2 shadow-sm rounded bg-white px-2 py-1 border h-100">
+                    <small class="text-muted text-nowrap fw-bold"><i class="bi bi-calendar3"></i> Issued:</small>
+                    <input type="date" class="form-control form-control-sm border-0 shadow-none" [(ngModel)]="filterStartDate" (change)="filterPolicies()" title="Start Date">
+                    <span class="text-muted fw-bold">to</span>
+                    <input type="date" class="form-control form-control-sm border-0 shadow-none" [(ngModel)]="filterEndDate" (change)="filterPolicies()" title="End Date">
+                </div>
+            </div>
+            <div class="col-md-5 text-end d-flex justify-content-end align-items-center gap-2">
                 <span class="text-muted small">Records in View: <strong>{{ filteredPolicies.length }}</strong></span>
                 
                 <select [(ngModel)]="selectedBranch" (change)="loadPolicies()" class="form-select form-select-sm" style="width: auto;">

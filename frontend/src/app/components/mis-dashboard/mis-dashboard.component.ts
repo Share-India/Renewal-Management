@@ -88,6 +88,10 @@ export class MisDashboardComponent implements OnInit {
     this.applyFilter();
   }
 
+  // Date filters
+  filterStartDate: string = '';
+  filterEndDate: string = '';
+
   filterPolicies(): void {
     this.applyFilter();
   }
@@ -97,18 +101,50 @@ export class MisDashboardComponent implements OnInit {
     if (this.viewMode === 'updated') source = this.updatedPolicies;
     if (this.viewMode === 'pendingIssuance') source = this.pendingIssuancePolicies;
 
-    if (!this.searchTerm) {
-      this.filteredPolicies = source;
-      return;
+    const lowerTerm = (this.searchTerm || '').toLowerCase();
+    
+    // Parse filter dates (setting start to 00:00:00 and end to 23:59:59)
+    let startD: Date | null = null;
+    let endD: Date | null = null;
+    if (this.filterStartDate) {
+      startD = new Date(this.filterStartDate);
+      startD.setHours(0, 0, 0, 0);
     }
-    const lowerTerm = this.searchTerm.toLowerCase();
-    this.filteredPolicies = source.filter(policy =>
-      policy.policyNumber?.toLowerCase().includes(lowerTerm) ||
-      policy.customer?.firstName?.toLowerCase().includes(lowerTerm) ||
-      policy.customer?.lastName?.toLowerCase().includes(lowerTerm) ||
-      policy.insuranceName?.toLowerCase().includes(lowerTerm) ||
-      policy.vehicleRegNo?.toLowerCase().includes(lowerTerm)
-    );
+    if (this.filterEndDate) {
+      endD = new Date(this.filterEndDate);
+      endD.setHours(23, 59, 59, 999);
+    }
+
+    this.filteredPolicies = source.filter(policy => {
+      // 1. Search filter
+      let matchesSearch = true;
+      if (lowerTerm) {
+        matchesSearch = !!(
+          policy.policyNumber?.toLowerCase().includes(lowerTerm) ||
+          policy.customer?.firstName?.toLowerCase().includes(lowerTerm) ||
+          policy.customer?.lastName?.toLowerCase().includes(lowerTerm) ||
+          policy.insuranceName?.toLowerCase().includes(lowerTerm) ||
+          policy.vehicleRegNo?.toLowerCase().includes(lowerTerm)
+        );
+      }
+
+      // 2. Date filter (issued date)
+      let matchesDate = true;
+      if (startD || endD) {
+        // Fallbacks for what might be considered "issued date"
+        const issueDateStr = policy.policyIssueDate || policy.policyStartDate || policy.paymentDate;
+        if (issueDateStr) {
+          const pDate = new Date(issueDateStr);
+          if (startD && pDate < startD) matchesDate = false;
+          if (endD && pDate > endD) matchesDate = false;
+        } else {
+          // If no date and user is filtering by date, exclude it
+          matchesDate = false;
+        }
+      }
+
+      return matchesSearch && matchesDate;
+    });
   }
 
   logout(): void {
