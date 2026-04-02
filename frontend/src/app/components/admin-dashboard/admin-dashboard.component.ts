@@ -20,25 +20,30 @@ import * as XLSX from 'xlsx';
           <p class="text-muted">Real-time insights into system performance and daily administrative tasks</p>
         </div>
         
-        <div class="d-flex gap-3 align-items-center">
-          <div class="branch-selector shadow-sm">
-            <div class="input-group">
-              <span class="input-group-text bg-transparent border-0 pe-1">
-                <div class="icon-circle bg-primary bg-opacity-10 text-primary">
-                  <i class="bi bi-geo-alt-fill"></i>
-                </div>
-              </span>
-              <select class="form-select border-0 bg-transparent fw-bold shadow-none" [(ngModel)]="selectedAdminBranch" (change)="onBranchChange()">
-                <option value="">All Branches Globally</option>
-                <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
-              </select>
+        <div class="d-flex flex-column align-items-end gap-2">
+          <div class="d-flex gap-3 align-items-center">
+            <div class="branch-selector shadow-sm">
+              <div class="input-group">
+                <span class="input-group-text bg-transparent border-0 pe-1">
+                  <div class="icon-circle bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-geo-alt-fill"></i>
+                  </div>
+                </span>
+                <select class="form-select border-0 bg-transparent fw-bold shadow-none" [(ngModel)]="selectedAdminBranch" (change)="onBranchChange()">
+                  <option value="">All Branches Globally</option>
+                  <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
+                </select>
+              </div>
             </div>
+            <button class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
+              <i class="bi bi-diagram-3-fill me-2 text-primary"></i> Manage
+            </button>
+            <button class="btn btn-primary shadow-sm px-4" (click)="openRenewalModal()">
+              <i class="bi bi-plus-circle me-2"></i> Add / Edit Policy
+            </button>
           </div>
-          <button class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
-            <i class="bi bi-diagram-3-fill me-2 text-primary"></i> Manage
-          </button>
-          <button class="btn btn-primary shadow-sm px-4" (click)="openRenewalModal()">
-            <i class="bi bi-plus-circle me-2"></i> Add / Edit Policy
+          <button class="btn btn-success btn-sm shadow-sm w-100" style="max-width: fit-content;" (click)="exportTodaysReport()" title="Export Today's Updates">
+            <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
           </button>
         </div>
       </div>
@@ -178,9 +183,6 @@ import * as XLSX from 'xlsx';
         <div class="card-header">
           <h3>📞 Renewer Call Records</h3>
           <div class="d-flex gap-2">
-            <button class="btn btn-success btn-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
-              <i class="bi bi-file-earmark-excel"></i> Download Today's Report
-            </button>
             <button class="btn btn-outline-primary btn-sm" (click)="loadRenewerRecords()">
               <i class="bi bi-arrow-clockwise"></i> Refresh
             </button>
