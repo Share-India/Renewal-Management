@@ -240,7 +240,12 @@ export class MisDashboardComponent implements OnInit {
     }
 
     const data = this.getFormattedExportData();
-    const doc = new jsPDF('landscape');
+    // Use a larger page size (a3 or a2) to comfortably fit 29 columns without extreme squishing
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a2'
+    });
     
     // Add a title
     const title = `MIS Dashboard Report - ${this.viewMode.toUpperCase()}`;
@@ -250,9 +255,6 @@ export class MisDashboardComponent implements OnInit {
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
 
     // Prepare table data
-    // PDF width is limited, so we select the most important columns or just shrink them all
-    // Since Format.xlsx has 29 columns, it will be extremely cramped.
-    // We will include all columns but use a very small font, or autoTable will handle pagination.
     const headers = Object.keys(data[0]);
     const body = data.map(row => Object.values(row).map(v => v !== null && v !== undefined ? String(v) : ''));
 
@@ -260,8 +262,15 @@ export class MisDashboardComponent implements OnInit {
       head: [headers],
       body: body,
       startY: 28,
-      styles: { fontSize: 6, cellPadding: 1 },
+      styles: { fontSize: 7, cellPadding: 1, overflow: 'linebreak' },
       headStyles: { fillColor: [63, 81, 181] },
+      columnStyles: {
+        5: { cellWidth: 25 }, // Email
+        6: { cellWidth: 30 }, // Policy No
+        18: { cellWidth: 45 }, // Address
+        2: { cellWidth: 25 }, // Customer Name
+        12: { cellWidth: 20 }  // Product Name
+      },
       margin: { top: 25, left: 5, right: 5 }
     });
 
