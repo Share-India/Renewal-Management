@@ -6,6 +6,7 @@ import { finalize } from 'rxjs/operators';
 import { CustomerListComponent } from '../customer-list/customer-list.component';
 import { WorkProgressComponent } from '../work-progress/work-progress.component';
 import { TimelineComponent } from '../timeline/timeline.component';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -177,6 +178,9 @@ import { TimelineComponent } from '../timeline/timeline.component';
         <div class="card-header">
           <h3>📞 Renewer Call Records</h3>
           <div class="d-flex gap-2">
+            <button class="btn btn-success btn-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
+              <i class="bi bi-file-earmark-excel"></i> Download Today's Report
+            </button>
             <button class="btn btn-outline-primary btn-sm" (click)="loadRenewerRecords()">
               <i class="bi bi-arrow-clockwise"></i> Refresh
             </button>
@@ -1475,6 +1479,107 @@ export class AdminDashboardComponent implements OnInit {
         alert('Failed to update policy details.');
       }
     });
+  }
+
+  exportTodaysReport(): void {
+    const todayStr = new Date().toDateString();
+    
+    // Filter records where lastReminderSentAt is today
+    const todaysUpdates = this.renewerRecords.filter(record => {
+      if (!record.reminder || !record.reminder.lastReminderSentAt) return false;
+      const updatedDate = new Date(record.reminder.lastReminderSentAt).toDateString();
+      return updatedDate === todayStr;
+    });
+
+    if (todaysUpdates.length === 0) {
+      alert('No updates found for today to export. The renewers haven\'t updated any policies yet today.');
+      return;
+    }
+
+    // Format data according to Format.xlsx + 3 custom columns
+    const exportData = todaysUpdates.map((r, index) => {
+      const p = r.policy || recordFallback(r); 
+      function recordFallback(rItem: any) { 
+          return {
+              policyEndDate: rItem.policyEndDate,
+              policyStartDate: rItem.policyStartDate,
+              expiryDate: rItem.expiryDate,
+              insuranceName: rItem.insuranceName,
+              type: rItem.type,
+              amount: rItem.amount,
+              productName: rItem.productName,
+              rmName: rItem.rmName,
+              associateName: rItem.associateName,
+              associateCode: rItem.associateCode,
+              vehicleRegNo: rItem.vehicleRegNo,
+              vehicleModel: rItem.vehicleModel,
+              paymentDate: rItem.paymentDate,
+              policyNumber: rItem.policyNumber,
+              customer: rItem.customer
+          };
+      }
+      
+      const c = r.customer;
+      const rem = r.reminder;
+      
+      const actPolicy = p.policyNumber ? p : (p.reminder?.policy || p);
+
+      const policyEndDate = actPolicy.policyEndDate;
+      const policyStartDate = actPolicy.policyStartDate;
+      const expiryDate = actPolicy.expiryDate;
+      const insuranceName = actPolicy.insuranceName;
+      const type = actPolicy.type;
+      const amount = actPolicy.amount;
+      const productName = actPolicy.productName;
+      const rmName = actPolicy.rmName;
+      const associateName = actPolicy.associateName;
+      const associateCode = actPolicy.associateCode;
+      const vehicleRegNo = actPolicy.vehicleRegNo;
+      const vehicleModel = actPolicy.vehicleModel;
+      const paymentDate = actPolicy.paymentDate;
+
+      return {
+        'Sr. No.': index + 1,
+        'FY': policyEndDate ? new Date(policyEndDate).getFullYear() : new Date().getFullYear(),
+        'Customer Name': c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : '',
+        'DOB': c?.dob || '',
+        'Contact No': c?.phone || '',
+        'Email ID': c?.email || '',
+        'Policy No': actPolicy.policyNumber || '',
+        'Insurance Type': type || '',
+        'Insurer Name': insuranceName || '',
+        'Policy Start Date': policyStartDate || '',
+        'Policy End Date': policyEndDate || '',
+        'Renewal Due date': expiryDate || '',
+        'Product Name': productName || '',
+        'Amount': amount || '',
+        'Premium': amount || '',
+        'RM Name': rmName || '',
+        'Associate name': associateName || '',
+        'Associate Code': associateCode || '',
+        'Address 1': c?.address || '',
+        'City': c?.city || '',
+        'State': c?.state || '',
+        'Pin Code': '',
+        'Car/RegNo': vehicleRegNo || '',
+        'Model Name': vehicleModel || '',
+        'Mgf Year': '',
+        'Billing Frequency': c?.billingFrequency || '',
+        'PPT': '',
+        'PT': '',
+        'Payment Date': paymentDate || '',
+        'Renewer Name': rem?.lastUpdatedBy && rem?.lastUpdatedBy !== 'System' ? rem.lastUpdatedBy : '',
+        'Renewer Note': rem?.notes || '',
+        'Update Time': rem?.lastReminderSentAt ? new Date(rem.lastReminderSentAt).toLocaleTimeString() : ''
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Todays Updates');
+    
+    const formattedDate = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Daily_Renewer_Report_${formattedDate}.xlsx`);
   }
 }
 
