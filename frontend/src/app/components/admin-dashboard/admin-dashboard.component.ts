@@ -1498,31 +1498,9 @@ export class AdminDashboardComponent implements OnInit {
 
     // Format data according to Format.xlsx + 3 custom columns
     const exportData = todaysUpdates.map((r, index) => {
-      const p = r.policy || recordFallback(r); 
-      function recordFallback(rItem: any) { 
-          return {
-              policyEndDate: rItem.policyEndDate,
-              policyStartDate: rItem.policyStartDate,
-              expiryDate: rItem.expiryDate,
-              insuranceName: rItem.insuranceName,
-              type: rItem.type,
-              amount: rItem.amount,
-              productName: rItem.productName,
-              rmName: rItem.rmName,
-              associateName: rItem.associateName,
-              associateCode: rItem.associateCode,
-              vehicleRegNo: rItem.vehicleRegNo,
-              vehicleModel: rItem.vehicleModel,
-              paymentDate: rItem.paymentDate,
-              policyNumber: rItem.policyNumber,
-              customer: rItem.customer
-          };
-      }
-      
       const c = r.customer;
       const rem = r.reminder;
-      
-      const actPolicy = p.policyNumber ? p : (p.reminder?.policy || p);
+      const actPolicy = rem?.policy || {};
 
       const policyEndDate = actPolicy.policyEndDate;
       const policyStartDate = actPolicy.policyStartDate;
@@ -1545,7 +1523,7 @@ export class AdminDashboardComponent implements OnInit {
         'DOB': c?.dob || '',
         'Contact No': c?.phone || '',
         'Email ID': c?.email || '',
-        'Policy No': actPolicy.policyNumber || '',
+        'Policy No': actPolicy.policyNumber || r.policyNumber || '',
         'Insurance Type': type || '',
         'Insurer Name': insuranceName || '',
         'Policy Start Date': policyStartDate || '',
