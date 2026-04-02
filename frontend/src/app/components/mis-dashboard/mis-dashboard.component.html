@@ -75,7 +75,16 @@
                     <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
                 </select>
 
-                <button class="btn btn-primary btn-sm" (click)="loadPolicies()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                <div class="btn-group shadow-sm">
+                    <button class="btn btn-success btn-sm border-0" (click)="exportToExcel()" title="Export to Excel">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                    </button>
+                    <button class="btn btn-danger btn-sm border-0" (click)="exportToPDF()" title="Export to PDF">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                    </button>
+                </div>
+
+                <button class="btn btn-primary btn-sm shadow-sm border-0" (click)="loadPolicies()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
             </div>
         </div>
 

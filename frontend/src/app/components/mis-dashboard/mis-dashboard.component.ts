@@ -5,6 +5,9 @@ import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../services/auth.service';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 @Component({
   selector: 'app-mis-dashboard',
@@ -177,5 +180,91 @@ export class MisDashboardComponent implements OnInit {
       },
       error: (err) => alert('Could not load policy document or no document exists.')
     });
+  }
+
+  // --- Export Logic ---
+  
+  getFormattedExportData(): any[] {
+    return this.filteredPolicies.map((p, index) => ({
+      'Sr. No.': index + 1,
+      'FY': p.policyEndDate ? new Date(p.policyEndDate).getFullYear() : (new Date().getFullYear()),
+      'Customer Name': p.customer ? `${p.customer.firstName || ''} ${p.customer.lastName || ''}`.trim() : '',
+      'DOB': p.customer?.dob || '',
+      'Contact No': p.customer?.phone || '',
+      'Email ID': p.customer?.email || '',
+      'Policy No': p.policyNumber || '',
+      'Insurance Type': p.type || '',
+      'Insurer Name': p.insuranceName || '',
+      'Policy Start Date': p.policyStartDate || '',
+      'Policy End Date': p.policyEndDate || '',
+      'Renewal Due date': p.expiryDate || '',
+      'Product Name': p.productName || '',
+      'Amount': p.amount || '',
+      'Premium': p.netPremium || p.amount || '',
+      'RM Name': p.rmName || '',
+      'Associate name': p.associateName || '',
+      'Associate Code': p.associateCode || '',
+      'Address 1': p.customer?.address || '',
+      'City': p.customer?.city || '',
+      'State': p.customer?.state || '',
+      'Pin Code': '', // not in db
+      'Car/RegNo': p.vehicleRegNo || '',
+      'Model Name': p.vehicleModel || '',
+      'Mgf Year': '', // not in db explicitly 
+      'Billing Frequency': p.customer?.billingFrequency || '',
+      'PPT': '', // not in db
+      'PT': '', // not in db
+      'Payment Date': p.paymentDate || ''
+    }));
+  }
+
+  exportToExcel(): void {
+    if (!this.filteredPolicies || this.filteredPolicies.length === 0) {
+      alert('No records to export in the current view.');
+      return;
+    }
+
+    const data = this.getFormattedExportData();
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Policies');
+
+    // Generate buffer and save
+    XLSX.writeFile(workbook, `MIS_Export_${this.viewMode}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  exportToPDF(): void {
+    if (!this.filteredPolicies || this.filteredPolicies.length === 0) {
+      alert('No records to export in the current view.');
+      return;
+    }
+
+    const data = this.getFormattedExportData();
+    const doc = new jsPDF('landscape');
+    
+    // Add a title
+    const title = `MIS Dashboard Report - ${this.viewMode.toUpperCase()}`;
+    doc.setFontSize(16);
+    doc.text(title, 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 22);
+
+    // Prepare table data
+    // PDF width is limited, so we select the most important columns or just shrink them all
+    // Since Format.xlsx has 29 columns, it will be extremely cramped.
+    // We will include all columns but use a very small font, or autoTable will handle pagination.
+    const headers = Object.keys(data[0]);
+    const body = data.map(row => Object.values(row).map(v => v !== null && v !== undefined ? String(v) : ''));
+
+    autoTable(doc, {
+      head: [headers],
+      body: body,
+      startY: 28,
+      styles: { fontSize: 6, cellPadding: 1 },
+      headStyles: { fillColor: [63, 81, 181] },
+      margin: { top: 25, left: 5, right: 5 }
+    });
+
+    doc.save(`MIS_Export_${this.viewMode}_${new Date().toISOString().split('T')[0]}.pdf`);
   }
 }
