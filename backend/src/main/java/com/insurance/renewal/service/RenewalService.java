@@ -978,8 +978,16 @@ public class RenewalService {
             Policy p = r.getPolicy();
             if (p != null) {
                 p.setReminder(r); // ensure reminder is attached
-                if (processedPolicyIds.add(p.getId())) {
-                    todaysWork.add(p);
+                
+                boolean workedOnToday = false;
+                if (r.getLastReminderSentAt() != null && !r.getLastReminderSentAt().isBefore(startOfDay)) {
+                    workedOnToday = true;
+                }
+
+                if (!filterCompleted || !workedOnToday) {
+                    if (processedPolicyIds.add(p.getId())) {
+                        todaysWork.add(p);
+                    }
                 }
             }
         }
