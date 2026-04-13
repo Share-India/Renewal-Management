@@ -242,7 +242,7 @@ export class CustomerListComponent {
         const p = this.selectedHistoryPolicy;
         const currentUser = this.authService.getCurrentUser();
         const agentName = currentUser ? currentUser.username : 'Unknown';
-        const endDate = new Date(p.expiryDate).toLocaleDateString();
+        const endDate = new Date(p.expiryDate).toLocaleDateString('en-GB');
 
         const emailText = `Dear ${p.customer.firstName} ${p.customer.lastName},
 
@@ -275,7 +275,7 @@ Share India Insurance Brokers Pvt. Ltd.`;
         if (!this.selectedHistoryPolicy) return;
 
         const p = this.selectedHistoryPolicy;
-        const endDate = p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : 'N/A';
+        const endDate = p.expiryDate ? new Date(p.expiryDate).toLocaleDateString('en-GB') : 'N/A';
 
         const text = `Customer Name : ${p.customer.firstName} ${p.customer.lastName}
 Policy No : ${p.policyNumber}
