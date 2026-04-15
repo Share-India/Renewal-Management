@@ -73,7 +73,7 @@ import * as XLSX from 'xlsx';
         </div>
       </div>
 
-      <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
+      <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
 
       <div class="mt-4 mb-3">
         <app-timeline [counts]="timelineCounts" [adminMode]="true" (daySelected)="onDaySelected($event)"></app-timeline>
@@ -1218,7 +1218,7 @@ export class AdminDashboardComponent implements OnInit {
     this.selectedDay = 'todays-work';
 
     this.loading = true;
-    this.apiService.getTodaysWork().subscribe({
+    this.apiService.getTodaysWork(this.selectedAdminBranch).subscribe({
       next: (policies) => {
         const todayStr = new Date().toISOString().split('T')[0];
         
@@ -1348,6 +1348,7 @@ export class AdminDashboardComponent implements OnInit {
       this.selectPolicyForRenewal(policy);
     } else {
       this.resetRenewalForm();
+      this.renewalForm.branch = this.selectedAdminBranch;
     }
   }
 

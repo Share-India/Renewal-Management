@@ -40,12 +40,20 @@ export class ApiService {
         return this.http.get<{ [key: number]: number }>(url, { headers: this.getHeaders() });
     }
 
-    getTodaysWork(): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders() });
+    getTodaysWork(branch?: string): Observable<any[]> {
+        let params = new HttpParams();
+        if (branch && branch.trim() !== '') {
+            params = params.set('branch', branch.trim());
+        }
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders(), params });
     }
 
-    getTodaysWorkProgress(): Observable<{total: number, completed: number}> {
-        return this.http.get<{total: number, completed: number}>(`${this.baseUrl}/renewals/todays-work-progress`, { headers: this.getHeaders() });
+    getTodaysWorkProgress(branch?: string): Observable<{total: number, completed: number}> {
+        let params = new HttpParams();
+        if (branch && branch.trim() !== '') {
+            params = params.set('branch', branch.trim());
+        }
+        return this.http.get<{total: number, completed: number}>(`${this.baseUrl}/renewals/todays-work-progress`, { headers: this.getHeaders(), params });
     }
 
     logCall(policyId: number, data: any): Observable<any> {

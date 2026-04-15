@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { Subscription, interval } from 'rxjs';
@@ -11,6 +11,8 @@ import { Subscription, interval } from 'rxjs';
   styleUrls: ['./work-progress.component.css']
 })
 export class WorkProgressComponent implements OnInit, OnDestroy {
+  @Input() branch: string = '';
+
   totalWork = 0;
   completedWork = 0;
   actualPercentage = 0;
@@ -41,7 +43,7 @@ export class WorkProgressComponent implements OnInit, OnDestroy {
   }
 
   public refreshProgress() {
-    this.dataSub = this.apiService.getTodaysWorkProgress().subscribe({
+    this.dataSub = this.apiService.getTodaysWorkProgress(this.branch).subscribe({
       next: (data) => {
         this.totalWork = data.total;
         this.completedWork = data.completed;
