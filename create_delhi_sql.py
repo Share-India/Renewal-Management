@@ -68,9 +68,11 @@ for index, row in df.iterrows():
         state = "NULL"
         pincode = "NULL"
         
-        # INSERT IGNORE to prevent collisions and crashes with pre-existing records on AWS
-        sql_script += f"INSERT IGNORE INTO customers (first_name, last_name, email, phone, dob, address, city, state, location, pincode, pan_number, billing_frequency) "
-        sql_script += f"VALUES ({clean_sql(first_name)}, {clean_sql(last_name)}, {clean_sql(email)}, {clean_sql(phone)}, {dob}, {address}, {city}, {state}, 'Delhi', {pincode}, NULL, NULL);\n"
+        # We use ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id) to safely skip duplicating customers, 
+        # while STILL retrieving their exact ID to link their policies properly on re-runs!
+        sql_script += f"INSERT INTO customers (first_name, last_name, email, phone, dob, address, city, state, location, pincode, pan_number, billing_frequency) "
+        sql_script += f"VALUES ({clean_sql(first_name)}, {clean_sql(last_name)}, {clean_sql(email)}, {clean_sql(phone)}, {dob}, {address}, {city}, {state}, 'Delhi', {pincode}, NULL, NULL) "
+        sql_script += f"ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);\n"
         sql_script += f"SET {var_name} = LAST_INSERT_ID();\n\n"
     else:
         var_name = customers_dict[c_name]
