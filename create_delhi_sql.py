@@ -45,7 +45,7 @@ for index, row in df.iterrows():
         var_name = f"@curr_c_{index}"
         customers_dict[c_name] = var_name
         
-        raw_email = str(row.get('Email ID', '')).strip()
+        raw_email = str(row.get('Mail ID', '')).strip()
         raw_email = re.sub(r'[^a-zA-Z0-9@._-]', '', raw_email)
         
         if not raw_email or raw_email == '-' or raw_email.lower() == 'nan' or raw_email == '0':
@@ -58,14 +58,15 @@ for index, row in df.iterrows():
              
         seen_emails.add(email.lower())
         
-        phone = row.get('Contact No') if row.get('Contact No') and str(row.get('Contact No')).strip() != '-' else "0"
+        phone = row.get('Customer Ph No') if row.get('Customer Ph No') and str(row.get('Customer Ph No')).strip() != '-' else "0"
         
-        dob = clean_sql(row.get('DOB').strftime('%Y-%m-%d') if pd.notnull(row.get('DOB')) and hasattr(row.get('DOB'), 'strftime') else None)
+        dob = clean_sql(row.get('Dob').strftime('%Y-%m-%d') if pd.notnull(row.get('Dob')) and hasattr(row.get('Dob'), 'strftime') else None)
         
-        address = clean_sql(row.get('Address 1'))
-        city = clean_sql(row.get('City'))
-        state = clean_sql(row.get('State'))
-        pincode = clean_sql(row.get('Pin Code'))
+        # Address info not in Delhi Excel
+        address = "NULL"
+        city = "NULL"
+        state = "NULL"
+        pincode = "NULL"
         
         # INSERT IGNORE to prevent collisions and crashes with pre-existing records on AWS
         sql_script += f"INSERT IGNORE INTO customers (first_name, last_name, email, phone, dob, address, city, state, location, pincode, pan_number, billing_frequency) "
@@ -87,30 +88,32 @@ for index, row in df.iterrows():
     seen_policies.add(raw_p_num.upper())
     
     p_num = clean_sql(raw_p_num)
-    p_type = clean_sql(row.get('Insurance Type')) if pd.notnull(row.get('Insurance Type')) else "'Miscellaneous Insurance'"
-    i_name = clean_sql(row.get('Insurer Name'))
-    prod_name = clean_sql(row.get('Product Name'))
+    p_type = "'Miscellaneous Insurance'"
+    i_name = "NULL" # Not in Delhi
+    prod_name = clean_sql(row.get('Product'))
     
     ps_date = clean_sql(row.get('Policy Start Date').strftime('%Y-%m-%d') if pd.notnull(row.get('Policy Start Date')) and hasattr(row.get('Policy Start Date'), 'strftime') else None)
     pe_date = clean_sql(row.get('Policy End Date').strftime('%Y-%m-%d') if pd.notnull(row.get('Policy End Date')) and hasattr(row.get('Policy End Date'), 'strftime') else None)
-    px_date = clean_sql(row.get('Renewal Due date').strftime('%Y-%m-%d') if pd.notnull(row.get('Renewal Due date')) and hasattr(row.get('Renewal Due date'), 'strftime') else '1970-01-01')
+    px_date = clean_sql(row.get('Renew Date').strftime('%Y-%m-%d') if pd.notnull(row.get('Renew Date')) and hasattr(row.get('Renew Date'), 'strftime') else '1970-01-01')
     
-    prem = clean_sql(row.get('Premium')) if pd.notnull(row.get('Premium')) else "0.0"
-    amt = clean_sql(row.get('Amount')) if pd.notnull(row.get('Amount')) else "0.0"
+    prem = clean_sql(row.get('Total Due NET')) if pd.notnull(row.get('Total Due NET')) else "0.0"
+    amt = clean_sql(row.get('NET')) if pd.notnull(row.get('NET')) else "0.0"
     
-    rm_name = clean_sql(row.get('RM Name'))
-    asc_name = clean_sql(row.get('Associate name'))
-    asc_code = clean_sql(row.get('Associate Code'))
-    
-    v_reg = clean_sql(row.get('Car/RegNo'))
-    v_mod = clean_sql(row.get('Model Name'))
+    rm_name = "NULL"
+    asc_name = "NULL"
+    asc_code = "NULL"
+    v_reg = "NULL"
+    v_mod = "NULL"
     
     # We set Branch to Delhi
     branch = "'Delhi'"
     
-    # Use INSERT IGNORE to skip if police_number already exists!
-    sql_script += f"INSERT IGNORE INTO policies (policy_number, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, due_premium, amount, customer_id, status, rm_name, associate_name, associate_code, vehicle_reg_no, vehicle_model, branch) "
-    sql_script += f"VALUES ({p_num}, {p_type}, {i_name}, {prod_name}, {ps_date}, {pe_date}, {px_date}, {prem}, {amt}, {var_name}, 'ACTIVE', {rm_name}, {asc_name}, {asc_code}, {v_reg}, {v_mod}, {branch});\n\n"
+    # We use ON DUPLICATE KEY UPDATE to overwrite the previously corrupted import records 
+    # from the last run without erroring out on pre-existing valid policies constraints.
+    sql_script += f"INSERT INTO policies (policy_number, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, due_premium, amount, customer_id, status, rm_name, associate_name, associate_code, vehicle_reg_no, vehicle_model, branch) "
+    sql_script += f"VALUES ({p_num}, {p_type}, {i_name}, {prod_name}, {ps_date}, {pe_date}, {px_date}, {prem}, {amt}, {var_name}, 'ACTIVE', {rm_name}, {asc_name}, {asc_code}, {v_reg}, {v_mod}, {branch}) "
+    sql_script += f"ON DUPLICATE KEY UPDATE expiry_date=VALUES(expiry_date), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), product_name=VALUES(product_name), due_premium=VALUES(due_premium), amount=VALUES(amount);\n\n"
+
 
 sql_script += "SET FOREIGN_KEY_CHECKS=1;\n"
 
