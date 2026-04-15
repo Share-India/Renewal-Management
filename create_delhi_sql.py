@@ -67,8 +67,8 @@ for index, row in df.iterrows():
         state = clean_sql(row.get('State'))
         pincode = clean_sql(row.get('Pin Code'))
         
-        # INSERT without ID so it auto-increments
-        sql_script += f"INSERT INTO customers (first_name, last_name, email, phone, dob, address, city, state, location, pincode, pan_number, billing_frequency) "
+        # INSERT IGNORE to prevent collisions and crashes with pre-existing records on AWS
+        sql_script += f"INSERT IGNORE INTO customers (first_name, last_name, email, phone, dob, address, city, state, location, pincode, pan_number, billing_frequency) "
         sql_script += f"VALUES ({clean_sql(first_name)}, {clean_sql(last_name)}, {clean_sql(email)}, {clean_sql(phone)}, {dob}, {address}, {city}, {state}, 'Delhi', {pincode}, NULL, NULL);\n"
         sql_script += f"SET {var_name} = LAST_INSERT_ID();\n\n"
     else:
@@ -108,7 +108,8 @@ for index, row in df.iterrows():
     # We set Branch to Delhi
     branch = "'Delhi'"
     
-    sql_script += f"INSERT INTO policies (policy_number, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, due_premium, amount, customer_id, status, rm_name, associate_name, associate_code, vehicle_reg_no, vehicle_model, branch) "
+    # Use INSERT IGNORE to skip if police_number already exists!
+    sql_script += f"INSERT IGNORE INTO policies (policy_number, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, due_premium, amount, customer_id, status, rm_name, associate_name, associate_code, vehicle_reg_no, vehicle_model, branch) "
     sql_script += f"VALUES ({p_num}, {p_type}, {i_name}, {prod_name}, {ps_date}, {pe_date}, {px_date}, {prem}, {amt}, {var_name}, 'ACTIVE', {rm_name}, {asc_name}, {asc_code}, {v_reg}, {v_mod}, {branch});\n\n"
 
 sql_script += "SET FOREIGN_KEY_CHECKS=1;\n"
