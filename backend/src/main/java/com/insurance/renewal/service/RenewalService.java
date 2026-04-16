@@ -178,18 +178,10 @@ public class RenewalService {
         long totalReminders;
 
         if (branch != null && !branch.trim().isEmpty()) {
-            // Count manually for specific branch since these methods are very generic
-            totalPolicies = policyRepository.findAll().stream().filter(p -> branch.equalsIgnoreCase(p.getBranch()))
-                    .count();
-
-            // To be accurate with branch filtering for pending reminders, it's safer to
-            // join or stream.
-            // Using a stream for now as the table might not be massive enough to strictly
-            // enforce custom queries for every stat.
-            totalReminders = reminderRepository.findAllWithValidPolicy().stream()
-                    .filter(r -> "PENDING".equalsIgnoreCase(r.getReminderStatus()) && r.getPolicy() != null
-                            && branch.equalsIgnoreCase(r.getPolicy().getBranch()))
-                    .count();
+            // Use efficient DB counting instead of fetching all entities into memory
+            totalPolicies = policyRepository.countByBranchIgnoreCase(branch);
+            
+            totalReminders = reminderRepository.countByReminderStatusAndBranchIgnoreCase("PENDING", branch);
         } else {
             totalPolicies = policyRepository.count();
             totalReminders = reminderRepository.countByReminderStatusIgnoreCase("PENDING");

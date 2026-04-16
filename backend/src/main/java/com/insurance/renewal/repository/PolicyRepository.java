@@ -50,4 +50,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         @Query("SELECT p FROM Policy p WHERE p.id NOT IN (SELECT r.policy.id FROM Reminder r)")
         List<Policy> findPoliciesWithoutReminders();
+
+        @Query("SELECT DISTINCT p.branch FROM Policy p WHERE p.branch IS NOT NULL")
+        List<String> findDistinctBranches();
+
+        long countByBranchIgnoreCase(String branch);
 }

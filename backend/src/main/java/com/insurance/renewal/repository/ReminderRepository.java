@@ -18,6 +18,11 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     long countByReminderStatus(String reminderStatus);
     long countByReminderStatusIgnoreCase(String reminderStatus);
 
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Reminder r JOIN r.policy p WHERE LOWER(r.reminderStatus) = LOWER(:status) AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch))")
+    long countByReminderStatusAndBranchIgnoreCase(
+        @org.springframework.data.repository.query.Param("status") String status, 
+        @org.springframework.data.repository.query.Param("branch") String branch);
+
     List<Reminder> findByLastReminderSentAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.lastReminderSentAt BETWEEN :start AND :end AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
