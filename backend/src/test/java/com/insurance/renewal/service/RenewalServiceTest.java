@@ -53,11 +53,11 @@ public class RenewalServiceTest {
         Policy policy1 = new Policy();
         policy1.setPolicyNumber("POL-002");
         
-        when(policyRepository.searchPolicies(query))
+        when(policyRepository.searchPolicies(query, null))
                 .thenReturn(Arrays.asList(policy1));
 
         // When
-        List<Policy> result = renewalService.searchPolicies(query);
+        List<Policy> result = renewalService.searchPolicies(query, null);
 
         // Then
         assertEquals(1, result.size());
