@@ -72,8 +72,12 @@ export class ApiService {
         return this.http.get<any[]>(url, { headers: this.getHeaders() });
     }
 
-    searchPolicies(query: string): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/search?query=${query}`, { headers: this.getHeaders() });
+    searchPolicies(query: string, branch?: string): Observable<any[]> {
+        let url = `${this.baseUrl}/renewals/search?query=${encodeURIComponent(query)}`;
+        if (branch && branch.trim() !== '') {
+            url += `&branch=${encodeURIComponent(branch.trim())}`;
+        }
+        return this.http.get<any[]>(url, { headers: this.getHeaders() });
     }
 
     updatePolicy(id: number, policy: any): Observable<any> {

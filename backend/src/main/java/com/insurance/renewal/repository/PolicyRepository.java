@@ -20,8 +20,8 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findAdminPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate IN :targetDates AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL")
-        List<Policy> findPoliciesForTodaysWork(@Param("targetDates") List<LocalDate> targetDates);
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate IN :targetDates AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> findPoliciesForTodaysWork(@Param("targetDates") List<LocalDate> targetDates, @Param("branch") String branch);
 
         List<Policy> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
 
@@ -34,10 +34,11 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
                         @Param("offsets") List<Integer> offsets, @Param("branch") String branch);
 
         @Query("SELECT p FROM Policy p WHERE " +
-                        "LOWER(p.policyNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+                        "(LOWER(p.policyNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(p.customer.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-                        "LOWER(p.customer.lastName) LIKE LOWER(CONCAT('%', :query, '%'))")
-        List<Policy> searchPolicies(@Param("query") String query);
+                        "LOWER(p.customer.lastName) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+                        "(:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> searchPolicies(@Param("query") String query, @Param("branch") String branch);
 
         List<Policy> findByLateRenewalTrue();
 

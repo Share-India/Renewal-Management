@@ -1072,7 +1072,7 @@ export class AdminDashboardComponent implements OnInit {
     this.selectedDate = ''; // Clear date selection
     this.selectedDay = null; // Clear todays-work mode
 
-    this.apiService.searchPolicies(this.adminSearchTerm)
+    this.apiService.searchPolicies(this.adminSearchTerm, this.selectedAdminBranch)
       .pipe(finalize(() => this.loading = false))
       .subscribe({
         next: (policies) => {
@@ -1394,7 +1394,7 @@ export class AdminDashboardComponent implements OnInit {
       this.renewalSearchResults = [];
       return;
     }
-    this.apiService.searchPolicies(this.renewalSearchTerm).subscribe(results => {
+    this.apiService.searchPolicies(this.renewalSearchTerm, this.selectedAdminBranch).subscribe(results => {
       this.renewalSearchResults = results;
     });
   }

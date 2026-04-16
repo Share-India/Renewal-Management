@@ -723,8 +723,8 @@ public class RenewalService {
         }
     }
 
-    public List<Policy> searchPolicies(String query) {
-        return applyRenewerFilters(policyRepository.searchPolicies(query));
+    public List<Policy> searchPolicies(String query, String branch) {
+        return applyRenewerFilters(policyRepository.searchPolicies(query, branch));
     }
 
     public List<Policy> getLateRenewals() {
@@ -996,7 +996,7 @@ public class RenewalService {
                 .collect(java.util.stream.Collectors.toList());
 
         // Fetch policies
-        List<Policy> expiring = policyRepository.findPoliciesForTodaysWork(targetDates);
+        List<Policy> expiring = policyRepository.findPoliciesForTodaysWork(targetDates, branch);
 
         // Fetch reminders
         java.time.LocalDateTime endOfToday = today.plusDays(1).atStartOfDay();

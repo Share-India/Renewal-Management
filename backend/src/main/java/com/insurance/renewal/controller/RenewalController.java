@@ -123,8 +123,10 @@ public class RenewalController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<Policy>> searchPolicies(@RequestParam("query") String query) {
-        return ResponseEntity.ok(renewalService.searchPolicies(query));
+    public ResponseEntity<List<Policy>> searchPolicies(
+            @RequestParam("query") String query,
+            @RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.searchPolicies(query, branch));
     }
 
     @GetMapping("/late-renewals")

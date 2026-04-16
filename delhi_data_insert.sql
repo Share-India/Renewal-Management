@@ -1,3 +1,4 @@
+USE insurance_renewal;
 SET FOREIGN_KEY_CHECKS=0;
 
 INSERT INTO customers (first_name, last_name, email, phone, dob, address, city, state, location, pincode, pan_number, billing_frequency) VALUES ('Mr', 'Sandeep Kumar', 'dl-0-srivastava.sandeep2007@gmail.com', 8826446334, '1975-07-01', NULL, NULL, NULL, 'Delhi', NULL, NULL, NULL) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id);

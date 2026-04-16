@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, OnChanges, SimpleChanges, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { Subscription, interval } from 'rxjs';
@@ -10,7 +10,7 @@ import { Subscription, interval } from 'rxjs';
   templateUrl: './work-progress.component.html',
   styleUrls: ['./work-progress.component.css']
 })
-export class WorkProgressComponent implements OnInit, OnDestroy {
+export class WorkProgressComponent implements OnInit, OnDestroy, OnChanges {
   @Input() branch: string = '';
 
   totalWork = 0;
@@ -35,6 +35,12 @@ export class WorkProgressComponent implements OnInit, OnDestroy {
     this.timeSub = interval(60000).subscribe(() => {
       this.calculateFeedback();
     });
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['branch'] && !changes['branch'].isFirstChange()) {
+      this.refreshProgress();
+    }
   }
 
   ngOnDestroy(): void {
