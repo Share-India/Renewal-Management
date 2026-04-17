@@ -310,11 +310,10 @@ public class RenewalService {
     @org.springframework.transaction.annotation.Transactional
     public void autoIssueStuckLifeInsurancePolicies() {
         try {
-            List<Policy> allPolicies = policyRepository.findAll();
+            List<Policy> pendingPolicies = policyRepository.findByStatus("PENDING_ISSUANCE", null);
             int count = 0;
-            for (Policy policy : allPolicies) {
-                if ("PENDING_ISSUANCE".equals(policy.getStatus())
-                        && "Life Insurance".equalsIgnoreCase(policy.getType())) {
+            for (Policy policy : pendingPolicies) {
+                if ("Life Insurance".equalsIgnoreCase(policy.getType())) {
                     // Update dates
                     LocalDate oldExpiryDate = policy.getExpiryDate();
                     if (policy.getLastExpiryDate() == null) {
