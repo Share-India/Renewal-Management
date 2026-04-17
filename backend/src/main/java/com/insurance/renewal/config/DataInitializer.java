@@ -18,7 +18,7 @@ public class DataInitializer {
             // Ensure Single Admin: ShareIndia
             userRepository.findByUsername("ShareIndia").ifPresentOrElse(user -> {
                 // Determine if password needs update? For now, force it to match requirement
-                user.setPassword("ShareIndia@123");
+                user.setPassword(passwordEncoder.encode("ShareIndia@123"));
                 user.setRole("ROLE_ADMIN");
                 user.setActive(true);
                 userRepository.save(user);
@@ -26,7 +26,7 @@ public class DataInitializer {
             }, () -> {
                 User admin = new User();
                 admin.setUsername("ShareIndia");
-                admin.setPassword("ShareIndia@123");
+                admin.setPassword(passwordEncoder.encode("ShareIndia@123"));
                 admin.setRole("ROLE_ADMIN");
                 admin.setActive(true);
                 userRepository.save(admin);
