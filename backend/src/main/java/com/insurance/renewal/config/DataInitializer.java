@@ -43,10 +43,14 @@ public class DataInitializer {
                     changed = true;
                     System.out.println("Migrated user '" + user.getUsername() + "' to active status.");
                 }
-                if (!user.getRole().startsWith("ROLE_")) {
+                if (user.getRole() != null && !user.getRole().startsWith("ROLE_")) {
                     user.setRole("ROLE_" + user.getRole());
                     changed = true;
                     System.out.println("Migrated user '" + user.getUsername() + "' role to '" + user.getRole() + "'.");
+                } else if (user.getRole() == null) {
+                    user.setRole("ROLE_RENEWER"); // fallback default role
+                    changed = true;
+                    System.out.println("Fixed null role for user '" + user.getUsername() + "'.");
                 }
                 if (changed) {
                     userRepository.save(user);
