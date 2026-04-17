@@ -310,7 +310,7 @@ public class RenewalService {
     @org.springframework.transaction.annotation.Transactional
     public void autoIssueStuckLifeInsurancePolicies() {
         try {
-            List<Policy> pendingPolicies = policyRepository.findByStatus("PENDING_ISSUANCE", null);
+            List<Policy> pendingPolicies = policyRepository.findByStatus("PENDING_ISSUANCE", "");
             int count = 0;
             for (Policy policy : pendingPolicies) {
                 if ("Life Insurance".equalsIgnoreCase(policy.getType())) {
