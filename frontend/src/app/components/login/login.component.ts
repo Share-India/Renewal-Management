@@ -204,7 +204,7 @@ export class LoginComponent {
         },
         error: (err) => {
           console.error(err);
-          this.error = 'Invalid username or password';
+          this.error = 'Login Failed: HTTP ' + err.status + ' (' + err.message + '). Check if password is exactly ShareIndia@123';
           this.loading = false;
         }
       });
