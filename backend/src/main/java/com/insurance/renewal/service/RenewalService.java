@@ -306,7 +306,7 @@ public class RenewalService {
         }
     }
 
-    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 3 * * ?")
     @org.springframework.transaction.annotation.Transactional
     public void autoIssueStuckLifeInsurancePolicies() {
         try {
