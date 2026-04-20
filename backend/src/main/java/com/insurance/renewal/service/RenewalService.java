@@ -286,38 +286,11 @@ public class RenewalService {
     @org.springframework.transaction.annotation.Transactional
     public void autoIssueStuckLifeInsurancePolicies() {
         try {
-            List<Policy> pendingPolicies = policyRepository.findByStatus("PENDING_ISSUANCE", "");
-            int count = 0;
-            for (Policy policy : pendingPolicies) {
-                if ("Life Insurance".equalsIgnoreCase(policy.getType())) {
-                    // Update dates
-                    LocalDate oldExpiryDate = policy.getExpiryDate();
-                    if (policy.getLastExpiryDate() == null) {
-                        policy.setLastExpiryDate(oldExpiryDate);
-                    }
-                    if (oldExpiryDate != null) {
-                        policy.setPolicyStartDate(oldExpiryDate.plusDays(1));
-                        policy.setExpiryDate(oldExpiryDate.plusYears(1));
-                        policy.setPolicyEndDate(oldExpiryDate.plusYears(1));
-                    }
-                    policy.setPolicyIssueDate(LocalDate.now());
-                    policy.setStatus("ACTIVE");
-
-                    // Update reminder
-                    Reminder reminder = policy.getReminder();
-                    if (reminder != null) {
-                        reminder.setReminderStatus("Renewed");
-                        reminder.setLastCallOutcome("Renewed");
-                        reminderRepository.save(reminder);
-                    }
-
-                    policyRepository.save(policy);
-                    count++;
-                }
-            }
-            if (count > 0) {
-                System.out.println(
-                        "Retroactively auto-issued " + count + " stuck Life Insurance policies directly to MIS.");
+            int updatedPolicies = policyRepository.bulkAutoIssueLifeInsurancePolicies();
+            if (updatedPolicies > 0) {
+                int updatedReminders = reminderRepository.bulkUpdateAutoIssuedReminders();
+                System.out.println("Retroactively auto-issued " + updatedPolicies + 
+                        " stuck Life Insurance policies directly to MIS (updated " + updatedReminders + " reminders).");
             }
         } catch (Exception e) {
             System.err.println("ERROR: Failed to retroactively issue Life Insurance policies: " + e.getMessage());

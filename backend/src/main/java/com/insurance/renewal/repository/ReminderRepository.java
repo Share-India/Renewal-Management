@@ -63,4 +63,11 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.data.jpa.repository.Query(value = "DELETE r FROM reminders r LEFT JOIN policies p ON r.policy_id = p.id WHERE p.id IS NULL", nativeQuery = true)
     void deleteOrphans();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(value = "UPDATE reminders r " +
+            "JOIN policies p ON r.policy_id = p.id " +
+            "SET r.reminder_status = 'Renewed', r.last_call_outcome = 'Renewed' " +
+            "WHERE p.status = 'ACTIVE' AND LOWER(p.type) = 'life insurance' AND p.policy_issue_date = CURRENT_DATE", nativeQuery = true)
+    int bulkUpdateAutoIssuedReminders();
 }

@@ -55,4 +55,15 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         List<String> findDistinctBranches();
 
         long countByBranchIgnoreCase(String branch);
+
+        @org.springframework.data.jpa.repository.Modifying
+        @Query(value = "UPDATE policies p " +
+                "SET p.last_expiry_date = COALESCE(p.last_expiry_date, p.expiry_date), " +
+                "p.policy_start_date = DATE_ADD(p.expiry_date, INTERVAL 1 DAY), " +
+                "p.expiry_date = DATE_ADD(p.expiry_date, INTERVAL 1 YEAR), " +
+                "p.policy_end_date = DATE_ADD(p.expiry_date, INTERVAL 1 YEAR), " +
+                "p.policy_issue_date = CURRENT_DATE, " +
+                "p.status = 'ACTIVE' " +
+                "WHERE p.status = 'PENDING_ISSUANCE' AND LOWER(p.type) = 'life insurance'", nativeQuery = true)
+        int bulkAutoIssueLifeInsurancePolicies();
 }
