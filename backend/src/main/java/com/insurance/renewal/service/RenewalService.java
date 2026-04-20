@@ -649,12 +649,17 @@ public class RenewalService {
     }
 
     @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * ?") // Run at midnight
-    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class) // Run on startup
-    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class) // Run
+                                                                                                                         // on
+                                                                                                                         // startup
     public void updateExpiredPolicies() {
-        int updatedCount = policyRepository.bulkUpdateExpiredPoliciesStatus();
-        if (updatedCount > 0) {
-            System.out.println("UPDATED " + updatedCount + " POLICIES TO EXPIRED STATUS (NATIVELY MIGRATED)");
+        LocalDate today = LocalDate.now();
+        List<Policy> expiredPolicies = policyRepository.findByExpiryDateBeforeAndStatus(today, "ACTIVE");
+
+        if (!expiredPolicies.isEmpty()) {
+            expiredPolicies.forEach(policy -> policy.setStatus("EXPIRED"));
+            policyRepository.saveAll(expiredPolicies);
+            System.out.println("UPDATED " + expiredPolicies.size() + " POLICIES TO EXPIRED STATUS");
         }
     }
 
