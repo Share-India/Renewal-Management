@@ -21,7 +21,7 @@ public class User {
     private String role; // ADMIN, RENEWER
 
     @Column(nullable = false)
-    private Boolean active = true; // Default to active
+    private boolean active = true; // Default to active
 
     @Column(name = "assigned_branch")
     private String assignedBranch;
