@@ -29,7 +29,7 @@ public class Reminder {
     private String reminderStatus; // PENDING, SENT, ACKNOWLEDGED
 
     @Column(name = "follow_up_required")
-    private boolean followUpRequired;
+    private Boolean followUpRequired = false;
 
     @Column(name = "follow_up_date")
     private LocalDateTime followUpDate;
