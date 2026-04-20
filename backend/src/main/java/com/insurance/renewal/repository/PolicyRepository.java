@@ -66,4 +66,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
                 "p.status = 'ACTIVE' " +
                 "WHERE p.status = 'PENDING_ISSUANCE' AND LOWER(p.type) = 'life insurance'", nativeQuery = true)
         int bulkAutoIssueLifeInsurancePolicies();
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(value = "UPDATE policies " +
+            "SET status = 'EXPIRED' " +
+            "WHERE expiry_date < CURRENT_DATE AND status = 'ACTIVE'", nativeQuery = true)
+    int bulkUpdateExpiredPoliciesStatus();
 }
