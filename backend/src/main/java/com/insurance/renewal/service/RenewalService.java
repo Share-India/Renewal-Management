@@ -171,6 +171,7 @@ public class RenewalService {
                 reminderRepository.findByFollowUpDateBetween(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59)));
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Object> getAdminStats(String branch) {
         Map<String, Object> stats = new HashMap<>();
 
@@ -199,6 +200,7 @@ public class RenewalService {
         return stats;
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<Integer, Long> getTimelineCounts(String branch) {
         Map<Integer, Long> counts = new HashMap<>();
         LocalDate today = LocalDate.now();
@@ -1038,6 +1040,7 @@ public class RenewalService {
         }
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Integer> getTodaysWorkProgress(String branch) {
         LocalDate today = LocalDate.now();
 
