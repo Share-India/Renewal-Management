@@ -270,36 +270,10 @@ public class RenewalService {
             reminderRepository.deleteDuplicates();
 
             // 2. Create Missing Reminders
-            List<Policy> policiesWithoutReminders = policyRepository.findPoliciesWithoutReminders();
-
-            if (policiesWithoutReminders.isEmpty()) {
-                return;
-            }
-
-            int count = 0;
-            for (Policy policy : policiesWithoutReminders) {
-                // Double check in case of race condition or cache
-                if (policy.getReminder() == null) {
-                    Reminder reminder = new Reminder();
-                    reminder.setPolicy(policy);
-                    reminder.setReminderStatus("PENDING");
-                    reminder.setLastCallOutcome("Pending");
-                    reminder.setLastUpdatedBy("System");
-                    reminder.setLastReminderSentAt(null);
-
-                    policy.setReminder(reminder); // Link both ways if needed for JPA context
-                    reminderRepository.save(reminder);
-                    // policyRepository.save(policy); // Cascading should handle this if configured,
-                    // but saving reminder is usually enough if owner is Policy.
-                    // Actually, Reminder owns the foreign key, so saving reminder is correct.
-                    // But we might need to update Policy's reference to it if we keep using the
-                    // policy object in this transaction.
-
-                    count++;
-                }
-            }
+            int count = reminderRepository.bulkCreateMissingReminders();
+            
             if (count > 0) {
-                System.out.println("Created default reminders for " + count + " policies.");
+                System.out.println("Created default reminders for " + count + " policies via fast bulk DB insert.");
             }
         } catch (Exception e) {
             System.err.println("ERROR: Failed to ensure reminders exist on startup: " + e.getMessage());

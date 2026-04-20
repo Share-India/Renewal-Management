@@ -40,6 +40,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy")
     List<Reminder> findAllWithValidPolicy();
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(value = "INSERT INTO reminders (policy_id, reminder_status, last_call_outcome, last_updated_by) SELECT id, 'PENDING', 'Pending', 'System' FROM policies p WHERE p.id NOT IN (SELECT policy_id FROM reminders)", nativeQuery = true)
+    int bulkCreateMissingReminders();
+
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE FUNCTION('DATE', r.followUpDate) IN :targetDates")
     List<Reminder> findByFollowUpDateInWithValidPolicy(@org.springframework.data.repository.query.Param("targetDates") List<LocalDate> targetDates);
 
