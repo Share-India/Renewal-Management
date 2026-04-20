@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "reminders", indexes = {
     @Index(name = "idx_reminder_followup", columnList = "follow_up_date"),
-    @Index(name = "idx_reminder_status", columnList = "reminder_status")
+    @Index(name = "idx_reminder_status", columnList = "reminder_status"),
+    @Index(name = "idx_reminder_policy", columnList = "policy_id")
 })
 public class Reminder {
     @Id
