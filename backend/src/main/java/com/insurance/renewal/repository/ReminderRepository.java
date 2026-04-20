@@ -57,10 +57,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
         org.springframework.data.domain.Pageable pageable);
 
     @org.springframework.data.jpa.repository.Modifying
-    @org.springframework.data.jpa.repository.Query(value = "DELETE FROM reminders WHERE id NOT IN (SELECT id FROM (SELECT MAX(id) AS id FROM reminders GROUP BY policy_id) AS keep_ids)", nativeQuery = true)
+    @org.springframework.data.jpa.repository.Query(value = "DELETE r1 FROM reminders r1 INNER JOIN reminders r2 WHERE r1.policy_id = r2.policy_id AND r1.id < r2.id", nativeQuery = true)
     void deleteDuplicates();
 
     @org.springframework.data.jpa.repository.Modifying
-    @org.springframework.data.jpa.repository.Query(value = "DELETE FROM reminders WHERE policy_id NOT IN (SELECT id FROM policies)", nativeQuery = true)
+    @org.springframework.data.jpa.repository.Query(value = "DELETE r FROM reminders r LEFT JOIN policies p ON r.policy_id = p.id WHERE p.id IS NULL", nativeQuery = true)
     void deleteOrphans();
 }
