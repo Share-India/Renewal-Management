@@ -23,6 +23,7 @@ public class Policy {
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinColumn(name = "customer_id", nullable = false)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     private Customer customer;
 
     @Column(nullable = false)

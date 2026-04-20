@@ -19,6 +19,7 @@ public class Reminder {
 
     @OneToOne
     @JoinColumn(name = "policy_id", nullable = false, unique = true)
+    @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties("reminder")
     private Policy policy;
 
