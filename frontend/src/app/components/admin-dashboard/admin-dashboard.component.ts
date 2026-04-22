@@ -137,15 +137,24 @@ import * as XLSX from 'xlsx';
                 </div>
                 <!-- Filters Container -->
                 <div class="d-flex flex-column align-items-end gap-2">
-                  <!-- Type Filter (Today Only) -->
-                  <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
-                    <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
-                      <i class="bi bi-tags-fill me-1"></i> Type
-                    </span>
-                    <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
-                      <option value="all">All Types</option>
-                      <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
-                    </select>
+                  <div class="d-flex align-items-center gap-2">
+                    <!-- Day Match Filter (Only for 60 Days View) -->
+                    <div class="input-group shadow-sm" style="width: 140px;" *ngIf="selectedDay === 600">
+                      <span class="input-group-text bg-white border-secondary-subtle text-muted fw-bold">Day</span>
+                      <input type="number" class="form-control border-secondary-subtle text-center" 
+                             placeholder="e.g. 1" [(ngModel)]="dayFilter" (input)="applyDayFilter()" min="0" max="60">
+                    </div>
+                    
+                    <!-- Type Filter -->
+                    <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
+                      <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                        <i class="bi bi-tags-fill me-1"></i> Type
+                      </span>
+                      <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
+                        <option value="all">All Types</option>
+                        <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
+                      </select>
+                    </div>
                   </div>
 
                 <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
@@ -1182,11 +1191,9 @@ export class AdminDashboardComponent implements OnInit {
       .subscribe({
         next: (data) => {
           try {
-            this.selectedDateRecords = {
-              expiringPolicies: data.expiringPolicies || [],
-              scheduledFollowUps: data.scheduledFollowUps || [],
-              workedOnPolicies: data.workedOnPolicies || []
-            };
+            this.all60DaysExpiring = data.expiringPolicies || [];
+            this.all60DaysFollowUps = data.scheduledFollowUps || [];
+            this.applyDayFilter();
           } catch (e) {
             console.error('Error processing 60 days records:', e);
             this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
@@ -1199,11 +1206,64 @@ export class AdminDashboardComponent implements OnInit {
       });
   }
 
+  applyDayFilter() {
+    if (this.selectedDay !== 600) return;
+    
+    if (this.dayFilter !== null && this.dayFilter !== '') {
+      const normalizeDate = (val: any) => {
+          if (!val) return '';
+          if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+          return String(val).substring(0, 10);
+      };
+
+      const filterFn = (p: any) => {
+        if (!p.expiryDate) return false;
+        const expiryDate = normalizeDate(p.expiryDate);
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        const expiry = new Date(expiryDate);
+        const today = new Date(todayStr);
+        const diffTime = expiry.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays === Number(this.dayFilter);
+      };
+
+      const followUpFilterFn = (p: any) => {
+        if (!p.reminder || !p.reminder.followUpDate) return false;
+        const followUpDateStr = normalizeDate(p.reminder.followUpDate);
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        const followUp = new Date(followUpDateStr);
+        const today = new Date(todayStr);
+        const diffTime = followUp.getTime() - today.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays === Number(this.dayFilter);
+      };
+      
+      this.selectedDateRecords = {
+        expiringPolicies: this.all60DaysExpiring.filter(filterFn),
+        scheduledFollowUps: this.all60DaysFollowUps.filter(followUpFilterFn),
+        workedOnPolicies: this.selectedDateRecords?.workedOnPolicies || []
+      };
+    } else {
+      this.selectedDateRecords = {
+        expiringPolicies: this.all60DaysExpiring,
+        scheduledFollowUps: this.all60DaysFollowUps,
+        workedOnPolicies: this.selectedDateRecords?.workedOnPolicies || []
+      };
+    }
+  }
+
   todaysWorkTab: 'expiring' | 'followups' = 'expiring';
   todaysExpiring: any[] = [];
   todaysFollowUps: any[] = [];
   allTodaysExpiring: any[] = [];
   allTodaysFollowUps: any[] = [];
+  all60DaysExpiring: any[] = [];
+  all60DaysFollowUps: any[] = [];
+  dayFilter: string | null = null;
   selectedPremiumRange: string = 'all';
   selectedPolicyType: string = 'all';
   availablePolicyTypes: string[] = [];
