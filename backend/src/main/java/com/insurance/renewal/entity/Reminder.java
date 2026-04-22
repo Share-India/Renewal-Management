@@ -17,6 +17,8 @@ public class Reminder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     @OneToOne
     @JoinColumn(name = "policy_id", nullable = false, unique = true)
     @org.hibernate.annotations.NotFound(action = org.hibernate.annotations.NotFoundAction.IGNORE)

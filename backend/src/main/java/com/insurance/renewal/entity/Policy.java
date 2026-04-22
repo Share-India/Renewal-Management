@@ -71,6 +71,8 @@ public class Policy {
     @Column(name = "vehicle_model")
     private String vehicleModel;
 
+    @lombok.EqualsAndHashCode.Exclude
+    @lombok.ToString.Exclude
     @OneToOne(mappedBy = "policy", cascade = CascadeType.ALL)
     @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
     private Reminder reminder;
