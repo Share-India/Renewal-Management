@@ -641,6 +641,51 @@ public class RenewalService {
         return records;
     }
 
+    public Map<String, List<Policy>> getRecordsForNext60Days(String branch) {
+        System.out.println("DEBUG: getRecordsForNext60Days called branch: " + branch);
+        Map<String, List<Policy>> records = new HashMap<>();
+
+        LocalDate today = LocalDate.now();
+        LocalDate endBase = today.plusDays(60);
+
+        // 1. Expiring Policies in next 60 days
+        List<Policy> expiring = applyRenewerFilters(policyRepository.findPoliciesForTargetDateRange(today, endBase, branch));
+        System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for next 60 days");
+
+        records.put("expiringPolicies", expiring);
+
+        // 2. Scheduled Follow-ups in next 60 days
+        java.time.LocalDateTime start = today.atStartOfDay();
+        java.time.LocalDateTime end = endBase.atTime(23, 59, 59);
+
+        List<Reminder> reminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(start, end, branch);
+        List<Reminder> filteredReminders = applyRenewerFiltersToReminders(reminders);
+        System.out.println("Found " + filteredReminders.size() + " follow-ups for next 60 days.");
+
+        List<Policy> scheduledFollowUps = filteredReminders.stream()
+                .filter(reminder -> reminder.getPolicy() != null)
+                .map(reminder -> {
+                    Policy policy = reminder.getPolicy();
+                    policy.setReminder(reminder);
+                    return policy;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        records.put("scheduledFollowUps", scheduledFollowUps);
+
+        // Remove policies from 'expiring' if they are already in 'scheduledFollowUps'
+        java.util.Set<Long> followUpPolicyIds = scheduledFollowUps.stream()
+                .map(Policy::getId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<Policy> filteredExpiring = expiring.stream()
+                .filter(p -> !followUpPolicyIds.contains(p.getId()))
+                .collect(java.util.stream.Collectors.toList());
+
+        records.put("expiringPolicies", filteredExpiring);
+
+        return records;
+    }
+
     public List<Reminder> getAllCallRecords(String branch) {
         // Fetch only the 500 most recent records to prevent freezing the Admin
         // Dashboard

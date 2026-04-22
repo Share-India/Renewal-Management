@@ -66,6 +66,12 @@ export class ApiService {
         return this.http.get<any>(url, { headers: this.getHeaders() });
     }
 
+    getRecordsForNext60Days(branch?: string): Observable<any> {
+        let url = `${this.baseUrl}/renewals/admin/records/next-60-days`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<any>(url, { headers: this.getHeaders() });
+    }
+
     getAllCallRecords(branch?: string): Observable<any[]> {
         let url = `${this.baseUrl}/renewals/admin/call-records`;
         if (branch) url += `?branch=${encodeURIComponent(branch)}`;

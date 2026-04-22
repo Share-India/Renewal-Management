@@ -23,6 +23,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate IN :targetDates AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findPoliciesForTodaysWork(@Param("targetDates") List<LocalDate> targetDates, @Param("branch") String branch);
 
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> findPoliciesForTargetDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("branch") String branch);
+
         List<Policy> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
 
         List<Policy> findByExpiryDateBeforeAndStatus(LocalDate date, String status);

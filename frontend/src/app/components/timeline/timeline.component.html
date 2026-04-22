@@ -1,4 +1,10 @@
-<div class="timeline-container" [class.admin-mode]="adminMode">
+<div class="timeline-container relative" style="position: relative;" [class.admin-mode]="adminMode">
+  <button class="btn btn-outline-primary btn-sm" 
+          style="position: absolute; right: 20px; top: 15px;" 
+          (click)="select60Days()"
+          [class.active]="selectedDay === 600">
+    60 Days View
+  </button>
   <h3>Renewal Timeline</h3>
   <div class="timeline-scroll">
     <div *ngFor="let day of days" class="timeline-item" [class.active]="selectedDay === day" (click)="selectDay(day)">

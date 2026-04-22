@@ -122,6 +122,13 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getRecordsForDate(selectedDate, branch));
     }
 
+    @GetMapping("/admin/records/next-60-days")
+    public ResponseEntity<Map<String, List<Policy>>> getRecordsForNext60Days(
+            @RequestParam(value = "branch", required = false) String branch) {
+        System.out.println("API Request: /admin/records/next-60-days?branch=" + branch);
+        return ResponseEntity.ok(renewalService.getRecordsForNext60Days(branch));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<Policy>> searchPolicies(
             @RequestParam("query") String query,

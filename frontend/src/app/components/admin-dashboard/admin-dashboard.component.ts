@@ -118,7 +118,8 @@ import * as XLSX from 'xlsx';
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
                 <div class="d-flex flex-column gap-2">
                   <h4 class="section-header text-primary mb-0">
-                    <span *ngIf="!isSearchMode && selectedDay !== 'todays-work'">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
+                    <span *ngIf="!isSearchMode && selectedDay !== 'todays-work' && selectedDay !== 600">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
+                    <span *ngIf="selectedDay === 600">All Policies in Next 60 Days</span>
                     <span *ngIf="isSearchMode">Search Results for "{{ adminSearchTerm }}"</span>
                     <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
                     <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
@@ -170,7 +171,8 @@ import * as XLSX from 'xlsx';
             <!-- Scheduled Follow-ups (Hide in Search Mode or Todays Work mode) -->
             <div class="record-section" *ngIf="(!isSearchMode && selectedDay !== 'todays-work') && selectedDateRecords.scheduledFollowUps.length > 0">
               <h4 class="section-header text-warning">
-                Follow-ups Scheduled for {{ selectedDate | date:'mediumDate' }}
+                <span *ngIf="selectedDay !== 600">Follow-ups Scheduled for {{ selectedDate | date:'mediumDate' }}</span>
+                <span *ngIf="selectedDay === 600">All Scheduled Follow-ups in Next 60 Days</span>
                 <span class="badge bg-warning">{{ selectedDateRecords.scheduledFollowUps.length }}</span>
               </h4>
               <app-customer-list [policies]="selectedDateRecords.scheduledFollowUps" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
@@ -1147,6 +1149,11 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onDaySelected(day: number) {
+    if (day === 600) {
+      this.load60DaysWorkload();
+      return;
+    }
+
     this.selectedDay = day;
     this.isSearchMode = false;
     this.adminSearchTerm = '';
@@ -1161,6 +1168,35 @@ export class AdminDashboardComponent implements OnInit {
 
     this.selectedDate = `${yyyy}-${mm}-${dd}`;
     this.onDateChange(); // fetch records
+  }
+
+  load60DaysWorkload() {
+    this.selectedDate = '';
+    this.isSearchMode = false;
+    this.adminSearchTerm = '';
+    this.selectedDay = 600;
+
+    this.loading = true;
+    this.apiService.getRecordsForNext60Days(this.selectedAdminBranch)
+      .pipe(finalize(() => this.loading = false))
+      .subscribe({
+        next: (data) => {
+          try {
+            this.selectedDateRecords = {
+              expiringPolicies: data.expiringPolicies || [],
+              scheduledFollowUps: data.scheduledFollowUps || [],
+              workedOnPolicies: data.workedOnPolicies || []
+            };
+          } catch (e) {
+            console.error('Error processing 60 days records:', e);
+            this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching 60 days records:', err);
+          this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
+        }
+      });
   }
 
   todaysWorkTab: 'expiring' | 'followups' = 'expiring';
@@ -1274,6 +1310,8 @@ export class AdminDashboardComponent implements OnInit {
       if (this.workProgressComponent) {
           this.workProgressComponent.refreshProgress();
       }
+    } else if (this.selectedDay === 600) {
+      this.load60DaysWorkload();
     } else if (this.selectedDate) {
       this.onDateChange();
     } else if (this.isSearchMode) {

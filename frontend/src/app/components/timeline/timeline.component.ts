@@ -21,4 +21,9 @@ export class TimelineComponent {
         this.selectedDay = day;
         this.daySelected.emit(day);
     }
+
+    select60Days() {
+        this.selectedDay = 600; // Special magic number for 60-day range
+        this.daySelected.emit(600);
+    }
 }
