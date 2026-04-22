@@ -378,6 +378,22 @@ export class RenewalComponent implements OnInit {
   onDaySelected(day: number) {
     this.selectedDay = day;
     this.loading = true;
+    
+    if (day === 600) {
+      this.apiService.getRecordsForNext60Days().subscribe({
+        next: (data) => {
+          this.basePolicies = data.expiringPolicies || [];
+          this.baseFollowUps = data.scheduledFollowUps || [];
+          this.applyFilters();
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error(err);
+          this.loading = false;
+        }
+      });
+      return;
+    }
 
     forkJoin({
       policies: this.apiService.getPoliciesForTimeline(day),
@@ -535,6 +551,7 @@ export class RenewalComponent implements OnInit {
   getSectionTitle(): string {
     if (this.selectedDay === null) return '';
     if (this.selectedDay === 'todays-work') return "Today's Work ";
+    if (this.selectedDay === 600) return 'All Policies Expiring in Next 60 Days';
 
     const day = this.selectedDay as number;
     if (day === 0) return 'Upcoming Renewals (Expiring Today)';
@@ -548,6 +565,7 @@ export class RenewalComponent implements OnInit {
   getFollowUpDueText(): string {
     if (this.selectedDay === null) return '';
     if (this.selectedDay === 'todays-work') return '';
+    if (this.selectedDay === 600) return 'in Next 60 Days';
 
     const day = this.selectedDay as number;
     if (day === 0) return 'Today';
