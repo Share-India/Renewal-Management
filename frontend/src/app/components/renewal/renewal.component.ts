@@ -67,6 +67,13 @@ import { forkJoin, of } from 'rxjs';
                        [(ngModel)]="listSearchTerm" (input)="applyFilters()">
               </div>
 
+              <!-- Day Match Filter (Only for 60 Days View) -->
+              <div class="input-group shadow-sm" style="width: 140px;" *ngIf="selectedDay === 600">
+                <span class="input-group-text bg-white border-secondary-subtle text-muted fw-bold">Day</span>
+                <input type="number" class="form-control border-secondary-subtle text-center" 
+                       placeholder="e.g. 1" [(ngModel)]="dayFilter" (input)="applyFilters()" min="0" max="60">
+              </div>
+
               <!-- Filters Stack -->
               <div *ngIf="selectedDay === 'todays-work'" class="d-flex flex-column align-items-end gap-2">
                 <!-- Type Filter (Today Only) -->
@@ -428,6 +435,7 @@ export class RenewalComponent implements OnInit {
   selectedPremiumRange: string = 'all';
   selectedPolicyType: string = 'all';
   availablePolicyTypes: string[] = [];
+  dayFilter: string | number | null = null;
 
   applyFilters() {
     const term = this.listSearchTerm.toLowerCase().trim();
@@ -461,15 +469,37 @@ export class RenewalComponent implements OnInit {
       return p.type === this.selectedPolicyType;
     };
 
-    const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p);
-    
+    const dayFilterFn = (p: any, isFollowUp: boolean) => {
+      if (this.selectedDay !== 600 || this.dayFilter === null || this.dayFilter === '') return true;
+      
+      const targetDate = isFollowUp ? p?.reminder?.followUpDate : p?.expiryDate;
+      if (!targetDate) return false;
+
+      let dateObj: Date;
+      if (Array.isArray(targetDate)) {
+        dateObj = new Date(targetDate[0], targetDate[1] - 1, targetDate[2]);
+      } else {
+        dateObj = new Date(targetDate);
+      }
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      dateObj.setHours(0, 0, 0, 0);
+      
+      const diffTime = dateObj.getTime() - today.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays === Number(this.dayFilter);
+    };
+
     if (this.selectedDay === 'todays-work') {
+      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p);
       this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
       this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
       this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     } else {
-      this.policies = this.basePolicies.filter(filterFn);
-      this.followUps = this.baseFollowUps.filter(filterFn);
+      this.policies = this.basePolicies.filter((p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false));
+      this.followUps = this.baseFollowUps.filter((p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true));
     }
   }
 
