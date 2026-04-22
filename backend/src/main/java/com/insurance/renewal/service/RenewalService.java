@@ -1024,8 +1024,27 @@ public class RenewalService {
                 .findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay, branch);
         completedRemindersToday = applyRenewerFiltersToReminders(completedRemindersToday);
 
+        List<Integer> buckets = java.util.Arrays.asList(
+                75, 60, 45, 30, 15, 7, 3, 2, 1, 0,
+                -1, -2, -3, -7, -15, -30, -45, -60, -75
+        );
+
         long completed = completedRemindersToday.stream()
                 .filter(r -> r.getPolicy() != null)
+                .filter(r -> {
+                    // Prevent Total Inflation: If user updates an out-of-band policy via the Search Bar,
+                    // exclude it from the core metric unless its expiry intrinsically belongs to a target bucket.
+                    if (r.getPolicy().getExpiryDate() == null) return false;
+                    long diff = java.time.temporal.ChronoUnit.DAYS.between(today, r.getPolicy().getExpiryDate());
+                    // Allow it if it was literally scheduled for today directly (meaning they just overwrote it), or if it matches bucket.
+                    // If they updated it to a future date, we assume it was a core task if it matches the bucket.
+                    if (buckets.contains((int) diff)) return true;
+                    // If they updated a followUp today, but scheduled it to the future, it's out of band for bucket logic.
+                    // But if it was scheduled for today and they completed it today, it should count.
+                    // We allow all if it was a valid follow up for today (which we can't fully know 
+                    // since we overwrote the date, so bucket constraint is the safest proxy).
+                    return false;
+                })
                 .map(r -> r.getPolicy().getId())
                 .distinct()
                 .count();
