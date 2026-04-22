@@ -101,18 +101,18 @@ import * as XLSX from 'xlsx';
         </div>
 
         <div class="card-body">
-          <div *ngIf="!selectedDate && !isSearchMode && selectedDay !== 'todays-work'" class="text-center py-5">
+          <div *ngIf="!selectedDate && !isSearchMode && selectedDay !== 'todays-work' && selectedDay !== 600" class="text-center py-5">
             <i class="bi bi-calendar-date display-4 text-muted mb-3"></i>
             <p class="text-muted lead">Please select a date to view scheduled tasks and expiring policies.</p>
           </div>
 
-          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work') && loading" class="text-center py-5">
+          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work' || selectedDay === 600) && loading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
 
-          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work') && !loading" class="records-content">
+          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work' || selectedDay === 600) && !loading" class="records-content">
             <!-- Expiring Policies -->
             <div class="record-section">
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
