@@ -183,6 +183,24 @@ import { ApiService } from '../../services/api.service';
         </div>
       </div>
     </div>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div class="modal-overlay" *ngIf="userToDelete" style="z-index: 1050;" (click)="cancelDeleteUser()">
+      <div class="custom-modal-content" style="max-width: 450px; border-top: 5px solid #dc3545;" (click)="$event.stopPropagation()">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h4 class="text-danger mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i> Delete User</h4>
+          <button class="btn-close" (click)="cancelDeleteUser()"></button>
+        </div>
+        <div class="modal-body py-4">
+          <p class="fs-5 mb-2">Are you sure you want to delete <strong>{{ userToDelete.username }}</strong>?</p>
+          <p class="text-muted mb-0">They will lose all access to the system immediately. This action <strong>cannot</strong> be undone.</p>
+        </div>
+        <div class="modal-footer border-top-0 pt-0 gap-2">
+          <button class="btn btn-light" (click)="cancelDeleteUser()">Cancel</button>
+          <button class="btn btn-danger" (click)="confirmDeleteUser()">Yes, Delete User</button>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     .user-mgmt-container {
@@ -438,18 +456,30 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
+  userToDelete: any = null;
+
   hardDeleteUser(user: any) {
-    if (confirm(`Delete User: ${user.username}?\n\nAre you sure you want to permanently delete this user? They will lose all access to the system.\n\nThis action cannot be undone.`)) {
-      this.authService.hardDeleteUser(user.id).subscribe({
-        next: () => {
-          this.openUserList(); // Refresh list
-        },
-        error: (err) => {
-          console.error('Error deleting user:', err);
-          alert('Failed to delete user.');
-        }
-      });
-    }
+    this.userToDelete = user;
+  }
+
+  cancelDeleteUser() {
+    this.userToDelete = null;
+  }
+
+  confirmDeleteUser() {
+    if (!this.userToDelete) return;
+    
+    this.authService.hardDeleteUser(this.userToDelete.id).subscribe({
+      next: () => {
+        this.openUserList(); // Refresh list
+        this.userToDelete = null;
+      },
+      error: (err) => {
+        console.error('Error deleting user:', err);
+        alert('Failed to delete user.');
+        this.userToDelete = null;
+      }
+    });
   }
 }
 
