@@ -65,4 +65,7 @@ export class AuthService {
     deleteUser(id: number): Observable<any> {
         return this.http.delete(`${this.baseUrl}/admin/users/${id}`, { headers: this.getAuthHeaders() });
     }
+    hardDeleteUser(id: number): Observable<any> {
+        return this.http.delete(`${this.baseUrl}/admin/users/${id}/hard`, { headers: this.getAuthHeaders() });
+    }
 }

@@ -166,9 +166,12 @@ import { ApiService } from '../../services/api.service';
                   </span>
                 </td>
                 <td>
-                  <button class="btn btn-sm" [class.btn-outline-danger]="user.active" [class.btn-outline-success]="!user.active" 
+                  <button class="btn btn-sm me-2" [class.btn-outline-danger]="user.active" [class.btn-outline-success]="!user.active" 
                           (click)="toggleUserStatus(user)" [title]="user.active ? 'Deactivate' : 'Activate'">
                     <i class="bi" [class.bi-person-dash-fill]="user.active" [class.bi-person-check-fill]="!user.active"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="hardDeleteUser(user)" title="Delete User">
+                    <i class="bi bi-trash-fill"></i>
                   </button>
                 </td>
               </tr>
@@ -430,6 +433,20 @@ export class UserManagementComponent implements OnInit {
         error: (err) => {
           console.error('Error toggling user status:', err);
           alert('Failed to update user status.');
+        }
+      });
+    }
+  }
+
+  hardDeleteUser(user: any) {
+    if (confirm(`CRITICAL WARNING: Are you sure you want to PERMANENTLY DELETE the user '${user.username}' from the system? This action cannot be undone.`)) {
+      this.authService.hardDeleteUser(user.id).subscribe({
+        next: () => {
+          this.openUserList(); // Refresh list
+        },
+        error: (err) => {
+          console.error('Error deleting user:', err);
+          alert('Failed to delete user.');
         }
       });
     }

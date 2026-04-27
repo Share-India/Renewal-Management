@@ -83,6 +83,14 @@ public class AuthController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @DeleteMapping("/admin/users/{id}/hard")
+    public ResponseEntity<?> hardDeleteUser(@PathVariable("id") Long id) {
+        return userRepository.findById(id).map(user -> {
+            userRepository.delete(user);
+            return ResponseEntity.ok().build();
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/auth/change-password")
     public ResponseEntity<String> changePassword(@RequestBody Map<String, String> payload) {
         String oldPassword = payload.get("oldPassword");
