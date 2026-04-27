@@ -439,7 +439,7 @@ export class UserManagementComponent implements OnInit {
   }
 
   hardDeleteUser(user: any) {
-    if (confirm(`CRITICAL WARNING: Are you sure you want to PERMANENTLY DELETE the user '${user.username}' from the system? This action cannot be undone.`)) {
+    if (confirm(`Delete User: ${user.username}?\n\nAre you sure you want to permanently delete this user? They will lose all access to the system.\n\nThis action cannot be undone.`)) {
       this.authService.hardDeleteUser(user.id).subscribe({
         next: () => {
           this.openUserList(); // Refresh list
