@@ -31,4 +31,7 @@ public class User {
 
     @Column(name = "assigned_premium_range")
     private String assignedPremiumRange;
+
+    @Column(name = "assigned_customers", columnDefinition = "TEXT")
+    private String assignedCustomers;
 }

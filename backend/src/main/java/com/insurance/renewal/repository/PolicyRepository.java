@@ -57,6 +57,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT DISTINCT p.branch FROM Policy p WHERE p.branch IS NOT NULL")
         List<String> findDistinctBranches();
 
+        @Query("SELECT DISTINCT CONCAT(c.firstName, ' ', c.lastName) FROM Policy p JOIN p.customer c WHERE (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<String> findDistinctCustomerNamesByBranch(@Param("branch") String branch);
+
         long countByBranchIgnoreCase(String branch);
 
         @org.springframework.data.jpa.repository.Modifying

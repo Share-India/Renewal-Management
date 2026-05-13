@@ -171,6 +171,10 @@ export class ApiService {
     createBranch(branch: {name: string}): Observable<any> {
         return this.http.post<any>(`${this.baseUrl}/renewals/branches`, branch, { headers: this.getHeaders() });
     }
+
+    getCustomersByBranch(branch: string): Observable<string[]> {
+        return this.http.get<string[]>(`${this.baseUrl}/admin/customers-by-branch?branch=${encodeURIComponent(branch)}`, { headers: this.getHeaders() });
+    }
 }
 
 export interface Customer {

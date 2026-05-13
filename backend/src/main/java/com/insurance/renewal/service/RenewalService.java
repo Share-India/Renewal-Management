@@ -59,7 +59,22 @@ public class RenewalService {
                 if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
                     return false;
             }
-            if (user.getAssignedProductType() != null && !user.getAssignedProductType().isEmpty()
+            if (user.getAssignedCustomers() != null && !user.getAssignedCustomers().isEmpty()
+                    && !user.getAssignedCustomers().equals("null")) {
+                if (p.getCustomer() == null || p.getCustomer().getFirstName() == null)
+                    return false;
+                String fullName = p.getCustomer().getFirstName() + " " + p.getCustomer().getLastName();
+                String[] allowedCustomers = user.getAssignedCustomers().split("\\s*,\\s*");
+                boolean match = false;
+                for (String c : allowedCustomers) {
+                    if (c.equalsIgnoreCase(fullName.trim())) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match)
+                    return false;
+            } else if (user.getAssignedProductType() != null && !user.getAssignedProductType().isEmpty()
                     && !user.getAssignedProductType().equals("null")) {
                 if (p.getType() == null)
                     return false;
@@ -118,7 +133,22 @@ public class RenewalService {
                 if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
                     return false;
             }
-            if (user.getAssignedProductType() != null && !user.getAssignedProductType().isEmpty()
+            if (user.getAssignedCustomers() != null && !user.getAssignedCustomers().isEmpty()
+                    && !user.getAssignedCustomers().equals("null")) {
+                if (p.getCustomer() == null || p.getCustomer().getFirstName() == null)
+                    return false;
+                String fullName = p.getCustomer().getFirstName() + " " + p.getCustomer().getLastName();
+                String[] allowedCustomers = user.getAssignedCustomers().split("\\s*,\\s*");
+                boolean match = false;
+                for (String c : allowedCustomers) {
+                    if (c.equalsIgnoreCase(fullName.trim())) {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match)
+                    return false;
+            } else if (user.getAssignedProductType() != null && !user.getAssignedProductType().isEmpty()
                     && !user.getAssignedProductType().equals("null")) {
                 if (p.getType() == null)
                     return false;

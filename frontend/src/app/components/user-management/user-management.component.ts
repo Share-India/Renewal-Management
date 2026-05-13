@@ -63,7 +63,7 @@ import { ApiService } from '../../services/api.service';
                 <label>Assigned Branch</label>
                 <div class="input-group">
                   <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
-                  <select [(ngModel)]="newUser.assignedBranch" class="form-select">
+                  <select [(ngModel)]="newUser.assignedBranch" (ngModelChange)="onBranchChange()" class="form-select">
                     <option value="">All Branches Globally (Select All)</option>
                     <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
                   </select>
@@ -71,9 +71,25 @@ import { ApiService } from '../../services/api.service';
               </div>
             </ng-container>
 
-            <!-- Optional RENEWER Product Filters -->
+            <!-- Optional RENEWER Assignment Mode & Filters -->
             <ng-container *ngIf="newUser.role === 'RENEWER'">
+              
               <div class="form-group">
+                <label>Assignment Mode</label>
+                <div class="d-flex gap-3 mt-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="assignmentMode" id="modeProduct" value="product" [(ngModel)]="assignmentMode">
+                    <label class="form-check-label" for="modeProduct">By Product & Premium</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="assignmentMode" id="modeCustomer" value="customer" [(ngModel)]="assignmentMode" (change)="onAssignmentModeChange()">
+                    <label class="form-check-label" for="modeCustomer">By Customer & Premium</label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Product Types List -->
+              <div class="form-group" *ngIf="assignmentMode === 'product'">
                 <label>Assigned Product Types</label>
                 <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
                   <div class="form-check border-bottom pb-2 mb-2">
@@ -90,6 +106,38 @@ import { ApiService } from '../../services/api.service';
                       {{ type }}
                     </label>
                   </div>
+                </div>
+              </div>
+
+              <!-- Customer List -->
+              <div class="form-group" *ngIf="assignmentMode === 'customer'">
+                <label>Assigned Customers (Select Branch First)</label>
+                <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
+                  <div *ngIf="!newUser.assignedBranch" class="text-muted text-center p-2">
+                    Please select a branch above to see customers.
+                  </div>
+                  <div *ngIf="newUser.assignedBranch && loadingCustomers" class="text-center p-2">
+                    <div class="spinner-border spinner-border-sm text-primary"></div> Loading...
+                  </div>
+                  <div *ngIf="newUser.assignedBranch && !loadingCustomers && availableCustomers.length === 0" class="text-muted text-center p-2">
+                    No customers found for this branch.
+                  </div>
+                  <ng-container *ngIf="newUser.assignedBranch && !loadingCustomers && availableCustomers.length > 0">
+                    <div class="form-check border-bottom pb-2 mb-2">
+                      <input class="form-check-input" type="checkbox" id="selectAllCustomers" 
+                             [checked]="allCustomersSelected" (change)="toggleAllCustomers($event)">
+                      <label class="form-check-label fw-bold" for="selectAllCustomers">
+                        All Customers
+                      </label>
+                    </div>
+                    <div class="form-check" *ngFor="let cust of availableCustomers; let i = index">
+                      <input class="form-check-input" type="checkbox" [id]="'cust_' + i" 
+                             [checked]="selectedCustomers.includes(cust)" (change)="toggleCustomer(cust, $event)">
+                      <label class="form-check-label" [for]="'cust_' + i">
+                        {{ cust }}
+                      </label>
+                    </div>
+                  </ng-container>
                 </div>
               </div>
               
@@ -283,12 +331,18 @@ export class UserManagementComponent implements OnInit {
     role: 'RENEWER',
     assignedBranch: '',
     assignedProductType: '',
-    assignedPremiumRange: ''
+    assignedPremiumRange: '',
+    assignedCustomers: ''
   };
   confirmPassword = '';
   message = '';
   success = false;
   loading = false;
+
+  assignmentMode: 'product' | 'customer' = 'product';
+  availableCustomers: string[] = [];
+  selectedCustomers: string[] = [];
+  loadingCustomers = false;
 
   availableProductTypes = [
     'Engineering Policy', 'GMC', 'GPA', 'GTL', 'Health Insurance',
@@ -319,6 +373,62 @@ export class UserManagementComponent implements OnInit {
     } else {
       this.selectedProductTypes = [];
     }
+  }
+
+  get allCustomersSelected(): boolean {
+    return this.selectedCustomers.length > 0 && this.selectedCustomers.length === this.availableCustomers.length;
+  }
+
+  toggleCustomer(cust: string, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedCustomers.includes(cust)) {
+        this.selectedCustomers.push(cust);
+      }
+    } else {
+      this.selectedCustomers = this.selectedCustomers.filter(c => c !== cust);
+    }
+  }
+
+  toggleAllCustomers(event: any) {
+    if (event.target.checked) {
+      this.selectedCustomers = [...this.availableCustomers];
+    } else {
+      this.selectedCustomers = [];
+    }
+  }
+
+  onAssignmentModeChange() {
+    if (this.assignmentMode === 'customer') {
+      this.fetchCustomersForBranch();
+    }
+  }
+
+  onBranchChange() {
+    if (this.assignmentMode === 'customer') {
+      this.fetchCustomersForBranch();
+    }
+  }
+
+  fetchCustomersForBranch() {
+    if (!this.newUser.assignedBranch) {
+      this.availableCustomers = [];
+      this.selectedCustomers = [];
+      return;
+    }
+    
+    this.loadingCustomers = true;
+    this.apiService.getCustomersByBranch(this.newUser.assignedBranch).subscribe({
+      next: (customers) => {
+        this.availableCustomers = customers || [];
+        this.selectedCustomers = []; // Reset selection on branch change
+        this.loadingCustomers = false;
+      },
+      error: (err) => {
+        console.error('Error fetching customers:', err);
+        this.availableCustomers = [];
+        this.loadingCustomers = false;
+      }
+    });
   }
 
   availablePremiumRanges = ['<50,000', '50,000-1,00,000', '>1,00,000'];
@@ -398,11 +508,18 @@ export class UserManagementComponent implements OnInit {
     }
 
     if (this.newUser.role === 'RENEWER') {
-      this.newUser.assignedProductType = this.selectedProductTypes.join(',');
       this.newUser.assignedPremiumRange = this.selectedPremiumRanges.join(',');
+      if (this.assignmentMode === 'product') {
+        this.newUser.assignedProductType = this.selectedProductTypes.join(',');
+        this.newUser.assignedCustomers = ''; // Clear customer assignment
+      } else {
+        this.newUser.assignedCustomers = this.selectedCustomers.join(',');
+        this.newUser.assignedProductType = ''; // Clear product assignment
+      }
     } else {
       this.newUser.assignedProductType = '';
       this.newUser.assignedPremiumRange = '';
+      this.newUser.assignedCustomers = '';
     }
 
     this.authService.createUser(this.newUser).subscribe({
@@ -411,11 +528,13 @@ export class UserManagementComponent implements OnInit {
         this.success = true;
         this.newUser = { 
           username: '', password: '', role: 'RENEWER',
-          assignedBranch: '', assignedProductType: '', assignedPremiumRange: ''
+          assignedBranch: '', assignedProductType: '', assignedPremiumRange: '', assignedCustomers: ''
         };
         this.confirmPassword = '';
         this.selectedProductTypes = [];
         this.selectedPremiumRanges = [];
+        this.selectedCustomers = [];
+        this.assignmentMode = 'product';
         this.loading = false;
       },
       error: (err) => {

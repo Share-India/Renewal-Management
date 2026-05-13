@@ -21,6 +21,9 @@ public class AuthController {
     private UserRepository userRepository;
 
     @Autowired
+    private com.insurance.renewal.repository.PolicyRepository policyRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @GetMapping("/auth/login")
@@ -61,9 +64,18 @@ public class AuthController {
             user.setAssignedBranch(payload.get("assignedBranch"));
             user.setAssignedProductType(payload.get("assignedProductType"));
             user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
+            user.setAssignedCustomers(payload.get("assignedCustomers"));
         }
 
         return ResponseEntity.ok(userRepository.save(user));
+    }
+
+    @GetMapping("/admin/customers-by-branch")
+    public ResponseEntity<java.util.List<String>> getCustomersByBranch(@RequestParam("branch") String branch) {
+        if (branch == null || branch.trim().isEmpty() || branch.equals("null")) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+        return ResponseEntity.ok(policyRepository.findDistinctCustomerNamesByBranch(branch));
     }
 
     @GetMapping("/admin/users")
