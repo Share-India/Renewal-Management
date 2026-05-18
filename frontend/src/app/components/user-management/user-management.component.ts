@@ -123,6 +123,9 @@ import { ApiService } from '../../services/api.service';
                     No customers found for this branch.
                   </div>
                   <ng-container *ngIf="newUser.assignedBranch && !loadingCustomers && availableCustomers.length > 0">
+                    <div class="mb-2">
+                      <input type="text" class="form-control form-control-sm" placeholder="Search customers..." [(ngModel)]="customerSearchTerm">
+                    </div>
                     <div class="form-check border-bottom pb-2 mb-2">
                       <input class="form-check-input" type="checkbox" id="selectAllCustomers" 
                              [checked]="allCustomersSelected" (change)="toggleAllCustomers($event)">
@@ -130,7 +133,7 @@ import { ApiService } from '../../services/api.service';
                         All Customers
                       </label>
                     </div>
-                    <div class="form-check" *ngFor="let cust of availableCustomers; let i = index">
+                    <div class="form-check" *ngFor="let cust of filteredCustomers; let i = index">
                       <input class="form-check-input" type="checkbox" [id]="'cust_' + i" 
                              [checked]="selectedCustomers.includes(cust)" (change)="toggleCustomer(cust, $event)">
                       <label class="form-check-label" [for]="'cust_' + i">
@@ -343,6 +346,7 @@ export class UserManagementComponent implements OnInit {
   availableCustomers: string[] = [];
   selectedCustomers: string[] = [];
   loadingCustomers = false;
+  customerSearchTerm = '';
 
   availableProductTypes = [
     'Engineering Policy', 'GMC', 'GPA', 'GTL', 'Health Insurance',
@@ -377,6 +381,12 @@ export class UserManagementComponent implements OnInit {
 
   get allCustomersSelected(): boolean {
     return this.selectedCustomers.length > 0 && this.selectedCustomers.length === this.availableCustomers.length;
+  }
+
+  get filteredCustomers(): string[] {
+    if (!this.customerSearchTerm) return this.availableCustomers;
+    const term = this.customerSearchTerm.toLowerCase();
+    return this.availableCustomers.filter(c => c.toLowerCase().includes(term));
   }
 
   toggleCustomer(cust: string, event: any) {
