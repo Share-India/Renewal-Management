@@ -1,4 +1,4 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
+import { Component, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TimelineComponent } from '../timeline/timeline.component';
@@ -13,6 +13,70 @@ import { forkJoin, of } from 'rxjs';
   imports: [CommonModule, FormsModule, TimelineComponent, CustomerListComponent, WorkProgressComponent],
   template: `
     <div class="container mt-4">
+      <!-- Top 10 High-Value Policies Popup -->
+      <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055; margin-top: 60px;" *ngIf="topHighValuePolicies.length > 0">
+        
+        <!-- Reopen Button -->
+        <div class="text-end" *ngIf="!showHighValuePopup" style="pointer-events: auto;">
+          <button class="btn btn-primary shadow-lg d-flex align-items-center justify-content-center ms-auto" 
+                  style="width: 40px; height: 40px; border-radius: 50%;" 
+                  (click)="toggleHighValuePopup(true, $event)" 
+                  title="Show Top High-Value Deals">
+            <i class="bi bi-star-fill text-warning" style="pointer-events: none;"></i>
+          </button>
+        </div>
+
+        <!-- Popup Content -->
+        <div class="toast show bg-white shadow-lg border-0 pe-auto" role="alert" aria-live="assertive" aria-atomic="true" style="width: 360px; max-width: 95vw; border-radius: 8px; overflow: hidden; pointer-events: auto;" *ngIf="showHighValuePopup">
+          <div class="toast-header bg-primary text-white border-0 py-2 px-3">
+            <i class="bi bi-star-fill text-warning me-2"></i>
+            <strong class="me-auto">Top High-Value Deals Today</strong>
+            <button type="button" class="btn-close btn-close-white" (click)="toggleHighValuePopup(false, $event)" aria-label="Close"></button>
+          </div>
+          <div class="toast-body p-0 overflow-auto" style="max-height: 350px; overflow-x: hidden !important;">
+            <div class="list-group list-group-flush">
+              <ng-container *ngFor="let p of topHighValuePolicies; let i = index">
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3" 
+                     [ngClass]="{'list-group-item-action': p.policyCount > 1}"
+                     [style.cursor]="p.policyCount > 1 ? 'pointer' : 'default'"
+                     (click)="p.policyCount > 1 ? p.expanded = !p.expanded : null">
+                  <div class="me-2" style="flex: 1; min-width: 0;">
+                    <div class="fw-bold text-dark text-truncate small" [title]="p.customerName">
+                      {{i + 1}}. {{ p.customerName }}
+                    </div>
+                    <div class="text-muted text-truncate" style="font-size: 0.75rem; margin-top: 2px;">
+                      <span *ngIf="p.policyCount > 1">
+                        <i class="bi" [ngClass]="p.expanded ? 'bi-chevron-down' : 'bi-chevron-right'"></i> 
+                        {{ p.policyCount }} Policies
+                      </span>
+                      <span *ngIf="p.policyCount === 1" class="text-truncate"><i class="bi bi-file-earmark-text me-1"></i>{{ p.insuranceName }} | {{ p.policyNumber }}</span>
+                    </div>
+                  </div>
+                  <div class="text-end flex-shrink-0">
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.75rem;">
+                      ₹{{ p.totalPremium | number:'1.0-0' }}
+                    </span>
+                  </div>
+                </div>
+                
+                <!-- Expanded Policies -->
+                <div class="list-group-item bg-light p-2" *ngIf="p.policyCount > 1 && p.expanded">
+                  <div *ngFor="let sub of p.policies; let last = last" class="d-flex justify-content-between align-items-center" [ngClass]="{'border-bottom pb-1 mb-1': !last}">
+                    <div class="text-truncate me-2" style="font-size: 0.7rem;">
+                      <i class="bi bi-arrow-return-right text-muted mx-1"></i>
+                      <span class="text-dark fw-medium">{{ sub.insuranceName || sub.type }}</span>
+                      <span class="text-muted"> | {{ sub.policyNumber }}</span>
+                    </div>
+                    <div class="text-success fw-bold flex-shrink-0" style="font-size: 0.7rem;">
+                      ₹{{ (sub.duePremium ? sub.duePremium : (sub.amount || 0)) | number:'1.0-0' }}
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="header-section d-flex justify-content-between align-items-center mb-4">
         <div>
           <h2>Renewal Management Console</h2>
@@ -367,10 +431,11 @@ export class RenewalComponent implements OnInit {
 
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
-  constructor(private apiService: ApiService) { }
+  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.refreshTimelineCounts();
+    this.fetchTopHighValuePolicies();
   }
 
   refreshTimelineCounts() {
@@ -436,6 +501,72 @@ export class RenewalComponent implements OnInit {
   selectedPolicyType: string = 'all';
   availablePolicyTypes: string[] = [];
   dayFilter: string | number | null = null;
+  
+  showHighValuePopup: boolean = false;
+  topHighValuePolicies: any[] = [];
+
+  fetchTopHighValuePolicies() {
+    this.apiService.getTodaysWork().subscribe({
+      next: (policies) => {
+        if (!policies) {
+          this.topHighValuePolicies = [];
+          return;
+        }
+
+        const customerMap = new Map<string, any>();
+        
+        policies.forEach(p => {
+          if (!p.customer) return;
+          
+          let fullName = `${p.customer.firstName || ''} ${p.customer.lastName || ''}`.trim();
+          let baseName = fullName;
+          
+          if (baseName.includes(' (LA:')) {
+            baseName = baseName.split(' (LA:')[0].trim();
+          } else if (baseName.includes('(LA:')) {
+            baseName = baseName.split('(LA:')[0].trim();
+          }
+
+          const premium = p.duePremium ? p.duePremium : (p.amount || 0);
+          
+          if (customerMap.has(baseName)) {
+            const existing = customerMap.get(baseName);
+            existing.totalPremium += premium;
+            existing.policyCount += 1;
+            existing.policies.push(p);
+          } else {
+            customerMap.set(baseName, {
+              customerName: baseName,
+              totalPremium: premium,
+              policyCount: 1,
+              insuranceName: p.insuranceName || p.type,
+              policyNumber: p.policyNumber,
+              policies: [p],
+              expanded: false
+            });
+          }
+        });
+
+        this.topHighValuePolicies = Array.from(customerMap.values())
+          .sort((a, b) => b.totalPremium - a.totalPremium)
+          .slice(0, 20);
+          
+        if (this.topHighValuePolicies.length > 0) {
+          this.showHighValuePopup = true;
+        }
+      },
+      error: (err) => console.error('Error fetching top policies:', err)
+    });
+  }
+
+  toggleHighValuePopup(show: boolean, event?: Event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.showHighValuePopup = show;
+    this.cdr.detectChanges();
+  }
 
   applyFilters() {
     const term = this.listSearchTerm.toLowerCase().trim();
