@@ -1036,6 +1036,7 @@ export class AdminDashboardComponent implements OnInit {
     this.loadStats();
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
+    this.loadInitialData();
   }
 
   loadInitialData() {
