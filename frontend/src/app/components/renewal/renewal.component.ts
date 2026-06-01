@@ -30,7 +30,7 @@ import { forkJoin, of } from 'rxjs';
         <div class="toast show bg-white shadow-lg border-0 pe-auto" role="alert" aria-live="assertive" aria-atomic="true" style="width: 360px; max-width: 95vw; border-radius: 8px; overflow: hidden; pointer-events: auto;" *ngIf="showHighValuePopup">
           <div class="toast-header bg-primary text-white border-0 py-2 px-3">
             <i class="bi bi-star-fill text-warning me-2"></i>
-            <strong class="me-auto">Top High-Value Deals Today</strong>
+            <strong class="me-auto">Top High-Value Deals</strong>
             <button type="button" class="btn-close btn-close-white" (click)="toggleHighValuePopup(false, $event)" aria-label="Close"></button>
           </div>
           <div class="toast-body p-0 overflow-auto" style="max-height: 350px; overflow-x: hidden !important;">
@@ -450,7 +450,7 @@ export class RenewalComponent implements OnInit {
   onDaySelected(day: number) {
     this.selectedDay = day;
     this.loading = true;
-    
+
     if (day === 600) {
       this.apiService.getRecordsForNext60Days().subscribe({
         next: (data) => {
@@ -501,12 +501,12 @@ export class RenewalComponent implements OnInit {
   selectedPolicyType: string = 'all';
   availablePolicyTypes: string[] = [];
   dayFilter: string | number | null = null;
-  
+
   showHighValuePopup: boolean = false;
   topHighValuePolicies: any[] = [];
 
   fetchTopHighValuePolicies() {
-    this.apiService.getTodaysWork().subscribe({
+    this.apiService.getHighValueDeals().subscribe({
       next: (policies) => {
         if (!policies) {
           this.topHighValuePolicies = [];
@@ -514,13 +514,13 @@ export class RenewalComponent implements OnInit {
         }
 
         const customerMap = new Map<string, any>();
-        
+
         policies.forEach(p => {
           if (!p.customer) return;
-          
+
           let fullName = `${p.customer.firstName || ''} ${p.customer.lastName || ''}`.trim();
           let baseName = fullName;
-          
+
           if (baseName.includes(' (LA:')) {
             baseName = baseName.split(' (LA:')[0].trim();
           } else if (baseName.includes('(LA:')) {
@@ -528,7 +528,7 @@ export class RenewalComponent implements OnInit {
           }
 
           const premium = p.duePremium ? p.duePremium : (p.amount || 0);
-          
+
           if (customerMap.has(baseName)) {
             const existing = customerMap.get(baseName);
             existing.totalPremium += premium;
@@ -550,7 +550,7 @@ export class RenewalComponent implements OnInit {
         this.topHighValuePolicies = Array.from(customerMap.values())
           .sort((a, b) => b.totalPremium - a.totalPremium)
           .slice(0, 20);
-          
+
         if (this.topHighValuePolicies.length > 0) {
           this.showHighValuePopup = true;
         }
@@ -570,7 +570,7 @@ export class RenewalComponent implements OnInit {
 
   applyFilters() {
     const term = this.listSearchTerm.toLowerCase().trim();
-    
+
     const searchFilterFn = (p: any) => {
       if (!term) return true;
       if (this.searchBy === 'rm') {
@@ -602,7 +602,7 @@ export class RenewalComponent implements OnInit {
 
     const dayFilterFn = (p: any, isFollowUp: boolean) => {
       if (this.selectedDay !== 600 || this.dayFilter === null || this.dayFilter === '') return true;
-      
+
       const targetDate = isFollowUp ? p?.reminder?.followUpDate : p?.expiryDate;
       if (!targetDate) return false;
 
@@ -612,14 +612,14 @@ export class RenewalComponent implements OnInit {
       } else {
         dateObj = new Date(targetDate);
       }
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       dateObj.setHours(0, 0, 0, 0);
-      
+
       const diffTime = dateObj.getTime() - today.getTime();
       const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-      
+
       return diffDays === Number(this.dayFilter);
     };
 
@@ -650,21 +650,21 @@ export class RenewalComponent implements OnInit {
     this.apiService.getTodaysWork().subscribe({
       next: (policies) => {
         const todayStr = new Date().toISOString().split('T')[0];
-        
+
         const normalizeDate = (val: any) => {
-            if (!val) return '';
-            if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
-            return String(val).substring(0, 10);
+          if (!val) return '';
+          if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+          return String(val).substring(0, 10);
         };
 
         this.allTodaysFollowUps = policies.filter((p: any) => {
-           if (!p.reminder || !p.reminder.followUpDate) return false;
-           return normalizeDate(p.reminder.followUpDate) <= todayStr;
+          if (!p.reminder || !p.reminder.followUpDate) return false;
+          return normalizeDate(p.reminder.followUpDate) <= todayStr;
         });
-        
+
         this.allTodaysExpiring = policies.filter((p: any) => {
-           if (!p.reminder || !p.reminder.followUpDate) return true;
-           return normalizeDate(p.reminder.followUpDate) > todayStr;
+          if (!p.reminder || !p.reminder.followUpDate) return true;
+          return normalizeDate(p.reminder.followUpDate) > todayStr;
         });
 
         // Extract available types
@@ -679,7 +679,7 @@ export class RenewalComponent implements OnInit {
 
         this.followUps = [];
         this.loading = false;
-        
+
         if (this.workProgressComponent) {
           this.workProgressComponent.refreshProgress();
         }

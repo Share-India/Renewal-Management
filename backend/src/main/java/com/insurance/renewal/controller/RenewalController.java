@@ -71,6 +71,11 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getTodaysWork(branch));
     }
 
+    @GetMapping("/high-value-deals")
+    public ResponseEntity<List<Policy>> getHighValueDeals(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getHighValueDeals(branch));
+    }
+
     @PostMapping("/policies")
     public ResponseEntity<Policy> createPolicy(@RequestBody Policy policy) {
         // Get current user

@@ -677,7 +677,7 @@ import * as XLSX from 'xlsx';
       <div class="toast show bg-white shadow-lg border-0 pe-auto" role="alert" aria-live="assertive" aria-atomic="true" style="width: 360px; max-width: 95vw; border-radius: 8px; overflow: hidden; pointer-events: auto;" *ngIf="showHighValuePopup">
         <div class="toast-header bg-primary text-white border-0 py-2 px-3">
           <i class="bi bi-star-fill text-warning me-2"></i>
-          <strong class="me-auto">Top High-Value Deals Today</strong>
+          <strong class="me-auto">Top High-Value Deals</strong>
           <button type="button" class="btn-close btn-close-white" (click)="showHighValuePopup = false" aria-label="Close"></button>
         </div>
         <div class="toast-body p-0 overflow-auto" style="max-height: 350px; overflow-x: hidden !important;">
@@ -1069,11 +1069,11 @@ export class AdminDashboardComponent implements OnInit {
     if (!this.newBranchName || !this.newBranchName.trim()) return;
     this.apiService.createBranch({ name: this.newBranchName.trim() }).subscribe({
       next: (res) => {
-         this.loadBranches();
-         this.newBranchName = '';
+        this.loadBranches();
+        this.newBranchName = '';
       },
       error: (err) => {
-         alert('Error creating branch: ' + (err.error || err.message));
+        alert('Error creating branch: ' + (err.error || err.message));
       }
     });
   }
@@ -1088,28 +1088,28 @@ export class AdminDashboardComponent implements OnInit {
   refreshTimelineCounts() {
     this.apiService.getTimelineCounts(this.selectedAdminBranch).subscribe({
       next: (counts) => {
-          this.timelineCounts = counts;
-          // Refresh Timeline View to trigger a re-render map layout
-          this.timelineCounts = { ...this.timelineCounts };
+        this.timelineCounts = counts;
+        // Refresh Timeline View to trigger a re-render map layout
+        this.timelineCounts = { ...this.timelineCounts };
       },
       error: (err) => console.error('Error fetching timeline counts for admin', err)
     });
   }
 
   onBranchChange() {
-      this.loadStats();
-      this.refreshTimelineCounts();
-      this.loadRenewerRecords();
-      this.fetchTopHighValuePolicies();
-      if (this.selectedDate) {
-          this.onDateChange();
-      } else if (this.selectedDay === 'todays-work') {
-          this.openTodaysWork();
-      }
+    this.loadStats();
+    this.refreshTimelineCounts();
+    this.loadRenewerRecords();
+    this.fetchTopHighValuePolicies();
+    if (this.selectedDate) {
+      this.onDateChange();
+    } else if (this.selectedDay === 'todays-work') {
+      this.openTodaysWork();
+    }
   }
 
   fetchTopHighValuePolicies() {
-    this.apiService.getTodaysWork(this.selectedAdminBranch).subscribe({
+    this.apiService.getHighValueDeals(this.selectedAdminBranch).subscribe({
       next: (policies) => {
         if (!policies) {
           this.topHighValuePolicies = [];
@@ -1118,13 +1118,13 @@ export class AdminDashboardComponent implements OnInit {
 
         // Group by customer name
         const customerMap = new Map<string, any>();
-        
+
         policies.forEach(p => {
           if (!p.customer) return;
-          
+
           let fullName = `${p.customer.firstName || ''} ${p.customer.lastName || ''}`.trim();
           let baseName = fullName;
-          
+
           // Strip out " (LA: ...)" part to group by base customer name
           if (baseName.includes(' (LA:')) {
             baseName = baseName.split(' (LA:')[0].trim();
@@ -1133,7 +1133,7 @@ export class AdminDashboardComponent implements OnInit {
           }
 
           const premium = p.duePremium ? p.duePremium : (p.amount || 0);
-          
+
           if (customerMap.has(baseName)) {
             const existing = customerMap.get(baseName);
             existing.totalPremium += premium;
@@ -1155,7 +1155,7 @@ export class AdminDashboardComponent implements OnInit {
         this.topHighValuePolicies = Array.from(customerMap.values())
           .sort((a, b) => b.totalPremium - a.totalPremium)
           .slice(0, 20);
-          
+
         if (this.topHighValuePolicies.length > 0) {
           this.showHighValuePopup = true;
         }
@@ -1348,24 +1348,24 @@ export class AdminDashboardComponent implements OnInit {
 
   applyDayFilter() {
     if (this.selectedDay !== 600) return;
-    
+
     if (this.dayFilter !== null && this.dayFilter !== '') {
       const normalizeDate = (val: any) => {
-          if (!val) return '';
-          if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
-          return String(val).substring(0, 10);
+        if (!val) return '';
+        if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+        return String(val).substring(0, 10);
       };
 
       const filterFn = (p: any) => {
         if (!p.expiryDate) return false;
         const expiryDate = normalizeDate(p.expiryDate);
         const todayStr = new Date().toISOString().split('T')[0];
-        
+
         const expiry = new Date(expiryDate);
         const today = new Date(todayStr);
         const diffTime = expiry.getTime() - today.getTime();
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        
+
         return diffDays === Number(this.dayFilter);
       };
 
@@ -1373,15 +1373,15 @@ export class AdminDashboardComponent implements OnInit {
         if (!p.reminder || !p.reminder.followUpDate) return false;
         const followUpDateStr = normalizeDate(p.reminder.followUpDate);
         const todayStr = new Date().toISOString().split('T')[0];
-        
+
         const followUp = new Date(followUpDateStr);
         const today = new Date(todayStr);
         const diffTime = followUp.getTime() - today.getTime();
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-        
+
         return diffDays === Number(this.dayFilter);
       };
-      
+
       this.selectedDateRecords = {
         expiringPolicies: this.all60DaysExpiring.filter(filterFn),
         scheduledFollowUps: this.all60DaysFollowUps.filter(followUpFilterFn),
@@ -1426,12 +1426,12 @@ export class AdminDashboardComponent implements OnInit {
 
       return isPremiumMatch && isTypeMatch;
     };
-    
+
     this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
     this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
 
     if (this.selectedDateRecords) {
-        this.selectedDateRecords.expiringPolicies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+      this.selectedDateRecords.expiringPolicies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     }
   }
 
@@ -1443,7 +1443,7 @@ export class AdminDashboardComponent implements OnInit {
   setAdminTodaysWorkTab(tab: 'expiring' | 'followups') {
     this.todaysWorkTab = tab;
     if (this.selectedDateRecords) {
-        this.selectedDateRecords.expiringPolicies = tab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+      this.selectedDateRecords.expiringPolicies = tab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     }
   }
 
@@ -1457,21 +1457,21 @@ export class AdminDashboardComponent implements OnInit {
     this.apiService.getTodaysWork(this.selectedAdminBranch).subscribe({
       next: (policies) => {
         const todayStr = new Date().toISOString().split('T')[0];
-        
+
         const normalizeDate = (val: any) => {
-            if (!val) return '';
-            if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
-            return String(val).substring(0, 10);
+          if (!val) return '';
+          if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+          return String(val).substring(0, 10);
         };
 
         this.allTodaysFollowUps = policies.filter((p: any) => {
-           if (!p.reminder || !p.reminder.followUpDate) return false;
-           return normalizeDate(p.reminder.followUpDate) <= todayStr;
+          if (!p.reminder || !p.reminder.followUpDate) return false;
+          return normalizeDate(p.reminder.followUpDate) <= todayStr;
         });
-        
+
         this.allTodaysExpiring = policies.filter((p: any) => {
-           if (!p.reminder || !p.reminder.followUpDate) return true;
-           return normalizeDate(p.reminder.followUpDate) > todayStr;
+          if (!p.reminder || !p.reminder.followUpDate) return true;
+          return normalizeDate(p.reminder.followUpDate) > todayStr;
         });
 
         // Extract available types
@@ -1491,7 +1491,7 @@ export class AdminDashboardComponent implements OnInit {
         };
         this.loading = false;
         if (this.workProgressComponent) {
-            this.workProgressComponent.refreshProgress();
+          this.workProgressComponent.refreshProgress();
         }
       },
       error: (err) => {
@@ -1508,7 +1508,7 @@ export class AdminDashboardComponent implements OnInit {
     if (this.selectedDay === 'todays-work') {
       this.openTodaysWork();
       if (this.workProgressComponent) {
-          this.workProgressComponent.refreshProgress();
+        this.workProgressComponent.refreshProgress();
       }
     } else if (this.selectedDay === 600) {
       this.load60DaysWorkload();
@@ -1724,7 +1724,7 @@ export class AdminDashboardComponent implements OnInit {
 
   exportTodaysReport(): void {
     const todayStr = new Date().toDateString();
-    
+
     // Filter records where lastReminderSentAt is today
     const todaysUpdates = this.renewerRecords.filter(record => {
       if (!record.reminder || !record.reminder.lastReminderSentAt) return false;
@@ -1796,7 +1796,7 @@ export class AdminDashboardComponent implements OnInit {
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Todays Updates');
-    
+
     const formattedDate = new Date().toISOString().split('T')[0];
     XLSX.writeFile(workbook, `Daily_Renewer_Report_${formattedDate}.xlsx`);
   }

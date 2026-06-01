@@ -194,6 +194,25 @@ public class RenewalService {
         return applyRenewerFilters(policyRepository.findPoliciesForTimeline(targetDate));
     }
 
+    public List<Policy> getHighValueDeals(String branch) {
+        LocalDate today = LocalDate.now();
+        LocalDate nextWeek = today.plusDays(7);
+        
+        List<Policy> upcomingPolicies = policyRepository.findPoliciesForTargetDateRange(today, nextWeek, branch);
+        
+        List<Reminder> upcomingReminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(
+                today.atStartOfDay(), nextWeek.atTime(23, 59, 59), branch);
+                
+        List<Policy> policies = new java.util.ArrayList<>(upcomingPolicies);
+        upcomingReminders.forEach(r -> {
+            Policy p = r.getPolicy();
+            p.setReminder(r);
+            if (!policies.contains(p)) policies.add(p);
+        });
+
+        return applyRenewerFilters(policies);
+    }
+
     // Get reminders scheduled for follow-up in 'days'
     public List<Reminder> getFollowUpsForTimeline(int days) {
         LocalDate targetDate = LocalDate.now().plusDays(days);
