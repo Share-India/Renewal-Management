@@ -183,6 +183,12 @@ export class ApiService {
     getCustomersByBranch(branch: string): Observable<string[]> {
         return this.http.get<string[]>(`${this.baseUrl}/admin/customers-by-branch?branch=${encodeURIComponent(branch)}`, { headers: this.getHeaders() });
     }
+
+    getRmNames(branch?: string): Observable<string[]> {
+        let url = `${this.baseUrl}/admin/rm-names`;
+        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
+        return this.http.get<string[]>(url, { headers: this.getHeaders() });
+    }
 }
 
 export interface Customer {

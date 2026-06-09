@@ -23,6 +23,24 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
         @org.springframework.data.repository.query.Param("status") String status, 
         @org.springframework.data.repository.query.Param("branch") String branch);
 
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE LOWER(r.reminderStatus) = LOWER(:status) AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch))")
+    List<Reminder> findByReminderStatusAndBranchIgnoreCase(
+        @org.springframework.data.repository.query.Param("status") String status, 
+        @org.springframework.data.repository.query.Param("branch") String branch);
+
+    List<Reminder> findByReminderStatusIgnoreCase(String reminderStatus);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Reminder r JOIN r.policy p WHERE LOWER(r.reminderStatus) = LOWER(:status) AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) AND LOWER(p.rmName) IN :rmNames")
+    long countByReminderStatusAndBranchAndRmNamesIgnoreCase(
+        @org.springframework.data.repository.query.Param("status") String status, 
+        @org.springframework.data.repository.query.Param("branch") String branch,
+        @org.springframework.data.repository.query.Param("rmNames") List<String> rmNames);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Reminder r JOIN r.policy p WHERE LOWER(r.reminderStatus) = LOWER(:status) AND LOWER(p.rmName) IN :rmNames")
+    long countByReminderStatusAndRmNamesIgnoreCase(
+        @org.springframework.data.repository.query.Param("status") String status, 
+        @org.springframework.data.repository.query.Param("rmNames") List<String> rmNames);
+
     List<Reminder> findByLastReminderSentAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.lastReminderSentAt BETWEEN :start AND :end AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")

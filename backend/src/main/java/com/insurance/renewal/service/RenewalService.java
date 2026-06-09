@@ -50,10 +50,36 @@ public class RenewalService {
 
         String username = auth.getName();
         com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null || user.getRole() == null || !user.getRole().contains("RENEWER"))
+        if (user == null || user.getRole() == null || (!user.getRole().contains("RENEWER") && !user.getRole().contains("RM")))
             return policies;
 
         return policies.stream().filter(p -> {
+            // Role RM Logic
+            if (user.getRole().contains("RM")) {
+                if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
+                        && !user.getAssignedBranch().equals("null")) {
+                    if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
+                        return false;
+                }
+                if (user.getAssignedRm() != null && !user.getAssignedRm().isEmpty()
+                        && !user.getAssignedRm().equals("null")) {
+                    if (p.getRmName() == null)
+                        return false;
+                    String[] allowedRms = user.getAssignedRm().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String rm : allowedRms) {
+                        if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match)
+                        return false;
+                }
+                return true;
+            }
+
+            // Role RENEWER Logic
             if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
                     && !user.getAssignedBranch().equals("null")) {
                 if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
@@ -120,13 +146,40 @@ public class RenewalService {
 
         String username = auth.getName();
         com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
-        if (user == null || user.getRole() == null || !user.getRole().contains("RENEWER"))
+        if (user == null || user.getRole() == null || (!user.getRole().contains("RENEWER") && !user.getRole().contains("RM")))
             return reminders;
 
         return reminders.stream().filter(r -> {
             Policy p = r.getPolicy();
             if (p == null)
                 return false;
+
+            // Role RM Logic
+            if (user.getRole().contains("RM")) {
+                if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
+                        && !user.getAssignedBranch().equals("null")) {
+                    if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
+                        return false;
+                }
+                if (user.getAssignedRm() != null && !user.getAssignedRm().isEmpty()
+                        && !user.getAssignedRm().equals("null")) {
+                    if (p.getRmName() == null)
+                        return false;
+                    String[] allowedRms = user.getAssignedRm().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String rm : allowedRms) {
+                        if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match)
+                        return false;
+                }
+                return true;
+            }
+
+            // Role RENEWER Logic
 
             if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
                     && !user.getAssignedBranch().equals("null")) {
@@ -227,14 +280,49 @@ public class RenewalService {
         long totalPolicies;
         long totalReminders;
 
-        if (branch != null && !branch.trim().isEmpty()) {
-            // Use efficient DB counting instead of fetching all entities into memory
-            totalPolicies = policyRepository.countByBranchIgnoreCase(branch);
-            
-            totalReminders = reminderRepository.countByReminderStatusAndBranchIgnoreCase("PENDING", branch);
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null && auth.isAuthenticated() ? auth.getName() : null;
+        com.insurance.renewal.entity.User user = username != null ? userRepository.findByUsername(username).orElse(null) : null;
+        boolean isRmOrRenewer = user != null && user.getRole() != null && (user.getRole().contains("RM") || user.getRole().contains("RENEWER"));
+
+        if (isRmOrRenewer) {
+            if (user.getRole().contains("RM")) {
+                List<String> assignedRms = null;
+                if (user.getAssignedRm() != null && !user.getAssignedRm().trim().isEmpty() && !user.getAssignedRm().equals("null")) {
+                    assignedRms = java.util.Arrays.stream(user.getAssignedRm().split(","))
+                            .map(String::trim)
+                            .map(String::toLowerCase)
+                            .collect(java.util.stream.Collectors.toList());
+                }
+
+                if (assignedRms != null && !assignedRms.isEmpty()) {
+                    if (branch != null && !branch.trim().isEmpty()) {
+                        totalPolicies = policyRepository.countByBranchAndRmNamesIgnoreCase(branch, assignedRms);
+                        totalReminders = reminderRepository.countByReminderStatusAndBranchAndRmNamesIgnoreCase("PENDING", branch, assignedRms);
+                    } else {
+                        totalPolicies = policyRepository.countByRmNamesIgnoreCase(assignedRms);
+                        totalReminders = reminderRepository.countByReminderStatusAndRmNamesIgnoreCase("PENDING", assignedRms);
+                    }
+                } else {
+                    totalPolicies = 0;
+                    totalReminders = 0;
+                }
+            } else {
+                List<Policy> allPols = (branch != null && !branch.trim().isEmpty()) ? policyRepository.findByBranchIgnoreCase(branch) : policyRepository.findAll();
+                totalPolicies = applyRenewerFilters(allPols).size();
+                
+                List<Reminder> pendingRems = (branch != null && !branch.trim().isEmpty()) ? reminderRepository.findByReminderStatusAndBranchIgnoreCase("PENDING", branch) : reminderRepository.findByReminderStatusIgnoreCase("PENDING");
+                totalReminders = applyRenewerFiltersToReminders(pendingRems).size();
+            }
         } else {
-            totalPolicies = policyRepository.count();
-            totalReminders = reminderRepository.countByReminderStatusIgnoreCase("PENDING");
+            if (branch != null && !branch.trim().isEmpty()) {
+                // Use efficient DB counting instead of fetching all entities into memory
+                totalPolicies = policyRepository.countByBranchIgnoreCase(branch);
+                totalReminders = reminderRepository.countByReminderStatusAndBranchIgnoreCase("PENDING", branch);
+            } else {
+                totalPolicies = policyRepository.count();
+                totalReminders = reminderRepository.countByReminderStatusIgnoreCase("PENDING");
+            }
         }
 
         // Today's Work Count needs to match the exact same logic as the Action Required
@@ -639,7 +727,7 @@ public class RenewalService {
         Map<String, List<Policy>> records = new HashMap<>();
 
         // 1. Expiring Policies on this date
-        List<Policy> expiring = policyRepository.findAdminPoliciesForTimeline(date, branch);
+        List<Policy> expiring = applyRenewerFilters(policyRepository.findAdminPoliciesForTimeline(date, branch));
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for date: " + date);
         expiring.forEach(p -> System.out.println(" - Policy: " + p.getPolicyNumber() + ", Status: " + p.getStatus()));
 
@@ -651,9 +739,10 @@ public class RenewalService {
         System.out.println("Fetching follow-ups between " + start + " and " + end);
 
         List<Reminder> reminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(start, end, branch);
-        System.out.println("Found " + reminders.size() + " follow-ups.");
+        List<Reminder> filteredReminders = applyRenewerFiltersToReminders(reminders);
+        System.out.println("Found " + filteredReminders.size() + " follow-ups.");
 
-        List<Policy> scheduledFollowUps = reminders.stream()
+        List<Policy> scheduledFollowUps = filteredReminders.stream()
                 .filter(reminder -> reminder.getPolicy() != null)
                 .map(reminder -> {
                     Policy policy = reminder.getPolicy();
@@ -677,8 +766,9 @@ public class RenewalService {
         // 3. Worked on Policies (Renewed/Called today)
         List<Reminder> workedOn = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(
                 date.atStartOfDay(), date.atTime(23, 59, 59), branch);
+        List<Reminder> filteredWorkedOn = applyRenewerFiltersToReminders(workedOn);
 
-        List<Policy> workedOnPolicies = workedOn.stream()
+        List<Policy> workedOnPolicies = filteredWorkedOn.stream()
                 .map(reminder -> {
                     Policy policy = reminder.getPolicy();
                     policy.setReminder(reminder);
@@ -739,7 +829,7 @@ public class RenewalService {
         // Fetch only the 500 most recent records to prevent freezing the Admin
         // Dashboard
         org.springframework.data.domain.Pageable top500 = org.springframework.data.domain.PageRequest.of(0, 500);
-        return reminderRepository.findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(branch, top500);
+        return applyRenewerFiltersToReminders(reminderRepository.findTop500ByOrderByLastReminderSentAtDescWithValidPolicy(branch, top500));
     }
 
     @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * ?") // Run at midnight

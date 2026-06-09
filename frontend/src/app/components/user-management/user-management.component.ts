@@ -53,12 +53,13 @@ import { ApiService } from '../../services/api.service';
                   <option value="SERVICING">Policy Servicing</option>
                   <option value="MIS">MIS</option>
                   <option value="ADMIN">Administrator</option>
+                  <option value="RM">Relationship Manager</option>
                 </select>
               </div>
             </div>
 
-            <!-- Optional Branch Filter for Agents -->
-            <ng-container *ngIf="['RENEWER', 'SERVICING', 'MIS'].includes(newUser.role)">
+            <!-- Optional Branch Filter for Agents & RM -->
+            <ng-container *ngIf="['RENEWER', 'SERVICING', 'MIS', 'RM'].includes(newUser.role)">
               <div class="form-group">
                 <label>Assigned Branch</label>
                 <div class="input-group">
@@ -67,6 +68,43 @@ import { ApiService } from '../../services/api.service';
                     <option value="">All Branches Globally (Select All)</option>
                     <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
                   </select>
+                </div>
+              </div>
+            </ng-container>
+
+            <!-- RM Assignment Filter -->
+            <ng-container *ngIf="newUser.role === 'RM'">
+              <div class="form-group">
+                <label>Assigned Relationship Manager (Select Branch First)</label>
+                <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
+                  <div *ngIf="!newUser.assignedBranch" class="text-muted text-center p-2">
+                    Please select a branch above to see RM names.
+                  </div>
+                  <div *ngIf="newUser.assignedBranch && loadingRmNames" class="text-center p-2">
+                    <div class="spinner-border spinner-border-sm text-primary"></div> Loading...
+                  </div>
+                  <div *ngIf="newUser.assignedBranch && !loadingRmNames && availableRmNames.length === 0" class="text-muted text-center p-2">
+                    No RM names found for this branch.
+                  </div>
+                  <ng-container *ngIf="newUser.assignedBranch && !loadingRmNames && availableRmNames.length > 0">
+                    <div class="mb-2">
+                      <input type="text" class="form-control form-control-sm" placeholder="Search RM names..." [(ngModel)]="rmSearchTerm">
+                    </div>
+                    <div class="form-check border-bottom pb-2 mb-2">
+                      <input class="form-check-input" type="checkbox" id="selectAllRms" 
+                             [checked]="allRmsSelected" (change)="toggleAllRms($event)">
+                      <label class="form-check-label fw-bold" for="selectAllRms">
+                        All Relationship Managers
+                      </label>
+                    </div>
+                    <div class="form-check" *ngFor="let rm of filteredRms; let i = index">
+                      <input class="form-check-input" type="checkbox" [id]="'rm_' + i" 
+                             [checked]="selectedRms.includes(rm)" (change)="toggleRm(rm, $event)">
+                      <label class="form-check-label" [for]="'rm_' + i">
+                        {{ rm }}
+                      </label>
+                    </div>
+                  </ng-container>
                 </div>
               </div>
             </ng-container>
@@ -335,7 +373,8 @@ export class UserManagementComponent implements OnInit {
     assignedBranch: '',
     assignedProductType: '',
     assignedPremiumRange: '',
-    assignedCustomers: ''
+    assignedCustomers: '',
+    assignedRm: ''
   };
   confirmPassword = '';
   message = '';
@@ -414,9 +453,34 @@ export class UserManagementComponent implements OnInit {
   }
 
   onBranchChange() {
-    if (this.assignmentMode === 'customer') {
+    if (this.assignmentMode === 'customer' && this.newUser.role === 'RENEWER') {
       this.fetchCustomersForBranch();
     }
+    if (this.newUser.role === 'RM') {
+      this.fetchRmNamesForBranch();
+    }
+  }
+
+  fetchRmNamesForBranch() {
+    if (!this.newUser.assignedBranch) {
+      this.availableRmNames = [];
+      this.newUser.assignedRm = '';
+      return;
+    }
+    
+    this.loadingRmNames = true;
+    this.apiService.getRmNames(this.newUser.assignedBranch).subscribe({
+      next: (names) => {
+        this.availableRmNames = names || [];
+        this.selectedRms = []; // Reset selection on branch change
+        this.loadingRmNames = false;
+      },
+      error: (err) => {
+        console.error('Error fetching RM names:', err);
+        this.availableRmNames = [];
+        this.loadingRmNames = false;
+      }
+    });
   }
 
   fetchCustomersForBranch() {
@@ -471,6 +535,38 @@ export class UserManagementComponent implements OnInit {
   users: any[] = [];
   loadingUsers = false;
   availableBranches: string[] = [];
+  availableRmNames: string[] = [];
+  selectedRms: string[] = [];
+  loadingRmNames = false;
+  rmSearchTerm = '';
+
+  get allRmsSelected(): boolean {
+    return this.selectedRms.length > 0 && this.selectedRms.length === this.availableRmNames.length;
+  }
+
+  get filteredRms(): string[] {
+    if (!this.rmSearchTerm) return this.availableRmNames;
+    const term = this.rmSearchTerm.toLowerCase();
+    return this.availableRmNames.filter(r => r.toLowerCase().includes(term));
+  }
+
+  toggleRm(rm: string, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedRms.includes(rm)) {
+        this.selectedRms.push(rm);
+      }
+    } else {
+      this.selectedRms = this.selectedRms.filter(r => r !== rm);
+    }
+  }
+
+  toggleAllRms(event: any) {
+    if (event.target.checked) {
+      this.selectedRms = [...this.availableRmNames];
+    } else {
+      this.selectedRms = [];
+    }
+  }
 
   constructor(private authService: AuthService, private apiService: ApiService) { }
 
@@ -526,6 +622,8 @@ export class UserManagementComponent implements OnInit {
         this.newUser.assignedCustomers = this.selectedCustomers.join(',');
         this.newUser.assignedProductType = ''; // Clear product assignment
       }
+    } else if (this.newUser.role === 'RM') {
+      this.newUser.assignedRm = this.selectedRms.join(',');
     } else {
       this.newUser.assignedProductType = '';
       this.newUser.assignedPremiumRange = '';
@@ -538,12 +636,14 @@ export class UserManagementComponent implements OnInit {
         this.success = true;
         this.newUser = { 
           username: '', password: '', role: 'RENEWER',
-          assignedBranch: '', assignedProductType: '', assignedPremiumRange: '', assignedCustomers: ''
+          assignedBranch: '', assignedProductType: '', assignedPremiumRange: '', assignedCustomers: '', assignedRm: ''
         };
         this.confirmPassword = '';
         this.selectedProductTypes = [];
         this.selectedPremiumRanges = [];
         this.selectedCustomers = [];
+        this.selectedRms = [];
+        this.rmSearchTerm = '';
         this.assignmentMode = 'product';
         this.loading = false;
       },

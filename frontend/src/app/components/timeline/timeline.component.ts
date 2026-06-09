@@ -12,6 +12,7 @@ export class TimelineComponent {
     @Output() daySelected = new EventEmitter<number>();
     @Input() counts: { [key: number]: number } = {};
     @Input() adminMode: boolean = false;
+    @Input() userRole: string = '';
 
     days: number[] = [75, 60, 45, 30, 15, 7, 3, 2, 1];
     postExpiryDays: number[] = [-1, -2, -3, -7, -15, -30, -45, -60, -75];

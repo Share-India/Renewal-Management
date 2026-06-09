@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { finalize } from 'rxjs/operators';
 import { CustomerListComponent } from '../customer-list/customer-list.component';
 import { WorkProgressComponent } from '../work-progress/work-progress.component';
@@ -16,13 +17,13 @@ import * as XLSX from 'xlsx';
     <div class="admin-container">
       <div class="header-section d-flex justify-content-between align-items-center">
         <div>
-          <h2>Administrative Dashboard</h2>
-          <p class="text-muted">Real-time insights into system performance and daily administrative tasks</p>
+          <h2>{{ isRmRole() ? 'RM Dashboard' : 'Administrative Dashboard' }}</h2>
+          <p class="text-muted">{{ isRmRole() ? 'Manage your relationship data and follow-ups' : 'Real-time insights into system performance and daily administrative tasks' }}</p>
         </div>
         
         <div class="d-flex flex-column align-items-end gap-2">
           <div class="d-flex gap-3 align-items-center">
-            <div class="branch-selector shadow-sm">
+            <div *ngIf="!isRmRole()" class="branch-selector shadow-sm">
               <div class="input-group">
                 <span class="input-group-text bg-transparent border-0 pe-1">
                   <div class="icon-circle bg-primary bg-opacity-10 text-primary">
@@ -35,7 +36,7 @@ import * as XLSX from 'xlsx';
                 </select>
               </div>
             </div>
-            <button class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
+            <button *ngIf="!isRmRole()" class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
               <i class="bi bi-diagram-3-fill me-2 text-primary"></i> Manage
             </button>
             <button class="btn btn-primary shadow-sm px-4" (click)="openRenewalModal()">
@@ -76,7 +77,7 @@ import * as XLSX from 'xlsx';
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
 
       <div class="mt-4 mb-3">
-        <app-timeline [counts]="timelineCounts" [adminMode]="true" (daySelected)="onDaySelected($event)"></app-timeline>
+        <app-timeline [counts]="timelineCounts" [adminMode]="true" [userRole]="isRmRole() ? 'RM' : 'ADMIN'" (daySelected)="onDaySelected($event)"></app-timeline>
       </div>
 
       <!-- Date Picker Section -->
@@ -1030,13 +1031,17 @@ export class AdminDashboardComponent implements OnInit {
   renewalSearchResults: any[] = [];
   newPolicyEndDate: string = '';
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) { }
+  constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.loadStats();
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
     this.loadInitialData();
+  }
+
+  isRmRole(): boolean {
+    return this.authService.hasRole('RM');
   }
 
   loadInitialData() {
@@ -1331,8 +1336,33 @@ export class AdminDashboardComponent implements OnInit {
       .subscribe({
         next: (data) => {
           try {
-            this.all60DaysExpiring = data.expiringPolicies || [];
-            this.all60DaysFollowUps = data.scheduledFollowUps || [];
+            let expiring = data.expiringPolicies || [];
+            let followups = data.scheduledFollowUps || [];
+            
+            if (this.isRmRole()) {
+               const normalizeDate = (val: any) => {
+                 if (!val) return '';
+                 if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+                 return String(val).substring(0, 10);
+               };
+               const todayStr = new Date().toISOString().split('T')[0];
+               const today = new Date(todayStr);
+               
+               expiring = expiring.filter((p: any) => {
+                 if(!p.expiryDate) return false;
+                 const diffDays = Math.round((new Date(normalizeDate(p.expiryDate)).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                 return diffDays <= 30 && diffDays >= 0;
+               });
+               
+               followups = followups.filter((p: any) => {
+                 if(!p.reminder || !p.reminder.followUpDate) return false;
+                 const diffDays = Math.round((new Date(normalizeDate(p.reminder.followUpDate)).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                 return diffDays <= 30 && diffDays >= 0;
+               });
+            }
+
+            this.all60DaysExpiring = expiring;
+            this.all60DaysFollowUps = followups;
             this.applyDayFilter();
           } catch (e) {
             console.error('Error processing 60 days records:', e);

@@ -57,10 +57,20 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT DISTINCT p.branch FROM Policy p WHERE p.branch IS NOT NULL")
         List<String> findDistinctBranches();
 
+        @Query("SELECT DISTINCT p.rmName FROM Policy p WHERE p.rmName IS NOT NULL AND p.rmName != '' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY p.rmName ASC")
+        List<String> findDistinctRmNamesByBranch(@Param("branch") String branch);
+
         @Query("SELECT DISTINCT CONCAT(c.firstName, ' ', c.lastName) FROM Policy p JOIN p.customer c WHERE (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<String> findDistinctCustomerNamesByBranch(@Param("branch") String branch);
 
         long countByBranchIgnoreCase(String branch);
+        List<Policy> findByBranchIgnoreCase(String branch);
+
+        @Query("SELECT COUNT(p) FROM Policy p WHERE (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) AND LOWER(p.rmName) IN :rmNames")
+        long countByBranchAndRmNamesIgnoreCase(@Param("branch") String branch, @Param("rmNames") List<String> rmNames);
+
+        @Query("SELECT COUNT(p) FROM Policy p WHERE LOWER(p.rmName) IN :rmNames")
+        long countByRmNamesIgnoreCase(@Param("rmNames") List<String> rmNames);
 
         @org.springframework.data.jpa.repository.Modifying
         @Query(value = "UPDATE policies p " +

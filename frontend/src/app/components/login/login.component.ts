@@ -11,10 +11,10 @@ import { AuthService } from '../../services/auth.service';
   template: `
     <div class="login-container">
       <div class="login-card">
-        <div class="mb-4">
-          <img src="assets/logo.png" alt="Share India" height="80" class="mb-3">
-          <h2 class="fw-bold tracking-wide">Share India</h2>
-          <p class="text-muted">Insurance Renewal App</p>
+        <div class="mb-3">
+          <img src="assets/logo.png" alt="Share India" height="60" class="mb-2">
+          <h2 class="fw-bold tracking-wide mb-1">Share India</h2>
+          <p class="text-muted mb-0">Insurance Renewal App</p>
         </div>
         <p class="text-muted">Select your role to sign in</p>
 
@@ -32,6 +32,10 @@ import { AuthService } from '../../services/auth.service';
             <div class="icon">📊</div>
             MIS 
           </button>
+          <button class="btn btn-outline-secondary role-btn" (click)="selectRole('RM')">
+            <div class="icon">🤝</div>
+            Relationship Manager
+          </button>
           <button class="btn btn-outline-danger role-btn" (click)="selectRole('ADMIN')">
             <div class="icon">🛡️</div>
             Admin
@@ -41,7 +45,7 @@ import { AuthService } from '../../services/auth.service';
         <!-- Login Form -->
         <div *ngIf="selectedRole" class="login-form">
           <h4 class="mb-4">
-            {{ selectedRole === 'ADMIN' ? 'Admin Login' : (selectedRole === 'SERVICING' ? 'Policy Servicing Login' : (selectedRole === 'MIS' ? 'MIS Login' : 'Renewer Login')) }}
+            {{ selectedRole === 'ADMIN' ? 'Admin Login' : (selectedRole === 'RM' ? 'RM Login' : (selectedRole === 'SERVICING' ? 'Policy Servicing Login' : (selectedRole === 'MIS' ? 'MIS Login' : 'Renewer Login'))) }}
           </h4>
           
           <div class="form-group">
@@ -72,12 +76,13 @@ import { AuthService } from '../../services/auth.service';
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      padding: 2rem 1rem;
       background-color: #f8f9fa;
     }
     .login-card {
       background: white;
-      padding: 40px;
+      padding: 30px;
       border-radius: 15px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.08);
       width: 100%;
@@ -87,16 +92,16 @@ import { AuthService } from '../../services/auth.service';
     .role-selection {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      margin-top: 30px;
+      gap: 10px;
+      margin-top: 20px;
     }
     .role-btn {
-      padding: 20px;
+      padding: 12px 20px;
       text-align: left;
       display: flex;
       align-items: center;
-      gap: 20px;
-      font-size: 1.1rem;
+      gap: 15px;
+      font-size: 1.05rem;
       border-radius: 10px;
       transition: all 0.2s;
       background: white;
@@ -108,6 +113,13 @@ import { AuthService } from '../../services/auth.service';
     .btn-outline-danger { border-color: #dc3545; color: #dc3545; }
     .btn-outline-success { border-color: #198754; color: #198754; }
     .btn-outline-info { border-color: #045161ff; color: #000000ff; }
+    .btn-outline-secondary { border-color: #6c757d; color: #6c757d; }
+    
+    .btn-outline-primary:hover { background-color: #0d6efd; color: white; }
+    .btn-outline-danger:hover { background-color: #dc3545; color: white; }
+    .btn-outline-success:hover { background-color: #198754; color: white; }
+    .btn-outline-info:hover { background-color: #045161ff; color: white; }
+    .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
     
     .role-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .role-btn .icon { font-size: 1.5rem; }
@@ -146,11 +158,11 @@ export class LoginComponent {
   password = '';
   loading = false;
   error = '';
-  selectedRole: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | null = null;
+  selectedRole: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | null = null;
 
   constructor(private authService: AuthService, private router: Router) { }
 
-  selectRole(role: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS') {
+  selectRole(role: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM') {
     this.selectedRole = role;
     this.error = '';
     this.username = '';
@@ -179,6 +191,12 @@ export class LoginComponent {
             this.loading = false;
             return;
           }
+          if (this.selectedRole === 'RM' && user.role !== 'RM' && user.role !== 'ADMIN') {
+            this.error = 'Access Denied: You are not a Relationship Manager.';
+            this.authService.logout();
+            this.loading = false;
+            return;
+          }
           if (this.selectedRole === 'SERVICING' && user.role !== 'SERVICING' && user.role !== 'ADMIN') {
             this.error = 'Access Denied: You are not authorized for Policy Servicing.';
             this.authService.logout();
@@ -192,7 +210,7 @@ export class LoginComponent {
             return;
           }
 
-          if (user.role === 'ADMIN') {
+          if (user.role === 'ADMIN' || user.role === 'RM') {
             this.router.navigate(['/admin']);
           } else if (user.role === 'SERVICING') {
             this.router.navigate(['/servicing']);

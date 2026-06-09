@@ -25,6 +25,12 @@
               [routerLinkActiveOptions]="{exact: true}">Admin</a>
           </li>
 
+          <!-- RM Dashboard: Visible only to RM -->
+          <li class="nav-item me-3" *ngIf="authService.hasRole('RM')">
+            <a class="nav-link" routerLink="/admin" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">RM Dashboard</a>
+          </li>
+
 
           <!-- User Management: Visible only to Admins -->
           <li class="nav-item me-3" *ngIf="authService.isAdmin()">

@@ -3,7 +3,7 @@
           style="position: absolute; right: 20px; top: 15px;" 
           (click)="select60Days()"
           [class.active]="selectedDay === 600">
-    60 Days View
+    {{ userRole && userRole.includes('RM') ? '30 Days View' : '60 Days View' }}
   </button>
   <h3>Renewal Timeline</h3>
   <div class="timeline-scroll">

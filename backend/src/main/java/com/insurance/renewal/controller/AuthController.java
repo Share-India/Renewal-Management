@@ -65,17 +65,27 @@ public class AuthController {
             user.setAssignedProductType(payload.get("assignedProductType"));
             user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
             user.setAssignedCustomers(payload.get("assignedCustomers"));
+        } else if (role.contains("RM")) {
+            user.setAssignedBranch(payload.get("assignedBranch"));
+            user.setAssignedRm(payload.get("assignedRm"));
         }
 
         return ResponseEntity.ok(userRepository.save(user));
     }
 
     @GetMapping("/admin/customers-by-branch")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<java.util.List<String>> getCustomersByBranch(@RequestParam("branch") String branch) {
         if (branch == null || branch.trim().isEmpty() || branch.equals("null")) {
             return ResponseEntity.ok(java.util.Collections.emptyList());
         }
         return ResponseEntity.ok(policyRepository.findDistinctCustomerNamesByBranch(branch));
+    }
+
+    @GetMapping("/admin/rm-names")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
+    public ResponseEntity<java.util.List<String>> getRmNamesByBranch(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(policyRepository.findDistinctRmNamesByBranch(branch));
     }
 
     @GetMapping("/admin/users")
