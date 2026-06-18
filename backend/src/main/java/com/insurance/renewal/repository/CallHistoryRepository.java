@@ -13,5 +13,7 @@ public interface CallHistoryRepository extends JpaRepository<CallHistory, Long> 
 
     CallHistory findFirstByPolicyIdAndCallDateBeforeOrderByCallDateDesc(Long policyId, java.time.LocalDateTime callDate);
 
+    List<CallHistory> findByAgentNameAndCallDateBetween(String agentName, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     void deleteByPolicyId(Long policyId);
 }

@@ -43,9 +43,14 @@ import * as XLSX from 'xlsx';
               <i class="bi bi-plus-circle me-2"></i> Add / Edit Policy
             </button>
           </div>
-          <button class="btn btn-success btn-sm shadow-sm w-100" style="max-width: fit-content;" (click)="exportTodaysReport()" title="Export Today's Updates">
-            <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
-          </button>
+          <div class="d-flex gap-2 justify-content-end w-100 mt-2">
+            <button class="btn btn-dark btn-sm shadow-sm px-3 fw-semibold d-flex align-items-center" *ngIf="!isRmRole()" (click)="openRenewerStatsModal()" title="View Renewer Activity">
+              <i class="bi bi-bar-chart-fill me-2 fs-6 text-info"></i> Renewer Activity
+            </button>
+            <button class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
+              <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
+            </button>
+          </div>
         </div>
       </div>
       
@@ -73,6 +78,8 @@ import * as XLSX from 'xlsx';
           </div>
         </div>
       </div>
+
+      <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
 
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
 
@@ -725,11 +732,191 @@ import * as XLSX from 'xlsx';
         </div>
       </div>
     </div>
+    
+    <!-- Simple & Clean Renewer Stats Modal -->
+    <div class="modal-overlay" *ngIf="showRenewerStatsModal" (click)="closeRenewerStatsModal()" style="background: rgba(0, 0, 0, 0.4);">
+      <div class="custom-modal-content border-0 shadow" style="max-width: 750px; padding: 0; overflow: hidden; border-radius: 8px; background: #ffffff;" (click)="$event.stopPropagation()">
+        
+        <!-- Header -->
+        <div class="p-3 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #eaedf1; background: #f8f9fa;">
+          <h4 class="mb-0 text-dark fw-bold d-flex align-items-center">
+            <i class="bi bi-person-lines-fill text-primary me-2"></i> 
+            Renewer Activity
+          </h4>
+          <button class="btn btn-sm btn-light text-secondary rounded-circle" (click)="closeRenewerStatsModal()" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body p-4" style="max-height: 80vh; overflow-y: auto;">
+          
+          <!-- State 1: Simple List View -->
+          <div *ngIf="!selectedRenewerStat" class="fade-in">
+            <p class="text-muted mb-3 fs-6">Select a team member to view their performance for the current month.</p>
+            
+            <div class="row g-3">
+              <div class="col-md-6" *ngFor="let stat of renewerStats">
+                <div class="card h-100 border shadow-sm simple-hover-card" style="cursor: pointer; border-color: #eaedf1; border-radius: 8px;" (click)="selectedRenewerStat = stat">
+                  <div class="card-body p-3 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                      <div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i class="bi bi-person-fill fs-5"></i>
+                      </div>
+                      <h6 class="mb-0 fw-bold text-dark">{{ stat.agentName }}</h6>
+                    </div>
+                    <div>
+                      <span class="badge bg-light text-dark border px-2 py-1">{{ stat.total }} Tasks</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="renewerStats?.length === 0" class="text-center py-5 my-4 bg-light border rounded-3">
+              <i class="bi bi-inbox fs-2 text-muted mb-2 d-block"></i>
+              <h6 class="fw-bold text-dark">No renewers found</h6>
+              <p class="text-muted small mb-0">Ensure users are assigned the RENEWER role.</p>
+            </div>
+          </div>
+          
+          <!-- State 2: Simple Detail View -->
+          <div *ngIf="selectedRenewerStat" class="fade-in">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="d-flex align-items-center">
+                <div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
+                   <i class="bi bi-person-fill fs-4"></i>
+                </div>
+                <div>
+                  <h5 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.agentName }}</h5>
+                  <small class="text-muted mb-0" *ngIf="!selectedStatsDate">Current Month's Activity</small>
+                  <small class="text-muted mb-0" *ngIf="selectedStatsDate">Activity for {{ selectedStatsDate | date:'mediumDate' }}</small>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                  <input type="date" class="form-control form-control-sm border shadow-sm p-1" style="width: auto; height: 31px; font-size: 0.85rem;" [(ngModel)]="selectedStatsDate" (change)="onStatsDateChange()">
+                  <button *ngIf="selectedStatsDate" class="btn btn-sm btn-link text-decoration-none p-0" (click)="clearStatsDate()">Clear</button>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary px-3" style="height: 31px; display: flex; align-items: center;" (click)="goBackToRenewerList()">
+                  <i class="bi bi-arrow-left me-1"></i> Back
+                </button>
+              </div>
+            </div>
+            
+            <div class="row g-3 mb-4">
+              <!-- Renewed -->
+              <div class="col-md-4 col-sm-6">
+                <div class="card h-100 border shadow-sm" style="border-radius: 8px; border-color: #eaedf1;">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small fw-semibold text-uppercase">Renewed</span>
+                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #e6f4ea; color: #1e8e3e;">
+                        <i class="bi bi-check-lg"></i>
+                      </div>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.stats['Renewed'] || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Interested -->
+              <div class="col-md-4 col-sm-6">
+                <div class="card h-100 border shadow-sm" style="border-radius: 8px; border-color: #eaedf1;">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small fw-semibold text-uppercase">Interested</span>
+                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #e8f0fe; color: #1a73e8;">
+                        <i class="bi bi-hand-thumbs-up"></i>
+                      </div>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.stats['Interested'] || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Call Back Later -->
+              <div class="col-md-4 col-sm-6">
+                <div class="card h-100 border shadow-sm" style="border-radius: 8px; border-color: #eaedf1;">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small fw-semibold text-uppercase">Call Back</span>
+                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #fef7e0; color: #f29900;">
+                        <i class="bi bi-clock"></i>
+                      </div>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.stats['Call Back Later'] || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Not Interested -->
+              <div class="col-md-4 col-sm-6">
+                <div class="card h-100 border shadow-sm" style="border-radius: 8px; border-color: #eaedf1;">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small fw-semibold text-uppercase">Not Interested</span>
+                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #fce8e6; color: #d93025;">
+                        <i class="bi bi-x-lg"></i>
+                      </div>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.stats['Not Interested'] || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Voicemail -->
+              <div class="col-md-4 col-sm-6">
+                <div class="card h-100 border shadow-sm" style="border-radius: 8px; border-color: #eaedf1;">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small fw-semibold text-uppercase">Voicemail</span>
+                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #f1f3f4; color: #5f6368;">
+                        <i class="bi bi-voicemail"></i>
+                      </div>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.stats['Voicemail'] || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Externally Renewed -->
+              <div class="col-md-4 col-sm-6">
+                <div class="card h-100 border shadow-sm" style="border-radius: 8px; border-color: #eaedf1;">
+                  <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="text-muted small fw-semibold text-uppercase">Ext. Renewed</span>
+                      <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 28px; height: 28px; background-color: #f3e8fd; color: #9334e6;">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                      </div>
+                    </div>
+                    <h3 class="mb-0 fw-bold text-dark">{{ selectedRenewerStat.stats['Externally Renewed'] || 0 }}</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Total Card -->
+            <div class="p-3 text-center rounded" style="background-color: #f8f9fa; border: 1px solid #eaedf1;">
+               <h4 class="fw-bold mb-1 text-dark">{{ selectedRenewerStat.total }} <span class="text-muted fw-normal fs-6">Total Policies Touched</span></h4>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+    
   `,
   styles: [`
     .admin-container { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-    /* Branch Selector Redesign */
+    /* Simple Custom Utilities */
+    .simple-hover-card { transition: all 0.2s ease; }
+    .simple-hover-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.08)!important; }
+    
+    .fade-in { animation: fadeIn 0.2s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    
     .branch-selector {
       background: white;
       border: 1px solid #e2e8f0;
@@ -1012,6 +1199,7 @@ export class AdminDashboardComponent implements OnInit {
 
   // Renewer Records
   renewerRecords: any[] = [];
+  renewerStats: any[] = [];
 
   // Audit Logs
   auditLogs: any[] = [];
@@ -1031,6 +1219,11 @@ export class AdminDashboardComponent implements OnInit {
   renewalSearchResults: any[] = [];
   newPolicyEndDate: string = '';
 
+  // Renewer Stats Modal
+  showRenewerStatsModal: boolean = false;
+  selectedRenewerStat: any = null;
+  selectedStatsDate: string = '';
+
   constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
@@ -1038,6 +1231,9 @@ export class AdminDashboardComponent implements OnInit {
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
     this.loadInitialData();
+    if (!this.isRmRole()) {
+      this.loadRenewerStats();
+    }
   }
 
   isRmRole(): boolean {
@@ -1048,11 +1244,51 @@ export class AdminDashboardComponent implements OnInit {
     this.loadRenewerRecords();
     // this.loadLateRenewals(); // Not needed as separate section is removed
 
-    // Do not auto-select date. User must select manually.
     this.selectedDate = '';
     this.selectedDay = null;
 
     this.loadBranches();
+  }
+
+  loadRenewerStats(date?: string, agentName?: string) {
+    this.apiService.getRenewerMonthlyStats(date, agentName).subscribe({
+      next: (stats) => {
+        if (agentName) {
+            // Update only the selected renewer
+            const updatedStat = stats.find(s => s.agentName === agentName);
+            if (updatedStat) {
+                this.selectedRenewerStat = updatedStat;
+            } else {
+                // If no stats returned for this agent on this date, zero it out but keep agentName
+                this.selectedRenewerStat = {
+                    agentName: agentName,
+                    stats: {
+                        'Renewed': 0, 'Interested': 0, 'Call Back Later': 0, 
+                        'Not Interested': 0, 'Voicemail': 0, 'Externally Renewed': 0
+                    },
+                    total: 0
+                };
+            }
+        } else {
+            // Update the main list
+            this.renewerStats = stats;
+        }
+      },
+      error: (err) => console.error('Error fetching renewer stats:', err)
+    });
+  }
+
+  onStatsDateChange() {
+    if (this.selectedRenewerStat) {
+        this.loadRenewerStats(this.selectedStatsDate, this.selectedRenewerStat.agentName);
+    }
+  }
+
+  clearStatsDate() {
+    this.selectedStatsDate = '';
+    if (this.selectedRenewerStat) {
+        this.loadRenewerStats(undefined, this.selectedRenewerStat.agentName);
+    }
   }
 
   loadBranches() {
@@ -1068,6 +1304,23 @@ export class AdminDashboardComponent implements OnInit {
   closeBranchModal() {
     this.showBranchModal = false;
     this.newBranchName = '';
+  }
+
+  openRenewerStatsModal() {
+    this.showRenewerStatsModal = true;
+    this.selectedRenewerStat = null;
+  }
+
+  closeRenewerStatsModal() {
+    this.showRenewerStatsModal = false;
+    this.selectedRenewerStat = null;
+    this.selectedStatsDate = '';
+  }
+
+  goBackToRenewerList() {
+    this.selectedRenewerStat = null;
+    this.selectedStatsDate = '';
+    this.loadRenewerStats();
   }
 
   saveBranch() {

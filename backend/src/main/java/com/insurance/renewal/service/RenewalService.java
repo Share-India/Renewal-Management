@@ -825,6 +825,71 @@ public class RenewalService {
         return records;
     }
 
+    public List<Map<String, Object>> getRenewerStats(String dateStr, String agentName) {
+        List<Map<String, Object>> stats = new java.util.ArrayList<>();
+        
+        // 1. Get all users and filter by RENEWER role only
+        List<com.insurance.renewal.entity.User> allUsers = userRepository.findAll();
+        List<com.insurance.renewal.entity.User> renewers = new java.util.ArrayList<>();
+        for (com.insurance.renewal.entity.User u : allUsers) {
+            if (u.getRole() != null && u.getRole().contains("RENEWER")) {
+                if (agentName == null || agentName.trim().isEmpty() || agentName.equals(u.getUsername())) {
+                    renewers.add(u);
+                }
+            }
+        }
+        
+        // 2. Define date range
+        java.time.LocalDateTime startOfRange;
+        java.time.LocalDateTime endOfRange;
+        
+        if (dateStr != null && !dateStr.trim().isEmpty()) {
+            java.time.LocalDate selectedDate = java.time.LocalDate.parse(dateStr);
+            startOfRange = selectedDate.atStartOfDay();
+            endOfRange = startOfRange.plusDays(1).minusNanos(1);
+        } else {
+            startOfRange = java.time.LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            endOfRange = startOfRange.plusMonths(1).minusNanos(1);
+        }
+        
+        for (com.insurance.renewal.entity.User user : renewers) {
+            String username = user.getUsername();
+            List<CallHistory> calls = callHistoryRepository.findByAgentNameAndCallDateBetween(username, startOfRange, endOfRange);
+            
+            Map<String, Integer> outcomeCounts = new HashMap<>();
+            outcomeCounts.put("Renewed", 0);
+            outcomeCounts.put("Interested", 0);
+            outcomeCounts.put("Not Interested", 0);
+            outcomeCounts.put("Call Back Later", 0);
+            outcomeCounts.put("Voicemail", 0);
+            outcomeCounts.put("Externally Renewed", 0);
+            
+            int total = 0;
+            
+            for (CallHistory call : calls) {
+                String outcome = call.getCallOutcome();
+                
+                // Map "Pending Issuance" (used for most policies) to "Renewed" for stats purposes
+                if ("Pending Issuance".equalsIgnoreCase(outcome)) {
+                    outcome = "Renewed";
+                }
+
+                if (outcome != null && outcomeCounts.containsKey(outcome)) {
+                    outcomeCounts.put(outcome, outcomeCounts.get(outcome) + 1);
+                    total++;
+                }
+            }
+            
+            Map<String, Object> renewerStat = new HashMap<>();
+            renewerStat.put("agentName", username);
+            renewerStat.put("stats", outcomeCounts);
+            renewerStat.put("total", total);
+            stats.add(renewerStat);
+        }
+        
+        return stats;
+    }
+
     public List<Reminder> getAllCallRecords(String branch) {
         // Fetch only the 500 most recent records to prevent freezing the Admin
         // Dashboard
@@ -1037,7 +1102,7 @@ public class RenewalService {
 
     @org.springframework.transaction.annotation.Transactional
     public Reminder logCall(Long policyId, String notes, String outcome, java.time.LocalDateTime nextFollowUp,
-            String agentName) {
+            String agentName, String contactTo, String contactName, String contactNumber) {
         Policy policy = policyRepository.findById(policyId)
                 .orElseThrow(() -> new RuntimeException("Policy not found: " + policyId));
 
@@ -1070,6 +1135,9 @@ public class RenewalService {
         history.setNotes(notes);
         history.setFollowUpDate(nextFollowUp);
         history.setAgentName(agentName);
+        history.setContactTo(contactTo);
+        history.setContactName(contactName);
+        history.setContactNumber(contactNumber);
         callHistoryRepository.save(history);
 
         return reminder;

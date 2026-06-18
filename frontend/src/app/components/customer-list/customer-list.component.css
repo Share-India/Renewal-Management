@@ -52,6 +52,49 @@
     background-color: #0b5ed7;
 }
 
+.btn-outline-primary {
+    color: #0d6efd;
+    border: 1px solid #0d6efd !important;
+    background: transparent;
+}
+
+.btn-outline-primary:hover,
+.btn-check:checked + .btn-outline-primary {
+    background-color: #0d6efd;
+    color: white;
+}
+
+/* Custom Segmented Control */
+.custom-segmented-control {
+    display: flex;
+    background-color: #f1f3f5;
+    border-radius: 8px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.custom-segmented-control .segment {
+    flex: 1;
+    text-align: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.custom-segmented-control .segment:hover {
+    background-color: #e9ecef;
+}
+
+.custom-segmented-control .segment.active {
+    background-color: #ffffff;
+    color: #0d6efd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
 .btn-outline-info {
     color: #0dcaf0;
     border: 1px solid #0dcaf0;

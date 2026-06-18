@@ -21,9 +21,13 @@ export class CustomerListComponent {
     selectedPolicyDetails: any = null;
     showLogCallModal: boolean = false;
     showDetailsModal: boolean = false;
+    sendingEmail: boolean = false;
 
     // Form fields
     callNotes: string = '';
+    contactTo: string = '';
+    contactName: string = '';
+    contactNumber: string = '';
     callOutcome: string = 'Interested';
     nextFollowUp: string = '';
 
@@ -166,17 +170,43 @@ export class CustomerListComponent {
         }
     }
 
+    sendEmail() {
+        if (!this.selectedPolicy) return;
+
+        this.sendingEmail = true;
+        this.apiService.sendCustomerEmail(this.selectedPolicy.id).subscribe({
+            next: (response) => {
+                alert('Email sent successfully!');
+                this.sendingEmail = false;
+            },
+            error: (err) => {
+                console.error('Error sending email', err);
+                alert('Failed to send email. Ensure the customer has a valid email address.');
+                this.sendingEmail = false;
+            }
+        });
+    }
+
     openLogCall(policy: any) {
         this.selectedPolicy = policy;
         this.showLogCallModal = true;
         this.callNotes = '';
         this.callOutcome = 'Interested';
         this.nextFollowUp = '';
+        this.contactTo = '';
+        this.contactName = '';
+        this.contactNumber = '';
     }
 
     closeModal() {
         this.showLogCallModal = false;
         this.selectedPolicy = null;
+    }
+
+    validateNumber(event: any) {
+        const input = event.target.value;
+        this.contactNumber = input.replace(/[^0-9]/g, '');
+        event.target.value = this.contactNumber;
     }
 
     submitLogCall() {
@@ -194,7 +224,10 @@ export class CustomerListComponent {
             notes: this.callNotes,
             outcome: this.callOutcome,
             nextFollowUp: this.nextFollowUp || null,
-            agentName: agentName
+            agentName: agentName,
+            contactTo: this.contactTo,
+            contactName: this.contactName,
+            contactNumber: this.contactNumber
         };
 
         this.apiService.logCall(this.selectedPolicy.id, payload).subscribe({

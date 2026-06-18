@@ -448,6 +448,29 @@
                     <option value="Externally Renewed">Externally Renewed</option>
                 </select>
             </div>
+            
+            <div class="form-group mb-3">
+                <label class="form-label d-block text-secondary mb-2">Contact To</label>
+                <div class="custom-segmented-control">
+                    <div class="segment" [class.active]="contactTo === 'Client'" (click)="contactTo = 'Client'">Client</div>
+                    <div class="segment" [class.active]="contactTo === 'RM'" (click)="contactTo = 'RM'">RM</div>
+                    <div class="segment" [class.active]="contactTo === 'Associate'" (click)="contactTo = 'Associate'">Associate</div>
+                </div>
+            </div>
+            
+            <div class="form-group" *ngIf="contactTo">
+                <div class="row">
+                    <div class="col-6">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" [(ngModel)]="contactName" placeholder="Enter name">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Number</label>
+                        <input type="text" inputmode="numeric" class="form-control" [(ngModel)]="contactNumber" (input)="validateNumber($event)" placeholder="Enter number" maxlength="15">
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label class="form-label">Notes</label>
                 <textarea class="form-control" rows="3" [(ngModel)]="callNotes"
@@ -458,10 +481,18 @@
                 <input type="datetime-local" class="form-control" [(ngModel)]="nextFollowUp" [min]="minDate">
             </div>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-            <button class="btn btn-primary" [disabled]="!nextFollowUp" (click)="submitLogCall()">Save Log</button>
-        </div>
+            <div class="modal-footer border-top-0 d-flex justify-content-between">
+                <button type="button" class="btn btn-outline-info d-flex align-items-center" 
+                        (click)="sendEmail()" [disabled]="sendingEmail">
+                    <i class="bi bi-envelope-fill me-2" *ngIf="!sendingEmail"></i>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="sendingEmail"></span>
+                    {{ sendingEmail ? 'Sending...' : 'Email Customer' }}
+                </button>
+                <div>
+                    <button type="button" class="btn btn-secondary me-2" (click)="closeModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary px-4" (click)="submitLogCall()">Save Log</button>
+                </div>
+            </div>
     </div>
 </div>
 
@@ -665,6 +696,12 @@
                             <small class="text-muted">{{ record.callDate | date:'medium' }}</small>
                         </div>
                         <p class="mb-2">{{ record.notes }}</p>
+                        <div *ngIf="record.contactTo" class="mb-2 p-2 bg-light rounded border" style="font-size: 0.85rem;">
+                            <strong>Contacted {{ record.contactTo }}</strong><span *ngIf="record.contactName || record.contactNumber">:</span>
+                            <span *ngIf="record.contactName" class="ms-1">{{ record.contactName }}</span>
+                            <span *ngIf="record.contactName && record.contactNumber" class="text-muted"> | </span>
+                            <span *ngIf="record.contactNumber"><i class="bi bi-telephone-fill ms-1 me-1 small"></i>{{ record.contactNumber }}</span>
+                        </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <small class="text-muted">
                                 <i class="bi bi-person-circle me-1"></i>{{ record.agentName }}

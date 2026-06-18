@@ -189,6 +189,21 @@ export class ApiService {
         if (branch) url += `?branch=${encodeURIComponent(branch)}`;
         return this.http.get<string[]>(url, { headers: this.getHeaders() });
     }
+
+  sendCustomerEmail(policyId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/renewals/${policyId}/send-email`, {}, { headers: this.getHeaders() });
+  }
+
+  getRenewerMonthlyStats(date?: string, agentName?: string): Observable<any[]> {
+    let url = `${this.baseUrl}/renewals/admin/renewer-stats`;
+    const params: string[] = [];
+    if (date) params.push(`date=${encodeURIComponent(date)}`);
+    if (agentName) params.push(`agentName=${encodeURIComponent(agentName)}`);
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+    return this.http.get<any[]>(url, { headers: this.getHeaders() });
+  }
 }
 
 export interface Customer {

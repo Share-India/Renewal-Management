@@ -4,6 +4,8 @@ import com.insurance.renewal.entity.Policy;
 import com.insurance.renewal.entity.Reminder;
 import com.insurance.renewal.entity.AuditLog;
 import com.insurance.renewal.service.RenewalService;
+import com.insurance.renewal.service.EmailService;
+import com.insurance.renewal.repository.PolicyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +21,12 @@ public class RenewalController {
 
     @Autowired
     private RenewalService renewalService;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Autowired
+    private PolicyRepository policyRepository;
 
     @GetMapping("/timeline/{days}")
     public List<Policy> getTimelinePolicies(@PathVariable("days") int days) {
@@ -99,6 +107,10 @@ public class RenewalController {
         String dateStr = (String) payload.get("nextFollowUp");
         java.time.LocalDateTime nextFollowUp = dateStr != null ? java.time.LocalDateTime.parse(dateStr) : null;
 
+        String contactTo = (String) payload.get("contactTo");
+        String contactName = (String) payload.get("contactName");
+        String contactNumber = (String) payload.get("contactNumber");
+
         // Get current user
         String agentName = (String) payload.get("agentName");
         if (agentName == null || agentName.isEmpty()) {
@@ -110,12 +122,36 @@ public class RenewalController {
             agentName = "System Admin"; // Fallback if no user is logged in
         }
 
-        return ResponseEntity.ok(renewalService.logCall(policyId, notes, outcome, nextFollowUp, agentName));
+        return ResponseEntity.ok(renewalService.logCall(policyId, notes, outcome, nextFollowUp, agentName, contactTo, contactName, contactNumber));
+    }
+
+    @PostMapping("/{policyId}/send-email")
+    public ResponseEntity<Map<String, String>> sendCustomerEmail(@PathVariable("policyId") Long policyId) {
+        String agentName = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+
+        if (agentName == null || agentName.equals("anonymousUser")) {
+            agentName = "System Admin";
+        }
+
+        Policy policy = policyRepository.findById(policyId)
+                .orElseThrow(() -> new RuntimeException("Policy not found with ID: " + policyId));
+
+        emailService.sendCustomerRenewalEmail(policy, agentName);
+
+        return ResponseEntity.ok(Map.of("message", "Email sent successfully"));
     }
 
     @GetMapping("/admin/call-records")
     public ResponseEntity<List<Reminder>> getAllCallRecords(@RequestParam(value = "branch", required = false) String branch) {
         return ResponseEntity.ok(renewalService.getAllCallRecords(branch));
+    }
+
+    @GetMapping("/admin/renewer-stats")
+    public ResponseEntity<List<Map<String, Object>>> getRenewerStats(
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String agentName) {
+        return ResponseEntity.ok(renewalService.getRenewerStats(date, agentName));
     }
 
     @GetMapping("/admin/records")
