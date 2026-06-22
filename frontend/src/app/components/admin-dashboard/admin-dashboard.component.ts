@@ -894,8 +894,15 @@ import * as XLSX from 'xlsx';
             </div>
             
             <!-- Total Card -->
-            <div class="p-3 text-center rounded" style="background-color: #f8f9fa; border: 1px solid #eaedf1;">
-               <h4 class="fw-bold mb-1 text-dark">{{ selectedRenewerStat.total }} <span class="text-muted fw-normal fs-6">/ {{ selectedRenewerStat.assignedCount || 0 }} Total Policies Touched</span></h4>
+            <div class="d-flex rounded mt-3" style="background-color: #f8f9fa; border: 1px solid #eaedf1; overflow: hidden;">
+              <div class="flex-fill p-3 text-center border-end" style="border-color: #eaedf1 !important;">
+                 <h4 class="fw-bold mb-1 text-dark">{{ selectedRenewerStat.total }}</h4>
+                 <div class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">Total Calls Made</div>
+              </div>
+              <div class="flex-fill p-3 text-center" style="background-color: #f1f8ff;">
+                 <h4 class="fw-bold mb-1 text-primary">{{ selectedRenewerStat.uniqueCount || 0 }} <span class="text-muted fw-normal fs-5">/ {{ selectedRenewerStat.assignedCount || 0 }}</span></h4>
+                 <div class="text-primary text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px; opacity: 0.8;">Unique Policies Touched</div>
+              </div>
             </div>
           </div>
           

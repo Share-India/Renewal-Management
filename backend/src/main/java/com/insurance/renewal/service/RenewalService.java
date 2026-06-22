@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 
 @Service
 public class RenewalService {
@@ -886,12 +888,21 @@ public class RenewalService {
                 }
             }
             
+            Set<Long> uniquePolicyIds = new HashSet<>();
+            for (CallHistory call : calls) {
+                if (call.getPolicy() != null) {
+                    uniquePolicyIds.add(call.getPolicy().getId());
+                }
+            }
+            int uniqueCount = uniquePolicyIds.size();
+            
             int assignedCount = applySpecificRenewerFilters(allPoliciesInRange, user).size();
             
             Map<String, Object> renewerStat = new HashMap<>();
             renewerStat.put("agentName", username);
             renewerStat.put("stats", outcomeCounts);
             renewerStat.put("total", total);
+            renewerStat.put("uniqueCount", uniqueCount);
             renewerStat.put("assignedCount", assignedCount);
             stats.add(renewerStat);
         }
