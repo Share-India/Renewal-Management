@@ -53,6 +53,10 @@ public class RenewalService {
         if (user == null || user.getRole() == null || (!user.getRole().contains("RENEWER") && !user.getRole().contains("RM")))
             return policies;
 
+        return applySpecificRenewerFilters(policies, user);
+    }
+
+    private List<Policy> applySpecificRenewerFilters(List<Policy> policies, com.insurance.renewal.entity.User user) {
         return policies.stream().filter(p -> {
             // Role RM Logic
             if (user.getRole().contains("RM")) {
@@ -852,6 +856,8 @@ public class RenewalService {
             endOfRange = startOfRange.plusMonths(1).minusNanos(1);
         }
         
+        List<Policy> allPoliciesInRange = policyRepository.findByExpiryDateBetween(startOfRange.toLocalDate(), endOfRange.toLocalDate());
+        
         for (com.insurance.renewal.entity.User user : renewers) {
             String username = user.getUsername();
             List<CallHistory> calls = callHistoryRepository.findByAgentNameAndCallDateBetween(username, startOfRange, endOfRange);
@@ -880,10 +886,13 @@ public class RenewalService {
                 }
             }
             
+            int assignedCount = applySpecificRenewerFilters(allPoliciesInRange, user).size();
+            
             Map<String, Object> renewerStat = new HashMap<>();
             renewerStat.put("agentName", username);
             renewerStat.put("stats", outcomeCounts);
             renewerStat.put("total", total);
+            renewerStat.put("assignedCount", assignedCount);
             stats.add(renewerStat);
         }
         

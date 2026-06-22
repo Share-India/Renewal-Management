@@ -36,10 +36,9 @@ import { forkJoin, of } from 'rxjs';
           <div class="toast-body p-0 overflow-auto" style="max-height: 350px; overflow-x: hidden !important;">
             <div class="list-group list-group-flush">
               <ng-container *ngFor="let p of topHighValuePolicies; let i = index">
-                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3" 
-                     [ngClass]="{'list-group-item-action': p.policyCount > 1}"
-                     [style.cursor]="p.policyCount > 1 ? 'pointer' : 'default'"
-                     (click)="p.policyCount > 1 ? p.expanded = !p.expanded : null">
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 list-group-item-action" 
+                     style="cursor: pointer;"
+                     (click)="p.policyCount > 1 ? p.expanded = !p.expanded : jumpToRecord(p.policies[0])">
                   <div class="me-2" style="flex: 1; min-width: 0;">
                     <div class="fw-bold text-dark text-truncate small" [title]="p.customerName">
                       {{i + 1}}. {{ p.customerName }}
@@ -61,7 +60,7 @@ import { forkJoin, of } from 'rxjs';
                 
                 <!-- Expanded Policies -->
                 <div class="list-group-item bg-light p-2" *ngIf="p.policyCount > 1 && p.expanded">
-                  <div *ngFor="let sub of p.policies; let last = last" class="d-flex justify-content-between align-items-center" [ngClass]="{'border-bottom pb-1 mb-1': !last}">
+                  <div *ngFor="let sub of p.policies; let last = last" class="d-flex justify-content-between align-items-center rounded px-2 py-1 list-group-item-action" [ngClass]="{'mb-1': !last}" style="cursor: pointer;" (click)="jumpToRecord(sub)">
                     <div class="text-truncate me-2" style="font-size: 0.7rem;">
                       <i class="bi bi-arrow-return-right text-muted mx-1"></i>
                       <span class="text-dark fw-medium">{{ sub.insuranceName || sub.type }}</span>
@@ -447,7 +446,12 @@ export class RenewalComponent implements OnInit {
     });
   }
 
-  onDaySelected(day: number) {
+  onDaySelected(day: number, keepSearch: boolean = false) {
+    if (!keepSearch) {
+      this.listSearchTerm = '';
+      this.searchBy = 'customer';
+    }
+    
     this.selectedDay = day;
     this.loading = true;
 
@@ -568,6 +572,23 @@ export class RenewalComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
+  jumpToRecord(policy: any) {
+    this.showHighValuePopup = false;
+    this.listSearchTerm = policy.policyNumber;
+    this.searchBy = 'customer';
+    
+    // Ensure we are on a view that shows these records (Next 60 Days view)
+    // The HTTP call inside onDaySelected will automatically call applyFilters() 
+    // after it finishes, picking up the listSearchTerm we just set!
+    if (this.selectedDay !== 600) {
+        this.onDaySelected(600, true);
+    } else {
+        this.applyFilters();
+    }
+    
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
   applyFilters() {
     const term = this.listSearchTerm.toLowerCase().trim();
 
@@ -645,6 +666,8 @@ export class RenewalComponent implements OnInit {
   }
 
   openTodaysWork() {
+    this.listSearchTerm = '';
+    this.searchBy = 'customer';
     this.selectedDay = 'todays-work';
     this.loading = true;
     this.apiService.getTodaysWork().subscribe({
@@ -710,6 +733,10 @@ export class RenewalComponent implements OnInit {
   }
 
   getSectionTitle(): string {
+    if (this.listSearchTerm && this.listSearchTerm.trim() !== '') {
+      return `Search Results for "${this.listSearchTerm}"`;
+    }
+    
     if (this.selectedDay === null) return '';
     if (this.selectedDay === 'todays-work') return "Today's Work ";
     if (this.selectedDay === 600) return 'All Policies Expiring in Next 60 Days';
@@ -743,9 +770,13 @@ export class RenewalComponent implements OnInit {
   };
   newPolicyEndDate: string = '';
 
-  openRenewalModal() {
+  openRenewalModal(policy: any = null) {
     this.showRenewalModal = true;
-    this.resetRenewalForm();
+    if (policy) {
+      this.selectPolicyForRenewal(policy);
+    } else {
+      this.resetRenewalForm();
+    }
   }
 
   closeRenewalModal() {

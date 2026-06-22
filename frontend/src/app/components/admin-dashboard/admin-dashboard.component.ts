@@ -81,8 +81,6 @@ import * as XLSX from 'xlsx';
 
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
 
-      <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
-
       <div class="mt-4 mb-3">
         <app-timeline [counts]="timelineCounts" [adminMode]="true" [userRole]="isRmRole() ? 'RM' : 'ADMIN'" (daySelected)="onDaySelected($event)"></app-timeline>
       </div>
@@ -691,10 +689,9 @@ import * as XLSX from 'xlsx';
         <div class="toast-body p-0 overflow-auto" style="max-height: 350px; overflow-x: hidden !important;">
           <div class="list-group list-group-flush">
             <ng-container *ngFor="let p of topHighValuePolicies; let i = index">
-              <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3" 
-                   [ngClass]="{'list-group-item-action': p.policyCount > 1}"
-                   [style.cursor]="p.policyCount > 1 ? 'pointer' : 'default'"
-                   (click)="p.policyCount > 1 ? p.expanded = !p.expanded : null">
+              <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 list-group-item-action" 
+                   style="cursor: pointer;"
+                   (click)="p.policyCount > 1 ? p.expanded = !p.expanded : jumpToRecord(p.policies[0])">
                 <div class="me-2" style="flex: 1; min-width: 0;">
                   <div class="fw-bold text-dark text-truncate small" [title]="p.customerName">
                     {{i + 1}}. {{ p.customerName }}
@@ -716,7 +713,7 @@ import * as XLSX from 'xlsx';
               
               <!-- Expanded Policies -->
               <div class="list-group-item bg-light p-2" *ngIf="p.policyCount > 1 && p.expanded">
-                <div *ngFor="let sub of p.policies; let last = last" class="d-flex justify-content-between align-items-center" [ngClass]="{'border-bottom pb-1 mb-1': !last}">
+                <div *ngFor="let sub of p.policies; let last = last" class="d-flex justify-content-between align-items-center rounded px-2 py-1 list-group-item-action" [ngClass]="{'mb-1': !last}" style="cursor: pointer;" (click)="jumpToRecord(sub)">
                   <div class="text-truncate me-2" style="font-size: 0.7rem;">
                     <i class="bi bi-arrow-return-right text-muted mx-1"></i>
                     <span class="text-dark fw-medium">{{ sub.insuranceName || sub.type }}</span>
@@ -898,7 +895,7 @@ import * as XLSX from 'xlsx';
             
             <!-- Total Card -->
             <div class="p-3 text-center rounded" style="background-color: #f8f9fa; border: 1px solid #eaedf1;">
-               <h4 class="fw-bold mb-1 text-dark">{{ selectedRenewerStat.total }} <span class="text-muted fw-normal fs-6">Total Policies Touched</span></h4>
+               <h4 class="fw-bold mb-1 text-dark">{{ selectedRenewerStat.total }} <span class="text-muted fw-normal fs-6">/ {{ selectedRenewerStat.assignedCount || 0 }} Total Policies Touched</span></h4>
             </div>
           </div>
           
@@ -1429,6 +1426,20 @@ export class AdminDashboardComponent implements OnInit {
     }
     this.showHighValuePopup = show;
     this.cdr.detectChanges();
+  }
+
+  jumpToRecord(policy: any) {
+    this.showHighValuePopup = false;
+    this.adminSearchTerm = policy.policyNumber;
+    this.searchAdminDailyRecords();
+    
+    // Scroll smoothly to the Daily Records View section
+    setTimeout(() => {
+        const dailyViewElement = document.querySelector('.date-view-card');
+        if (dailyViewElement) {
+            dailyViewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, 100);
   }
 
   // loadLateRenewals removed as per user request
