@@ -858,7 +858,7 @@ public class RenewalService {
             endOfRange = startOfRange.plusMonths(1).minusNanos(1);
         }
         
-        List<Policy> allPoliciesInRange = policyRepository.findByExpiryDateBetween(startOfRange.toLocalDate(), endOfRange.toLocalDate());
+        List<Policy> allPoliciesInRange = policyRepository.findPoliciesOriginallyExpiringInRange(startOfRange.toLocalDate(), endOfRange.toLocalDate());
         
         for (com.insurance.renewal.entity.User user : renewers) {
             String username = user.getUsername();

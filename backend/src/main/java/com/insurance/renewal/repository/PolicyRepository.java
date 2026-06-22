@@ -28,6 +28,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         List<Policy> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
 
+        @Query("SELECT p FROM Policy p WHERE (p.expiryDate >= :startDate AND p.expiryDate <= :endDate) OR (p.lastExpiryDate >= :startDate AND p.lastExpiryDate <= :endDate)")
+        List<Policy> findPoliciesOriginallyExpiringInRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
         List<Policy> findByExpiryDateBeforeAndStatus(LocalDate date, String status);
 
         @Query("SELECT COUNT(p) FROM Policy p LEFT JOIN p.reminder r WHERE " +
