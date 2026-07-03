@@ -193,7 +193,7 @@ export class CustomerListComponent {
     }
 
     get isRm(): boolean {
-        return this.authService.getRole() === 'RM';
+        return this.authService.hasRole('RM');
     }
 
     openRmUpdateModal(policy: any) {
