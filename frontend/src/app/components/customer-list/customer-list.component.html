@@ -733,9 +733,9 @@
 
 <!-- RM Update Modal -->
 <div class="modal-overlay" *ngIf="showRmUpdateModal" (click)="closeRmUpdateModal()">
-    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="max-width: 550px; padding: 0; overflow: hidden;">
+    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="width: 90%; max-width: 500px; padding: 0; overflow: hidden;">
         <div class="modal-header p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
-            <h4 class="mb-0 text-info fw-bold"><i class="bi bi-pencil-square me-2"></i>RM Update</h4>
+            <h5 class="mb-0 text-dark fw-bold"><i class="bi bi-chat-left-text-fill me-2 text-info"></i>RM Update</h5>
             <button class="btn-close" (click)="closeRmUpdateModal()"></button>
         </div>
         <div class="modal-body p-4">
@@ -745,15 +745,17 @@
                 <textarea class="form-control" rows="5" [(ngModel)]="rmUpdateText" placeholder="Enter RM update here..." style="resize: none; border-radius: 8px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.075);"></textarea>
             </div>
             <ng-template #viewOnlyUpdate>
-                <label class="form-label fw-bold text-secondary mb-2">RM's Note</label>
-                <div class="p-3 rounded border shadow-sm" style="background-color: #f8fbff; border-color: #bee5eb !important;">
-                    <p class="mb-0 text-dark" style="white-space: pre-wrap; font-size: 1.05rem;">{{ rmUpdateText || 'No update provided.' }}</p>
+                <div class="p-4 rounded-3 border bg-white shadow-sm position-relative">
+                    <div class="position-absolute top-0 start-0 translate-middle ms-4 mt-1 bg-white px-2">
+                        <small class="fw-bold text-muted text-uppercase" style="letter-spacing: 0.5px;">RM Note</small>
+                    </div>
+                    <p class="mb-0 mt-2 text-dark" style="white-space: pre-wrap; font-size: 1rem; line-height: 1.5;">{{ rmUpdateText || 'No update provided.' }}</p>
                 </div>
             </ng-template>
         </div>
-        <div class="modal-footer p-3 border-top d-flex justify-content-end bg-white">
-            <button class="btn btn-light me-2 rounded-pill px-4 border" (click)="closeRmUpdateModal()">Close</button>
-            <button *ngIf="isRm" class="btn btn-info text-white rounded-pill px-4 shadow-sm fw-bold" (click)="submitRmUpdate()">Save Update</button>
+        <div class="modal-footer p-3 border-top d-flex justify-content-end bg-light">
+            <button class="btn btn-secondary rounded-pill px-4" (click)="closeRmUpdateModal()">Close</button>
+            <button *ngIf="isRm" class="btn btn-info text-white rounded-pill px-4 shadow-sm fw-bold ms-2" (click)="submitRmUpdate()">Save Update</button>
         </div>
     </div>
 </div>
