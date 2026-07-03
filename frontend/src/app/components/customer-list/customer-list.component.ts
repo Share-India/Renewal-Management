@@ -22,6 +22,11 @@ export class CustomerListComponent {
     showLogCallModal: boolean = false;
     showDetailsModal: boolean = false;
     sendingEmail: boolean = false;
+    
+    // RM Update Logic
+    showRmUpdateModal: boolean = false;
+    rmUpdateText: string = '';
+    selectedPolicyForRmUpdate: any = null;
 
     // Form fields
     callNotes: string = '';
@@ -183,6 +188,44 @@ export class CustomerListComponent {
                 console.error('Error sending email', err);
                 alert('Failed to send email. Ensure the customer has a valid email address.');
                 this.sendingEmail = false;
+            }
+        });
+    }
+
+    get isRm(): boolean {
+        return this.authService.getRole() === 'RM';
+    }
+
+    openRmUpdateModal(policy: any) {
+        this.selectedPolicyForRmUpdate = policy;
+        this.rmUpdateText = policy.rmUpdate || '';
+        this.showRmUpdateModal = true;
+    }
+
+    closeRmUpdateModal() {
+        this.showRmUpdateModal = false;
+        this.selectedPolicyForRmUpdate = null;
+        this.rmUpdateText = '';
+    }
+
+    submitRmUpdate() {
+        if (!this.selectedPolicyForRmUpdate) return;
+        this.apiService.saveRmUpdate(this.selectedPolicyForRmUpdate.id, this.rmUpdateText).subscribe({
+            next: (updatedPolicy) => {
+                // Update local list
+                const index = this.policies.findIndex(p => p.id === updatedPolicy.id);
+                if (index !== -1) {
+                    this.policies[index].rmUpdate = updatedPolicy.rmUpdate;
+                }
+                if (this.selectedPolicy && this.selectedPolicy.id === updatedPolicy.id) {
+                    this.selectedPolicy.rmUpdate = updatedPolicy.rmUpdate;
+                }
+                alert('RM Update saved successfully!');
+                this.closeRmUpdateModal();
+            },
+            error: (err) => {
+                console.error('Error saving RM update', err);
+                alert('Failed to save RM update.');
             }
         });
     }

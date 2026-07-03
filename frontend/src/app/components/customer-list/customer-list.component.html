@@ -26,8 +26,14 @@
             </thead>
             <tbody>
                 <tr *ngFor="let policy of policies">
-                    <td class="fw-bold text-break" style="max-width: 150px; word-break: break-word;">{{
-                        policy.policyNumber }}</td>
+                    <td class="text-break" style="max-width: 150px; word-break: break-word;">
+                        <div class="fw-bold">{{ policy.policyNumber }}</div>
+                        <div *ngIf="policy.rmUpdate" class="mt-1">
+                            <span class="badge bg-info text-dark" style="cursor: pointer;" (click)="openRmUpdateModal(policy)" title="View RM Update">
+                                <i class="bi bi-chat-text me-1"></i>RM Update
+                            </span>
+                        </div>
+                    </td>
                     <td>
                         <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
                         <small class="text-muted">{{ policy.type }} • {{ policy.amount | currency:'INR' }}</small>
@@ -93,6 +99,10 @@
                             <button class="btn btn-sm btn-outline-secondary" (click)="openHistoryModal(policy)"
                                 title="Call History">
                                 <i class="bi bi-clock-history"></i>
+                            </button>
+                            <button *ngIf="isRm" class="btn btn-sm btn-outline-info" (click)="openRmUpdateModal(policy)"
+                                title="RM Update">
+                                <i class="bi bi-pencil-square"></i>
                             </button>
                             <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger"
                                 (click)="onDeletePolicy(policy)" title="Delete Policy">
@@ -717,6 +727,31 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" (click)="closeHistoryModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- RM Update Modal -->
+<div class="modal-overlay" *ngIf="showRmUpdateModal" (click)="closeRmUpdateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 500px;">
+        <div class="modal-header d-flex justify-content-between align-items-center mb-3">
+            <h5 class="m-0"><i class="bi bi-pencil-square me-2 text-info"></i>RM Update</h5>
+            <button class="btn-close" (click)="closeRmUpdateModal()"></button>
+        </div>
+        <div class="modal-body mb-3">
+            <div *ngIf="isRm; else viewOnlyUpdate">
+                <label class="form-label">Update Note (This will overwrite any previous note)</label>
+                <textarea class="form-control" rows="4" [(ngModel)]="rmUpdateText" placeholder="Enter RM update here..."></textarea>
+            </div>
+            <ng-template #viewOnlyUpdate>
+                <div class="p-3 bg-light rounded border">
+                    <p class="mb-0" style="white-space: pre-wrap;">{{ rmUpdateText }}</p>
+                </div>
+            </ng-template>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary me-2" (click)="closeRmUpdateModal()">Close</button>
+            <button *ngIf="isRm" class="btn btn-primary" (click)="submitRmUpdate()">Save Update</button>
         </div>
     </div>
 </div>

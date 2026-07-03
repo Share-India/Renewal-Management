@@ -134,6 +134,9 @@ public class Policy {
     @Column(name = "branch")
     private String branch;
 
+    @Column(name = "rm_update", columnDefinition = "TEXT")
+    private String rmUpdate;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

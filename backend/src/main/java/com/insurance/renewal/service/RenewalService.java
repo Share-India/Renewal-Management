@@ -569,6 +569,17 @@ public class RenewalService {
 
     }
 
+    public Policy saveRmUpdate(Long policyId, String rmUpdate, String agentName) {
+        Policy policy = policyRepository.findById(policyId)
+                .orElseThrow(() -> new RuntimeException("Policy not found"));
+        
+        String oldUpdate = policy.getRmUpdate();
+        policy.setRmUpdate(rmUpdate);
+        logChange(policyId, "RM Update", oldUpdate, rmUpdate, agentName);
+        
+        return policyRepository.save(policy);
+    }
+
     private String resolveEffectiveBranch(String requestedBranch) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();

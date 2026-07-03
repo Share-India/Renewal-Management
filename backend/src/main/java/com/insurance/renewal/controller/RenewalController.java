@@ -142,6 +142,18 @@ public class RenewalController {
         return ResponseEntity.ok(Map.of("message", "Email sent successfully"));
     }
 
+    @PostMapping("/{policyId}/rm-update")
+    public ResponseEntity<Policy> saveRmUpdate(@PathVariable("policyId") Long policyId,
+            @RequestBody Map<String, String> payload,
+            org.springframework.security.core.Authentication authentication) {
+        String updateText = payload.get("rmUpdate");
+        String agentName = authentication != null ? authentication.getName() : "System Admin";
+        if (agentName.equals("anonymousUser")) agentName = "System Admin";
+        
+        Policy updated = renewalService.saveRmUpdate(policyId, updateText, agentName);
+        return ResponseEntity.ok(updated);
+    }
+
     @GetMapping("/admin/call-records")
     public ResponseEntity<List<Reminder>> getAllCallRecords(@RequestParam(value = "branch", required = false) String branch) {
         return ResponseEntity.ok(renewalService.getAllCallRecords(branch));
