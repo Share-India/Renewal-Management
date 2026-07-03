@@ -100,9 +100,9 @@
                                 title="Call History">
                                 <i class="bi bi-clock-history"></i>
                             </button>
-                            <button *ngIf="isRm" class="btn btn-sm btn-outline-info" (click)="openRmUpdateModal(policy)"
-                                title="RM Update">
-                                <i class="bi bi-pencil-square"></i>
+                            <button *ngIf="isRm" class="btn btn-sm btn-info text-white fw-bold px-2 shadow-sm" (click)="openRmUpdateModal(policy)"
+                                title="Add RM Update">
+                                <i class="bi bi-pencil-square me-1"></i>RM
                             </button>
                             <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger"
                                 (click)="onDeletePolicy(policy)" title="Delete Policy">
