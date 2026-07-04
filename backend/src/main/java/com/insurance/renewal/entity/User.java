@@ -35,6 +35,6 @@ public class User {
     @Column(name = "assigned_customers", columnDefinition = "TEXT")
     private String assignedCustomers;
 
-    @Column(name = "assigned_rm")
+    @Column(name = "assigned_rm", columnDefinition = "TEXT")
     private String assignedRm;
 }
