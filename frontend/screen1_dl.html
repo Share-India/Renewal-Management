@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Share India Insurance - Role Selection</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#e2e2e5",
+                        "primary-container": "#0f52ba",
+                        "outline-variant": "#c3c6d5",
+                        "surface-variant": "#e2e2e5",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#eeeef0",
+                        "secondary": "#006d37",
+                        "tertiary-fixed": "#f8d8ff",
+                        "background": "#f9f9fc",
+                        "secondary-container": "#6bfe9c",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#6bfe9c",
+                        "surface-bright": "#f9f9fc",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#dadadc",
+                        "on-tertiary-container": "#efbdff",
+                        "on-primary-fixed-variant": "#00419c",
+                        "inverse-surface": "#2f3133",
+                        "on-surface": "#1a1c1e",
+                        "on-error-container": "#93000a",
+                        "on-background": "#1a1c1e",
+                        "on-surface-variant": "#434653",
+                        "surface-container-low": "#f3f3f6",
+                        "primary": "#003c90",
+                        "inverse-primary": "#b0c6ff",
+                        "on-secondary-fixed-variant": "#005228",
+                        "on-tertiary-fixed-variant": "#6c228c",
+                        "on-primary-fixed": "#001945",
+                        "on-secondary-container": "#00743a",
+                        "tertiary-fixed-dim": "#ecb2ff",
+                        "on-primary": "#ffffff",
+                        "surface-tint": "#1d59c1",
+                        "tertiary": "#661985",
+                        "primary-fixed": "#d9e2ff",
+                        "inverse-on-surface": "#f0f0f3",
+                        "on-secondary-fixed": "#00210c",
+                        "primary-fixed-dim": "#b0c6ff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#bcceff",
+                        "surface-container-high": "#e8e8ea",
+                        "tertiary-container": "#80369f",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "surface": "#f9f9fc",
+                        "outline": "#737784",
+                        "secondary-fixed-dim": "#4ae183"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "base": "8px",
+                        "container-max-width": "1440px",
+                        "gutter-mobile": "16px",
+                        "gutter-desktop": "32px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-xl": ["Inter"],
+                        "title-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-xs": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-xl": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "label-sm": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "label-xs": ["12px", { "lineHeight": "16px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.4);
+            border-left: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(0, 60, 144, 0.1);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .glass-card:hover {
+            transform: scale(1.02) translateY(-4px);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12px 40px 0 rgba(0, 60, 144, 0.15);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+        .glass-card:hover .icon-wrapper {
+            background-color: var(--color-primary-container);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen font-body-lg text-on-surface antialiased overflow-x-hidden flex flex-col relative">
+<!-- Background Image with Overlay -->
+<div class="fixed inset-0 z-0 pointer-events-none">
+<div aria-hidden="true" class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida/AP1WRLtPLQONRfDbNbecUVn_wY5pUQOtlmkyzWic3bgk2mWfQgNw11t97Ctwvv7lmBU93lot5WJSxo2MuE9iGDe3gy0DTGeLtNObQNwz5eTYGPDF4CZ3PE9EjRHf3JyO5KKq8SJWneP46q6cJTxDuY0hPZU9ExvxFd-zV30ECEYfwPd6n36unDxqmOw8R8jmOHuCab7ZbHT946dPleyF4eWewjswurHD-HUUcqb9uGaCYkWcVmahq2ZGreaGRL0m');"></div>
+<div class="absolute inset-0 bg-surface/70 backdrop-blur-sm"></div>
+</div>
+<!-- Header (Standalone, not using TopNavBar as it's a login/transactional screen) -->
+<header class="relative z-10 w-full px-margin-mobile md:px-margin-desktop py-6 flex justify-between items-center max-w-container-max-width mx-auto">
+<div class="flex items-center gap-4">
+<img alt="Share India Logo" class="h-10 w-auto rounded-md shadow-sm" src="https://lh3.googleusercontent.com/aida/AP1WRLsdsy9s2YizQE4OvCO9now_XyZNuB1RLCqFuB7K3oNb1pmTnzob3Obb_9Zg9L372uVmvLruP6gYXGFULjcgb6Tus2yRGOnWlrEfPv1NRo1UQQg70liZJdo0dIjO0EhMxkg4YqHm2oR4aHE3vpipcZzi276Q8TPbTeWuhK_THZcbn6rg_aKJadW_aizqCJ0o1qpG6B0oMQZXota77FOCcNXqYj5cvS4pnnYkDuD6WmK5NS933KZI9rnE5xQP"/>
+<div class="font-title-md text-primary font-bold tracking-tight hidden sm:block">Share India Insurance</div>
+</div>
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">language</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative z-10 flex-grow flex items-center justify-center px-margin-mobile md:px-margin-desktop py-12">
+<div class="glass-panel w-full max-w-6xl rounded-xl p-8 md:p-12">
+<div class="text-center mb-12">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-4">Welcome back. Select your workspace.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">Choose your specialized role portal to access dedicated tools, secure records, and workflow management for the insurance renewal lifecycle.</p>
+</div>
+<!-- 8-Card Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1: Renewer -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">autorenew</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Renewer</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Manage active renewals</p>
+</div>
+</button>
+<!-- Card 2: Policy Servicing -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Policy Servicing</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Updates &amp; endorsements</p>
+</div>
+</button>
+<!-- Card 3: MIS Dashboard -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">query_stats</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">MIS Dashboard</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Analytics &amp; reporting</p>
+</div>
+</button>
+<!-- Card 4: Relationship Manager -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">handshake</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Relationship Manager</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Client relations</p>
+</div>
+</button>
+<!-- Card 5: Claims Team -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Claims Team</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Process resolutions</p>
+</div>
+</button>
+<!-- Card 6: Sales Team -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Sales Team</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">New business</p>
+</div>
+</button>
+<!-- Card 7: Underwriting Team -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">Underwriting Team</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Risk assessment</p>
+</div>
+</button>
+<!-- Card 8: System Admin -->
+<button class="glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<div class="icon-wrapper w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-primary transition-colors duration-300">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">admin_panel_settings</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface group-hover:text-primary transition-colors">System Admin</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Platform config</p>
+</div>
+</button>
+</div>
+</div>
+</main>
+<!-- Footer Component from JSON -->
+<footer class="relative z-10 w-full bg-transparent mt-auto">
+<div class="bg-surface-container/10 backdrop-blur-md">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-desktop py-6 max-w-container-max-width mx-auto">
+<div class="font-title-md text-primary mb-4 md:mb-0">
+                    Share India Insurance
+                </div>
+<div class="flex flex-wrap justify-center gap-6 mb-4 md:mb-0">
+<a class="font-label-xs text-label-xs text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all opacity-80 hover:opacity-100" href="#">Privacy Policy</a>
+<a class="font-label-xs text-label-xs text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all opacity-80 hover:opacity-100" href="#">Terms of Service</a>
+<a class="font-label-xs text-label-xs text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all opacity-80 hover:opacity-100" href="#">Security Compliance</a>
+<a class="font-label-xs text-label-xs text-on-surface-variant dark:text-outline-variant hover:text-primary transition-all opacity-80 hover:opacity-100" href="#">Contact Support</a>
+</div>
+<div class="font-label-xs text-label-xs text-on-surface-variant dark:text-outline-variant text-center md:text-right">
+                    © 2024 Share India Insurance Brokers Pvt. Ltd. All rights reserved.
+                </div>
+</div>
+</div>
+</footer>
+</body></html>

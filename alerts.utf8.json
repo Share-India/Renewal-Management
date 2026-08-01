@@ -1,0 +1,387 @@
+﻿[
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1339,
+        "Line":  "        alert(\u0027Error creating branch: \u0027 + (err.error || err.message));"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1881,
+        "Line":  "      error: () =\u003e alert(\u0027Failed to view document. It might not exist.\u0027)"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1896,
+        "Line":  "    if (confirm(\u0027Are you sure you want to delete this policy? This action cannot be undone.\u0027)) {"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1899,
+        "Line":  "          alert(\u0027Policy deleted successfully\u0027);"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1906,
+        "Line":  "        error: (err) =\u003e alert(\u0027Failed to delete policy: \u0027 + err.message)"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1966,
+        "Line":  "      alert(\u0027Please fill all required fields marked with *\u0027);"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1978,
+        "Line":  "          alert(\u0027Policy updated successfully!\u0027);"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1982,
+        "Line":  "        error: (err) =\u003e alert(\u0027Error updating policy: \u0027 + err.message)"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1988,
+        "Line":  "          alert(\u0027Policy created successfully!\u0027);"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  1992,
+        "Line":  "        error: (err) =\u003e alert(\u0027Error creating policy: \u0027 + err.message)"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  2012,
+        "Line":  "        alert(\u0027Policy details updated successfully!\u0027);"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  2022,
+        "Line":  "        alert(\u0027Failed to update policy details.\u0027);"
+    },
+    {
+        "Filename":  "admin-dashboard.component.ts",
+        "LineNumber":  2038,
+        "Line":  "      alert(\u0027No updates found for today to export. The renewers haven\\\u0027t updated any policies yet today.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  219,
+        "Line":  "                alert(\u0027Email sent successfully!\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  224,
+        "Line":  "                alert(\u0027Failed to send email. Ensure the customer has a valid email address.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  258,
+        "Line":  "                alert(\u0027RM Update saved successfully!\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  263,
+        "Line":  "                alert(\u0027Failed to save RM update.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  294,
+        "Line":  "            alert(\u0027Please select a Next Follow-up date and time.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  313,
+        "Line":  "                alert(\u0027Call logged successfully!\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  321,
+        "Line":  "                alert(\u0027Failed to log call.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  426,
+        "Line":  "            alert(\u0027Please provide a reason for the late renewal.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  448,
+        "Line":  "                    alert(\u0027Please select a Payment Mode\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  452,
+        "Line":  "                    alert(\u0027Please enter Payment Amount\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  456,
+        "Line":  "                    alert(\u0027Please enter Payment Date\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  460,
+        "Line":  "                    alert(\u0027Please enter Bank Name for Cheque\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  484,
+        "Line":  "                        alert(`Policy Renewal Submitted for Issuance!\\n\\nThe policy is now in \u0027Pending Issuance\u0027 state and will be verified by the Service Team.`);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  488,
+        "Line":  "                    error: (err: any) =\u003e alert(\u0027Error renewing policy: \u0027 + (err.error?.message || err.message))"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  491,
+        "Line":  "            error: (err: any) =\u003e alert(\u0027Error updating policy details: \u0027 + err.message)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  516,
+        "Line":  "            error: () =\u003e alert(\u0027Failed to view document. It might not exist.\u0027)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  521,
+        "Line":  "        if (confirm(`Are you sure you want to delete policy ${policy.policyNumber}? This action cannot be undone.`)) {"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  524,
+        "Line":  "                    alert(\u0027Policy deleted successfully.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  529,
+        "Line":  "                    alert(\u0027Failed to delete policy.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  558,
+        "Line":  "                alert(\u0027Policy details updated successfully!\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  565,
+        "Line":  "                alert(\u0027Failed to update policy details.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  585,
+        "Line":  "                alert(`Policy routed to ${this.selectedRouteTeam} Team.`);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  589,
+        "Line":  "            error: (err) =\u003e alert(\u0027Error routing policy\u0027)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  620,
+        "Line":  "                alert(`Policy assigned to ${this.selectedAssignUser}.`);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  624,
+        "Line":  "            error: (err) =\u003e alert(\u0027Error assigning policy\u0027)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  631,
+        "Line":  "        if (confirm(\u0027Are you sure you want to delete this document?\u0027)) {"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  634,
+        "Line":  "                    alert(\u0027Document deleted successfully\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  638,
+        "Line":  "                error: (err) =\u003e alert(\u0027Error deleting document\u0027)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  644,
+        "Line":  "        if (confirm(\u0027Are you sure you want to send this back to the Renewer?\u0027)) {"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  652,
+        "Line":  "                    alert(\u0027Policy sent back to Renewer.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  655,
+        "Line":  "                error: (err) =\u003e alert(\u0027Error sending back to renewer\u0027)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  690,
+        "Line":  "                alert(\u0027Claims files and note uploaded successfully.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  696,
+        "Line":  "                alert(\u0027Error uploading claims files: \u0027 + (err.error?.message || err.message || JSON.stringify(err)));"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  727,
+        "Line":  "                alert(\u0027Sales files and note uploaded successfully.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  733,
+        "Line":  "                alert(\u0027Error uploading sales documents: \u0027 + (err.error?.message || err.message || JSON.stringify(err)));"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  762,
+        "Line":  "                alert(\u0027Underwriting document uploaded.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  768,
+        "Line":  "                alert(\u0027Error uploading underwriting document: \u0027 + (err.error?.message || err.message || JSON.stringify(err)));"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  774,
+        "Line":  "        if (confirm(`Delete this document?`)) {"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  777,
+        "Line":  "                    alert(\u0027Document deleted.\u0027);"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  784,
+        "Line":  "                error: (err) =\u003e alert(\u0027Error deleting document\u0027)"
+    },
+    {
+        "Filename":  "customer-list.component.ts",
+        "LineNumber":  796,
+        "Line":  "            error: () =\u003e alert(\u0027Failed to view document. It might not exist.\u0027)"
+    },
+    {
+        "Filename":  "mis-dashboard.component.ts",
+        "LineNumber":  174,
+        "Line":  "        alert(\u0027Policy details updated successfully!\u0027);"
+    },
+    {
+        "Filename":  "mis-dashboard.component.ts",
+        "LineNumber":  181,
+        "Line":  "        alert(\u0027Failed to update policy details.\u0027);"
+    },
+    {
+        "Filename":  "mis-dashboard.component.ts",
+        "LineNumber":  207,
+        "Line":  "      error: (err) =\u003e alert(\u0027Could not load payment proof or no document exists.\u0027)"
+    },
+    {
+        "Filename":  "mis-dashboard.component.ts",
+        "LineNumber":  217,
+        "Line":  "      error: (err) =\u003e alert(\u0027Could not load policy document or no document exists.\u0027)"
+    },
+    {
+        "Filename":  "mis-dashboard.component.ts",
+        "LineNumber":  259,
+        "Line":  "      alert(\u0027No records to export in the current view.\u0027);"
+    },
+    {
+        "Filename":  "mis-dashboard.component.ts",
+        "LineNumber":  274,
+        "Line":  "      alert(\u0027No records to export in the current view.\u0027);"
+    },
+    {
+        "Filename":  "policy-servicing.component.ts",
+        "LineNumber":  702,
+        "Line":  "        error: (err) =\u003e alert(\u0027Could not load document or no document exists.\u0027)"
+    },
+    {
+        "Filename":  "policy-servicing.component.ts",
+        "LineNumber":  714,
+        "Line":  "        error: (err) =\u003e alert(\u0027Could not load policy document or no document exists.\u0027)"
+    },
+    {
+        "Filename":  "policy-servicing.component.ts",
+        "LineNumber":  763,
+        "Line":  "      alert(\u0027Please fill all required fields (*)\u0027);"
+    },
+    {
+        "Filename":  "policy-servicing.component.ts",
+        "LineNumber":  768,
+        "Line":  "      alert(\u0027Please upload the policy document (*)\u0027);"
+    },
+    {
+        "Filename":  "policy-servicing.component.ts",
+        "LineNumber":  794,
+        "Line":  "        alert(\u0027Policy Issued Successfully!\u0027);"
+    },
+    {
+        "Filename":  "policy-servicing.component.ts",
+        "LineNumber":  800,
+        "Line":  "        alert(\u0027Failed to issue policy: \u0027 + (err.error?.message || err.message));"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  544,
+        "Line":  "        alert(\u0027Passwords do not match!\u0027);"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  550,
+        "Line":  "            alert(`Team member ${res.username} created successfully!`);"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  555,
+        "Line":  "            alert(\u0027Error creating team member: \u0027 + msg);"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  1020,
+        "Line":  "      alert(\u0027Please fill all required fields marked with *\u0027);"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  1039,
+        "Line":  "          alert(`Policy updated successfully!\\n\\nNew expiry date: ${newExpiryDate.toLocaleDateString()}\\nDays until expiry: ${daysUntilExpiry}\\n\\nThe policy has been moved to the appropriate timeline bucket.`);"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  1050,
+        "Line":  "        error: (err: any) =\u003e alert(\u0027Error updating policy: \u0027 + err.message)"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  1056,
+        "Line":  "          alert(\u0027Policy created successfully!\u0027);"
+    },
+    {
+        "Filename":  "renewal.component.ts",
+        "LineNumber":  1061,
+        "Line":  "        error: (err: any) =\u003e alert(\u0027Error creating policy: \u0027 + err.message)"
+    },
+    {
+        "Filename":  "user-management.component.ts",
+        "LineNumber":  675,
+        "Line":  "    if (confirm(`Are you sure you want to ${action} user ${user.username}?`)) {"
+    },
+    {
+        "Filename":  "user-management.component.ts",
+        "LineNumber":  682,
+        "Line":  "          alert(\u0027Failed to update user status.\u0027);"
+    },
+    {
+        "Filename":  "user-management.component.ts",
+        "LineNumber":  708,
+        "Line":  "        alert(\u0027Failed to delete user.\u0027);"
+    }
+]
