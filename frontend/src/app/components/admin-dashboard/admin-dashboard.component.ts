@@ -1,3 +1,4 @@
+import { NotificationService } from '../../services/notification.service';
 import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -706,7 +707,7 @@ import * as XLSX from 'xlsx';
                 </div>
                 <div class="text-end flex-shrink-0">
                   <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.75rem;">
-                    ₹{{ p.totalPremium | number:'1.0-0' }}
+                    {{ p.totalPremium | currency:'INR':'symbol':'1.0-0' }}
                   </span>
                 </div>
               </div>
@@ -720,7 +721,7 @@ import * as XLSX from 'xlsx';
                     <span class="text-muted"> | {{ sub.policyNumber }}</span>
                   </div>
                   <div class="text-success fw-bold flex-shrink-0" style="font-size: 0.7rem;">
-                    ₹{{ (sub.duePremium ? sub.duePremium : (sub.amount || 0)) | number:'1.0-0' }}
+                    {{ (sub.duePremium ? sub.duePremium : (sub.amount || 0)) | currency:'INR':'symbol':'1.0-0' }}
                   </div>
                 </div>
               </div>
@@ -1228,9 +1229,10 @@ export class AdminDashboardComponent implements OnInit {
   selectedRenewerStat: any = null;
   selectedStatsDate: string = '';
 
-  constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef) { }
+  constructor(private apiService: ApiService, private authService: AuthService, private cdr: ChangeDetectorRef, private notificationService: NotificationService) { }
 
   ngOnInit() {
+    this.apiService.adminViewAs = '';
     this.loadStats();
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
@@ -1335,7 +1337,7 @@ export class AdminDashboardComponent implements OnInit {
         this.newBranchName = '';
       },
       error: (err) => {
-        alert('Error creating branch: ' + (err.error || err.message));
+        this.notificationService.showErrorModal('Error creating branch: ' + (err.error || err.message));
       }
     });
   }
@@ -1877,7 +1879,7 @@ export class AdminDashboardComponent implements OnInit {
         // optimize: revoke url after some time? or let browser handle it on close.
         // window.URL.revokeObjectURL(url); // Can't revoke immediately if valid
       },
-      error: () => alert('Failed to view document. It might not exist.')
+      error: () => this.notificationService.showErrorModal('Failed to view document. It might not exist.')
     });
   }
 
@@ -1891,18 +1893,18 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  deletePolicy(id: any) {
-    if (confirm('Are you sure you want to delete this policy? This action cannot be undone.')) {
+  async deletePolicy(id: any) {
+    if (await this.notificationService.confirmAction('Are you sure you want to delete this policy? This action cannot be undone.')) {
       this.apiService.deletePolicy(id).subscribe({
         next: () => {
-          alert('Policy deleted successfully');
+          this.notificationService.showSuccessToast('Policy deleted successfully');
           this.refreshTimelineCounts();
           this.loadRenewerRecords();
           if (this.selectedDate) {
             this.onDateChange();
           }
         },
-        error: (err) => alert('Failed to delete policy: ' + err.message)
+        error: (err) => this.notificationService.showErrorModal('Failed to delete policy: ' + err.message)
       });
     }
   }
@@ -1962,7 +1964,7 @@ export class AdminDashboardComponent implements OnInit {
       !this.renewalForm.policyNumber || !this.renewalForm.insuranceName ||
       !this.renewalForm.type || !this.renewalForm.amount ||
       !this.renewalForm.policyStartDate || !this.renewalForm.policyEndDate) {
-      alert('Please fill all required fields marked with *');
+      this.notificationService.showErrorModal('Please fill all required fields marked with *');
       return;
     }
 
@@ -1974,21 +1976,21 @@ export class AdminDashboardComponent implements OnInit {
       // Update existing policy
       this.apiService.updatePolicy(this.selectedRenewalPolicy.id, this.renewalForm).subscribe({
         next: () => {
-          alert('Policy updated successfully!');
+          this.notificationService.showSuccessToast('Policy updated successfully!');
           this.closeRenewalModal();
           this.ngOnInit(); // Refresh stats
         },
-        error: (err) => alert('Error updating policy: ' + err.message)
+        error: (err) => this.notificationService.showErrorModal('Error updating policy: ' + err.message)
       });
     } else {
       // Create new policy
       this.apiService.createPolicy(this.renewalForm).subscribe({
         next: () => {
-          alert('Policy created successfully!');
+          this.notificationService.showSuccessToast('Policy created successfully!');
           this.closeRenewalModal();
           this.ngOnInit(); // Refresh stats
         },
-        error: (err) => alert('Error creating policy: ' + err.message)
+        error: (err) => this.notificationService.showErrorModal('Error creating policy: ' + err.message)
       });
     }
   }
@@ -2008,7 +2010,7 @@ export class AdminDashboardComponent implements OnInit {
 
     this.apiService.updatePolicy(this.selectedViewPolicy.id, this.selectedViewPolicy).subscribe({
       next: (updatedPolicy) => {
-        alert('Policy details updated successfully!');
+        this.notificationService.showSuccessToast('Policy details updated successfully!');
         this.selectedViewPolicy = updatedPolicy; // Update view
         this.isEditing = false;
         // Refresh lists if needed
@@ -2018,7 +2020,7 @@ export class AdminDashboardComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error updating policy:', err);
-        alert('Failed to update policy details.');
+        this.notificationService.showErrorModal('Failed to update policy details.');
       }
     });
   }
@@ -2034,7 +2036,7 @@ export class AdminDashboardComponent implements OnInit {
     });
 
     if (todaysUpdates.length === 0) {
-      alert('No updates found for today to export. The renewers haven\'t updated any policies yet today.');
+      this.notificationService.showErrorModal('No updates found for today to export. The renewers haven\'t updated any policies yet today.');
       return;
     }
 

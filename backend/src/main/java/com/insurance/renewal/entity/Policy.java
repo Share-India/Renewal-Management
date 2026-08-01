@@ -137,6 +137,40 @@ public class Policy {
     @Column(name = "rm_update", columnDefinition = "TEXT")
     private String rmUpdate;
 
+    // Workflow & Routing Fields
+    @Column(name = "target_team")
+    private String targetTeam;
+    
+    @Column(name = "routed_at")
+    private LocalDate routedAt;
+
+    @Column(name = "last_routed_from")
+    private String lastRoutedFrom;
+
+    @Column(name = "current_assignee")
+    private String currentAssignee;
+
+    @Column(name = "claims_excel_path")
+    private String claimsExcelPath;
+
+    @Column(name = "claims_pdf_path")
+    private String claimsPdfPath;
+
+    @Column(name = "underwriting_doc_path")
+    private String underwritingDocPath;
+
+    @Column(name = "underwriting_note", columnDefinition = "TEXT")
+    private String underwritingNote;
+
+    @Column(name = "claims_note", columnDefinition = "TEXT")
+    private String claimsNote;
+
+    @Column(name = "sales_note", columnDefinition = "TEXT")
+    private String salesNote;
+
+    @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private java.util.List<PolicyDocument> teamDocuments = new java.util.ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -1,8 +1,9 @@
 .timeline-container {
   padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  background: white;
+  border-radius: 12px;
   margin-bottom: 20px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 
 .timeline-scroll {
@@ -121,4 +122,125 @@
   top: -12px;
   right: -12px;
   border-width: 2px;
+}
+
+/* --- NEW PREMIUM UI ONLY FOR TEAM TIMELINE --- */
+.team-timeline.timeline-container {
+  padding: 24px 32px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+}
+
+.team-timeline .timeline-scroll {
+  gap: 16px;
+  padding-bottom: 24px;
+  padding-top: 16px;
+  scroll-behavior: smooth;
+}
+
+.team-timeline .timeline-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.team-timeline .timeline-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.team-timeline .timeline-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.team-timeline .timeline-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.team-timeline .timeline-item {
+  min-width: 90px;
+  height: 96px;
+  background: #f8fafc;
+  border: none;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none;
+}
+
+.team-timeline .timeline-item:hover {
+  background: #f1f5f9;
+  transform: translateY(-3px);
+  border-color: transparent;
+}
+
+.team-timeline .timeline-item.active {
+  background: #4f46e5;
+  color: white;
+  box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+  transform: translateY(-3px);
+  border-color: transparent;
+}
+
+.team-timeline .day-number {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #1e293b;
+  margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.team-timeline .timeline-item.active .day-number {
+  color: #ffffff;
+}
+
+.team-timeline .day-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.8px;
+  color: #64748b;
+  font-weight: 700;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.team-timeline .timeline-item.active .day-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.team-timeline .today-item {
+  min-width: 130px;
+  background: #e0e7ff;
+  border: none;
+}
+
+.team-timeline .today-item .day-number {
+  color: #4338ca;
+  font-size: 1.5rem;
+}
+
+.team-timeline .today-item.active {
+  background: #4f46e5;
+}
+
+.team-timeline .today-item.active .day-number {
+  color: #ffffff;
+}
+
+.team-timeline .timeline-badge {
+  background-color: #f43f5e;
+  color: white;
+  border-radius: 20px;
+  padding: 0 8px;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.4);
+  border: 2px solid #ffffff;
+  top: -8px;
+  right: -8px;
+}
+
+.team-timeline .today-badge {
+  background-color: #10b981;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
 }

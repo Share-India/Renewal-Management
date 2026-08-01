@@ -1,59 +1,92 @@
 <div class="app-container">
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary" *ngIf="authService.isLoggedIn()">
-    <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center" href="#">
-        <img src="assets/logo.png" alt="Share India" height="40" class="me-2 rounded bg-white p-1">
-        <span class="fw-bold tracking-wide">Share India</span>
+  <nav class="premium-navbar" *ngIf="authService.isLoggedIn()">
+    <div class="nav-container">
+      <a class="nav-brand" href="#">
+        <img src="assets/logo.png" alt="Share India">
+        <span>Share India</span>
       </a>
-      <div class="d-flex align-items-center">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 flex-row">
+      
+      <div class="nav-links">
+        <ul class="nav-list">
           <!-- Renewals: Visible only to RENEWER role -->
-          <li class="nav-item me-3" *ngIf="authService.hasRole('RENEWER')">
+          <li class="nav-item" *ngIf="authService.hasRole('RENEWER')">
             <a class="nav-link" routerLink="/" routerLinkActive="active"
-              [routerLinkActiveOptions]="{exact: true}">Renewals Dashboard</a>
+              [routerLinkActiveOptions]="{exact: true}"
+              (click)="setSourceTeam('')">Renewals Dashboard</a>
           </li>
 
           <!-- Servicing: Visible only to SERVICING role -->
-          <li class="nav-item me-3" *ngIf="authService.hasRole('SERVICING')">
+          <li class="nav-item" *ngIf="authService.hasRole('SERVICING')">
             <a class="nav-link" routerLink="/servicing" routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: true}">Servicing Dashboard</a>
           </li>
 
           <!-- Admin Dashboard: Visible only to Admins -->
-          <li class="nav-item me-3" *ngIf="authService.isAdmin()">
+          <li class="nav-item" *ngIf="authService.isAdmin()">
             <a class="nav-link" routerLink="/admin" routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: true}">Admin</a>
           </li>
 
           <!-- RM Dashboard: Visible only to RM -->
-          <li class="nav-item me-3" *ngIf="authService.hasRole('RM')">
+          <li class="nav-item" *ngIf="authService.hasRole('RM')">
             <a class="nav-link" routerLink="/admin" routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: true}">RM Dashboard</a>
           </li>
 
 
           <!-- User Management: Visible only to Admins -->
-          <li class="nav-item me-3" *ngIf="authService.isAdmin()">
+          <li class="nav-item" *ngIf="authService.isAdmin()">
             <a class="nav-link" routerLink="/admin/users" routerLinkActive="active">Add User</a>
           </li>
 
+          <!-- Manager Dashboards (Admin Assess) -->
+          <li class="nav-item" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/admin/dashboard/claims" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Claim Team</a>
+          </li>
+          <li class="nav-item" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/admin/dashboard/sales" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Sales Team</a>
+          </li>
+          <li class="nav-item" *ngIf="authService.isAdmin()">
+            <a class="nav-link" routerLink="/admin/dashboard/underwriting" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">UnderWriting Team</a>
+          </li>
+
           <!-- Policy Servicing: Visible to Admin -->
-          <li class="nav-item me-3" *ngIf="authService.isAdmin()">
+          <li class="nav-item" *ngIf="authService.isAdmin()">
             <a class="nav-link" routerLink="/servicing" routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: true}">Policy Servicing</a>
           </li>
 
           <!-- MIS Dashboard: Visible only to MIS or Admin -->
-          <li class="nav-item me-3" *ngIf="authService.hasRole('MIS') || authService.isAdmin()">
+          <li class="nav-item" *ngIf="authService.hasRole('MIS') || authService.isAdmin()">
             <a class="nav-link" routerLink="/mis-dashboard" routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: true}">MIS Dashboard</a>
           </li>
         </ul>
-        <div class="d-flex align-items-center">
-          <button class="btn btn-sm btn-outline-light me-2" (click)="openPasswordModal()">
+        <div class="nav-actions">
+          <ng-container *ngIf="authService.hasRole('RENEWER')">
+            <button class="nav-link border-0 mx-1" 
+                    style="cursor:pointer; background: transparent; padding: 6px 16px; border-radius: 999px; transition: all 0.2s ease;"
+                    [ngClass]="{'active text-primary bg-white fw-bold shadow-sm': selectedSourceTeam === 'CLAIMS'}" 
+                    (click)="setSourceTeam('CLAIMS')">
+              Claim Update
+            </button>
+            <button class="nav-link border-0 mx-1" 
+                    style="cursor:pointer; background: transparent; padding: 6px 16px; border-radius: 999px; transition: all 0.2s ease;"
+                    [ngClass]="{'active text-primary bg-white fw-bold shadow-sm': selectedSourceTeam === 'SALES'}" 
+                    (click)="setSourceTeam('SALES')">
+              Sales Update
+            </button>
+            <button class="nav-link border-0 mx-1" 
+                    style="cursor:pointer; background: transparent; padding: 6px 16px; border-radius: 999px; transition: all 0.2s ease;"
+                    [ngClass]="{'active text-primary bg-white fw-bold shadow-sm': selectedSourceTeam === 'UNDERWRITING'}" 
+                    (click)="setSourceTeam('UNDERWRITING')">
+              UnderWriting Update
+            </button>
+          </ng-container>
+          <button class="nav-btn nav-btn-outline" (click)="openPasswordModal()">
             <i class="bi bi-key"></i> Pass
           </button>
-          <button class="btn btn-outline-light btn-sm" (click)="logout()">Logout</button>
+          <button class="nav-btn nav-btn-outline" (click)="logout()">Logout</button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -12,16 +12,30 @@ export class ApiService {
 
     constructor(private http: HttpClient, private authService: AuthService) { }
 
-    private getHeaders() {
-        return this.authService.getAuthHeaders();
+    public adminViewAs: string = '';
+    public selectedSourceTeamSubject = new BehaviorSubject<string>('');
+    public selectedSourceTeam$ = this.selectedSourceTeamSubject.asObservable();
+
+    private getHeaders(isFileUpload: boolean = false) {
+        let headers = this.authService.getAuthHeaders();
+        if (isFileUpload) {
+            headers = headers.delete('Content-Type');
+        }
+        if (this.adminViewAs) {
+            headers = headers.set('X-Admin-View-As', this.adminViewAs);
+        }
+        return headers;
     }
 
     logout() {
         this.authService.logout();
     }
 
-    getPoliciesForTimeline(days: number): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/timeline/${days}`, { headers: this.getHeaders() });
+    getPoliciesForTimeline(days: number, branch?: string, sourceTeam?: string): Observable<any[]> {
+        let params = new HttpParams();
+        if (branch) params = params.set('branch', branch);
+        if (sourceTeam) params = params.set('sourceTeam', sourceTeam);
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/timeline/${days}`, { headers: this.getHeaders(), params });
     }
 
     getFollowUpsForTimeline(days: number): Observable<any[]> {
@@ -34,10 +48,11 @@ export class ApiService {
         return this.http.get<any>(url, { headers: this.getHeaders() });
     }
 
-    getTimelineCounts(branch?: string): Observable<{ [key: number]: number }> {
-        let url = `${this.baseUrl}/renewals/timeline-counts`;
-        if (branch) url += `?branch=${encodeURIComponent(branch)}`;
-        return this.http.get<{ [key: number]: number }>(url, { headers: this.getHeaders() });
+    getTimelineCounts(branch?: string, sourceTeam?: string): Observable<{ [key: number]: number }> {
+        let params = new HttpParams();
+        if (branch) params = params.set('branch', branch);
+        if (sourceTeam) params = params.set('sourceTeam', sourceTeam);
+        return this.http.get<{ [key: number]: number }>(`${this.baseUrl}/renewals/timeline-counts`, { headers: this.getHeaders(), params });
     }
 
     getTodaysWork(branch?: string): Observable<any[]> {
@@ -115,7 +130,7 @@ export class ApiService {
         if (file) {
             formData.append('file', file);
         }
-        return this.http.post<any>(`${this.baseUrl}/renewals/renew/${id}`, formData, { headers: this.getHeaders() });
+        return this.http.post<any>(`${this.baseUrl}/renewals/renew/${id}`, formData, { headers: this.getHeaders(true) });
     }
 
     createPolicy(policy: any): Observable<any> {
@@ -139,7 +154,7 @@ export class ApiService {
     }
 
     issuePolicy(id: number, formData: FormData): Observable<any> {
-        return this.http.post<any>(`${this.baseUrl}/renewals/servicing/issue/${id}`, formData, { headers: this.getHeaders() });
+        return this.http.post<any>(`${this.baseUrl}/renewals/servicing/issue/${id}`, formData, { headers: this.getHeaders(true) });
     }
 
     getLateRenewals(): Observable<any[]> {
@@ -162,6 +177,42 @@ export class ApiService {
             headers: this.getHeaders(),
             responseType: 'blob'
         });
+    }
+
+    downloadClaimsExcel(id: number): Observable<Blob> {
+        return this.http.get(`${this.baseUrl}/routing/${id}/claims-excel`, {
+            headers: this.getHeaders(),
+            responseType: 'blob'
+        });
+    }
+
+    downloadClaimsPdf(id: number): Observable<Blob> {
+        return this.http.get(`${this.baseUrl}/routing/${id}/claims-pdf`, {
+            headers: this.getHeaders(),
+            responseType: 'blob'
+        });
+    }
+
+    downloadUnderwritingDoc(id: number): Observable<Blob> {
+        return this.http.get(`${this.baseUrl}/routing/${id}/underwriting-doc`, {
+            headers: this.getHeaders(),
+            responseType: 'blob'
+        });
+    }
+
+    uploadTeamDocuments(policyId: number, formData: FormData): Observable<any> {
+        return this.http.post(`${this.baseUrl}/routing/${policyId}/upload-team-documents`, formData, { headers: this.getHeaders(true) });
+    }
+
+    downloadTeamDocument(documentId: number): Observable<Blob> {
+        return this.http.get(`${this.baseUrl}/routing/document/${documentId}/download`, {
+            headers: this.getHeaders(),
+            responseType: 'blob'
+        });
+    }
+
+    deleteTeamDocument(documentId: number): Observable<any> {
+        return this.http.delete(`${this.baseUrl}/routing/document/${documentId}`, { headers: this.getHeaders() });
     }
 
     getAuditLogs(id: number): Observable<any[]> {
@@ -207,6 +258,51 @@ export class ApiService {
       url += '?' + params.join('&');
     }
     return this.http.get<any[]>(url, { headers: this.getHeaders() });
+  }
+
+  // Cross-Team Routing
+  routePolicy(policyId: number, targetTeam: string | null, assignedUser?: string | null, sourceTeam?: string | null): Observable<any> {
+    const payload: any = { targetTeam };
+    if (assignedUser !== undefined && assignedUser !== null) {
+      payload.assignedUser = assignedUser;
+    }
+    if (sourceTeam) {
+      payload.sourceTeam = sourceTeam;
+    }
+    return this.http.post(`${this.baseUrl}/routing/${policyId}/route`, payload, { headers: this.getHeaders() });
+  }
+
+  uploadClaimsFiles(policyId: number, excelFiles?: File | null, pdfFiles?: File | null, note?: string): Observable<any> {
+    const formData = new FormData();
+    if (excelFiles) formData.append('excelFiles', excelFiles);
+    if (pdfFiles) formData.append('pdfFiles', pdfFiles);
+    if (note) formData.append('note', note);
+    
+    return this.http.post(`${this.baseUrl}/routing/${policyId}/upload-claims`, formData, { headers: this.getHeaders(true) });
+  }
+
+  uploadUnderwriting(policyId: number, docFile?: File, note?: string): Observable<any> {
+    const formData = new FormData();
+    if (docFile) formData.append('docFile', docFile);
+    if (note) formData.append('note', note);
+    
+    return this.http.post(`${this.baseUrl}/routing/${policyId}/upload-underwriting`, formData, { headers: this.getHeaders(true) });
+  }
+
+  addSalesNote(policyId: number, note: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/routing/${policyId}/sales-note`, { note }, { headers: this.getHeaders() });
+  }
+
+  deleteDocument(policyId: number, docType: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/routing/${policyId}/document/${docType}`, { headers: this.getHeaders() });
+  }
+
+  getUsers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/routing/users`, { headers: this.getHeaders() });
+  }
+
+  createTeamUser(username: string, password: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/routing/team/create-user`, { username, password }, { headers: this.getHeaders() });
   }
 }
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
     selector: 'app-customer-list',
@@ -15,6 +16,7 @@ export class CustomerListComponent {
     @Input() policies: any[] = [];
     @Input() loading: boolean = false;
     @Input() isAdmin: boolean = false;
+    @Input() adminViewAs: string = '';
     @Output() dataUpdated = new EventEmitter<void>();
 
     selectedPolicy: any = null;
@@ -23,6 +25,26 @@ export class CustomerListComponent {
     showDetailsModal: boolean = false;
     sendingEmail: boolean = false;
     
+    // Routing & Workflow Logic
+    showRouteModal: boolean = false;
+    selectedRouteTeam: string = '';
+    
+    showAssignModal: boolean = false;
+    selectedAssignUser: string = '';
+    availableUsersForTeam: any[] = [];
+    
+    showClaimsUploadModal: boolean = false;
+    claimsExcelFile: File | null = null;
+    claimsPdfFile: File | null = null;
+    claimsNote: string = '';
+    
+    showUnderwritingModal: boolean = false;
+    underwritingDocFile: File | null = null;
+    underwritingNote: string = '';
+
+    showSalesModal: boolean = false;
+    salesNote: string = '';
+
     // RM Update Logic
     showRmUpdateModal: boolean = false;
     rmUpdateText: string = '';
@@ -52,7 +74,7 @@ export class CustomerListComponent {
         this.selectedPaymentFile = event.target.files[0];
     }
 
-    constructor(private apiService: ApiService, private authService: AuthService) { }
+    constructor(private apiService: ApiService, private authService: AuthService, private notificationService: NotificationService) { }
 
     openDetailsModal(policy: any) {
         // Show modal immediately with cached data for responsiveness
@@ -76,8 +98,22 @@ export class CustomerListComponent {
     }
 
     get canEditPolicy(): boolean {
-        return this.authService.hasRole('ADMIN') || this.authService.hasRole('MIS');
+        // Sales and Claims team views should not have edit access in the Eye modal.
+        if (this.adminViewAs === 'sales' || this.adminViewAs === 'claims') {
+            return false;
+        }
+        return this.authService.hasRole('ADMIN') || this.authService.hasRole('MIS') || this.isUnderwritingManager || this.isUnderwritingUser;
     }
+
+    // Role Checks for Routing
+    get isRenewer(): boolean { return this.authService.hasRole('RENEWER'); }
+    get isClaimsManager(): boolean { return this.adminViewAs === 'claims' || this.authService.hasRole('CLAIMS_MANAGER'); }
+    get isSalesManager(): boolean { return this.adminViewAs === 'sales' || this.authService.hasRole('SALES_MANAGER'); }
+    get isSalesUser(): boolean { return this.authService.hasRole('SALES'); }
+    get isUnderwritingManager(): boolean { return this.adminViewAs === 'underwriting' || this.authService.hasRole('UNDERWRITING_MANAGER'); }
+    get isUnderwritingUser(): boolean { return this.authService.hasRole('UNDERWRITING'); }
+    get isClaimsUser(): boolean { return this.authService.hasRole('CLAIMS'); }
+    get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
 
     get canViewSensitiveInfo(): boolean {
         // Hide PAN and GST for RENEWER role
@@ -181,12 +217,12 @@ export class CustomerListComponent {
         this.sendingEmail = true;
         this.apiService.sendCustomerEmail(this.selectedPolicy.id).subscribe({
             next: (response) => {
-                alert('Email sent successfully!');
+                this.notificationService.showSuccessToast('Email sent successfully!');
                 this.sendingEmail = false;
             },
             error: (err) => {
                 console.error('Error sending email', err);
-                alert('Failed to send email. Ensure the customer has a valid email address.');
+                this.notificationService.showErrorModal('Failed to send email. Ensure the customer has a valid email address.');
                 this.sendingEmail = false;
             }
         });
@@ -220,12 +256,12 @@ export class CustomerListComponent {
                 if (this.selectedPolicy && this.selectedPolicy.id === updatedPolicy.id) {
                     this.selectedPolicy.rmUpdate = updatedPolicy.rmUpdate;
                 }
-                alert('RM Update saved successfully!');
+                this.notificationService.showSuccessToast('RM Update saved successfully!');
                 this.closeRmUpdateModal();
             },
             error: (err) => {
                 console.error('Error saving RM update', err);
-                alert('Failed to save RM update.');
+                this.notificationService.showErrorModal('Failed to save RM update.');
             }
         });
     }
@@ -256,7 +292,7 @@ export class CustomerListComponent {
         if (!this.selectedPolicy) return;
 
         if (!this.nextFollowUp) {
-            alert('Please select a Next Follow-up date and time.');
+            this.notificationService.showErrorModal('Please select a Next Follow-up date and time.');
             return;
         }
 
@@ -275,7 +311,7 @@ export class CustomerListComponent {
 
         this.apiService.logCall(this.selectedPolicy.id, payload).subscribe({
             next: (res: any) => {
-                alert('Call logged successfully!');
+                this.notificationService.showSuccessToast('Call logged successfully!');
                 this.closeModal();
                 // Optionally update the local policy object with new reminder status
                 this.selectedPolicy.reminder = res;
@@ -283,7 +319,7 @@ export class CustomerListComponent {
             },
             error: (err: any) => {
                 console.error(err);
-                alert('Failed to log call.');
+                this.notificationService.showErrorModal('Failed to log call.');
             }
         });
     }
@@ -388,7 +424,7 @@ Renewal Due Date : ${endDate}`;
         // Date validation removed as requested (Dates moved to Servicing)
 
         if (this.isLateRenewal && !this.renewalForm.lateRenewalReason) {
-            alert('Please provide a reason for the late renewal.');
+            this.notificationService.showErrorModal('Please provide a reason for the late renewal.');
             return;
         }
 
@@ -410,19 +446,19 @@ Renewal Due Date : ${endDate}`;
 
                 // Validate Payment Details
                 if (!this.renewalForm.paymentMode) {
-                    alert('Please select a Payment Mode');
+                    this.notificationService.showErrorModal('Please select a Payment Mode');
                     return;
                 }
                 if (!this.renewalForm.paymentAmount) {
-                    alert('Please enter Payment Amount');
+                    this.notificationService.showErrorModal('Please enter Payment Amount');
                     return;
                 }
                 if (!this.renewalForm.paymentDate) {
-                    alert('Please enter Payment Date');
+                    this.notificationService.showErrorModal('Please enter Payment Date');
                     return;
                 }
                 if (this.renewalForm.paymentMode === 'Cheque' && !this.renewalForm.paymentBank) {
-                    alert('Please enter Bank Name for Cheque');
+                    this.notificationService.showErrorModal('Please enter Bank Name for Cheque');
                     return;
                 }
                 const paymentDetails = {
@@ -446,24 +482,29 @@ Renewal Due Date : ${endDate}`;
                     this.selectedPaymentFile // Pass File
                 ).subscribe({
                     next: () => {
-                        alert(`Policy Renewal Submitted for Issuance!\n\nThe policy is now in 'Pending Issuance' state and will be verified by the Service Team.`);
+                        this.notificationService.showSuccessModal(`Policy Renewal Submitted for Issuance!\n\nThe policy is now in 'Pending Issuance' state and will be verified by the Service Team.`);
                         this.closeRenewalModal();
                         this.dataUpdated.emit();
                     },
-                    error: (err: any) => alert('Error renewing policy: ' + (err.error?.message || err.message))
+                    error: (err: any) => this.notificationService.showErrorModal('Error renewing policy: ' + (err.error?.message || err.message))
                 });
             },
-            error: (err: any) => alert('Error updating policy details: ' + err.message)
+            error: (err: any) => this.notificationService.showErrorModal('Error updating policy details: ' + err.message)
         });
     }
 
-    viewDocument(type: 'payment' | 'policy') {
+    viewDocument(type: 'payment' | 'policy' | 'claimsExcel' | 'claimsPdf' | 'underwritingDoc') {
         if (!this.selectedPolicyDetails) return;
         const id = this.selectedPolicyDetails.id;
 
-        const request = type === 'payment'
-            ? this.apiService.downloadPaymentProof(id)
-            : this.apiService.downloadPolicyDocument(id);
+        let request;
+        if (type === 'payment') request = this.apiService.downloadPaymentProof(id);
+        else if (type === 'policy') request = this.apiService.downloadPolicyDocument(id);
+        else if (type === 'claimsExcel') request = this.apiService.downloadClaimsExcel(id);
+        else if (type === 'claimsPdf') request = this.apiService.downloadClaimsPdf(id);
+        else if (type === 'underwritingDoc') request = this.apiService.downloadUnderwritingDoc(id);
+
+        if (!request) return;
 
         request.subscribe({
             next: (blob) => {
@@ -473,23 +514,30 @@ Renewal Due Date : ${endDate}`;
                 // browser needs time to load it. 
                 setTimeout(() => window.URL.revokeObjectURL(url), 10000);
             },
-            error: () => alert('Failed to view document. It might not exist.')
+            error: () => this.notificationService.showErrorModal('Failed to view document. It might not exist.')
         });
     }
 
-    onDeletePolicy(policy: any) {
-        if (confirm(`Are you sure you want to delete policy ${policy.policyNumber}? This action cannot be undone.`)) {
+    async onDeletePolicy(policy: any) {
+        if (await this.notificationService.confirmAction(`Are you sure you want to delete policy ${policy.policyNumber}? This action cannot be undone.`)) {
             this.apiService.deletePolicy(policy.id).subscribe({
                 next: () => {
-                    alert('Policy deleted successfully.');
+                    this.notificationService.showSuccessToast('Policy deleted successfully.');
                     this.dataUpdated.emit();
                 },
                 error: (err) => {
                     console.error('Error deleting policy:', err);
-                    alert('Failed to delete policy.');
+                    this.notificationService.showErrorModal('Failed to delete policy.');
                 }
             });
         }
+    }
+
+    getDocumentsByTeam(team: string): any[] {
+        if (!this.selectedPolicyDetails || !this.selectedPolicyDetails.teamDocuments) {
+            return [];
+        }
+        return this.selectedPolicyDetails.teamDocuments.filter((doc: any) => doc.uploadedByTeam === team);
     }
 
     // Edit Mode Logic (Mirrored from MIS/Admin Dashboard)
@@ -508,15 +556,244 @@ Renewal Due Date : ${endDate}`;
 
         this.apiService.updatePolicy(this.selectedPolicyDetails.id, this.selectedPolicyDetails).subscribe({
             next: (updatedPolicy) => {
-                alert('Policy details updated successfully!');
+                this.notificationService.showSuccessToast('Policy details updated successfully!');
                 this.selectedPolicyDetails = updatedPolicy; // Update view
                 this.isEditing = false;
                 this.dataUpdated.emit(); // Refresh parent lists
             },
             error: (err) => {
                 console.error('Error updating policy:', err);
-                alert('Failed to update policy details.');
+                this.notificationService.showErrorModal('Failed to update policy details.');
             }
+        });
+    }
+
+    // ----------------------------------------
+    // Routing & Workflow Methods
+    // ----------------------------------------
+    openRouteModal(policy: any) {
+        this.selectedPolicy = policy;
+        this.showRouteModal = true;
+    }
+    closeRouteModal() {
+        this.showRouteModal = false;
+        this.selectedRouteTeam = '';
+    }
+    submitRoute() {
+        if (!this.selectedRouteTeam) return;
+        this.apiService.routePolicy(this.selectedPolicy.id, this.selectedRouteTeam).subscribe({
+            next: () => {
+                this.notificationService.showSuccessToast(`Policy routed to ${this.selectedRouteTeam} Team.`);
+                this.closeRouteModal();
+                this.dataUpdated.emit();
+            },
+            error: (err) => this.notificationService.showErrorModal('Error routing policy')
+        });
+    }
+
+    openAssignModal(policy: any) {
+        this.selectedPolicy = policy;
+        this.showAssignModal = true;
+        // Fetch users for this manager's team
+        let roleToFetch = '';
+        if (this.isClaimsManager) roleToFetch = 'CLAIMS';
+        if (this.isSalesManager) roleToFetch = 'SALES';
+        if (this.isUnderwritingManager) roleToFetch = 'UNDERWRITING';
+        
+        this.apiService.getUsers().subscribe(users => {
+            this.availableUsersForTeam = users.filter((u: any) => u.role === 'ROLE_' + roleToFetch);
+        });
+    }
+    closeAssignModal() {
+        this.showAssignModal = false;
+        this.selectedAssignUser = '';
+        this.availableUsersForTeam = [];
+    }
+    submitAssign() {
+        if (!this.selectedAssignUser) return;
+        let team = '';
+        if (this.isClaimsManager) team = 'CLAIMS';
+        if (this.isSalesManager) team = 'SALES';
+        if (this.isUnderwritingManager) team = 'UNDERWRITING';
+
+        this.apiService.routePolicy(this.selectedPolicy.id, team, this.selectedAssignUser).subscribe({
+            next: () => {
+                this.notificationService.showSuccessToast(`Policy assigned to ${this.selectedAssignUser}.`);
+                this.closeAssignModal();
+                this.dataUpdated.emit();
+            },
+            error: (err) => this.notificationService.showErrorModal('Error assigning policy')
+        });
+    }
+
+
+
+    async deleteDocument(policy: any, docType: string) {
+        if (await this.notificationService.confirmAction('Are you sure you want to delete this document?')) {
+            this.apiService.deleteDocument(policy.id, docType).subscribe({
+                next: () => {
+                    this.notificationService.showSuccessToast('Document deleted successfully');
+                    this.dataUpdated.emit();
+                },
+                error: (err) => this.notificationService.showErrorModal('Error deleting document')
+            });
+        }
+    }
+
+    async sendBackToRenewer(policy: any) {
+        if (await this.notificationService.confirmAction('Are you sure you want to send this back to the Renewer?')) {
+            let sourceTeam = null;
+            if (this.isClaimsManager || this.isClaimsUser) sourceTeam = 'CLAIMS';
+            else if (this.isSalesManager || this.isSalesUser) sourceTeam = 'SALES';
+            else if (this.isUnderwritingManager || this.isUnderwritingUser) sourceTeam = 'UNDERWRITING';
+
+            this.apiService.routePolicy(policy.id, 'RENEWER', null, sourceTeam).subscribe({
+                next: () => {
+                    this.notificationService.showSuccessToast('Policy sent back to Renewer.');
+                    this.dataUpdated.emit();
+                },
+                error: (err) => this.notificationService.showErrorModal('Error sending back to renewer')
+            });
+        }
+    }
+
+    // ----------------------------------------
+    // Document Uploads
+    // ----------------------------------------
+    claimsFiles: File[] = [];
+    underwritingFiles: File[] = [];
+
+    openClaimsUpload(policy: any) {
+        this.selectedPolicy = policy;
+        this.showClaimsUploadModal = true;
+        this.claimsFiles = [];
+        this.claimsNote = '';
+    }
+    closeClaimsUpload() {
+        this.showClaimsUploadModal = false;
+        this.claimsFiles = [];
+        this.claimsNote = '';
+    }
+    onClaimsFilesSelected(event: any) {
+        if (event.target.files.length > 0) {
+            this.claimsFiles = Array.from(event.target.files);
+        }
+    }
+    submitClaimsUpload() {
+        const formData = new FormData();
+        formData.append('team', 'CLAIMS');
+        if (this.claimsNote) formData.append('note', this.claimsNote);
+        this.claimsFiles.forEach(file => formData.append('files', file));
+        
+        this.apiService.uploadTeamDocuments(this.selectedPolicy.id, formData).subscribe({
+            next: () => {
+                this.notificationService.showSuccessToast('Claims files and note uploaded successfully.');
+                this.closeClaimsUpload();
+                this.dataUpdated.emit();
+            },
+            error: (err) => {
+                console.error('Claims upload error:', err);
+                this.notificationService.showErrorModal('Error uploading claims files: ' + (err.error?.message || err.message || JSON.stringify(err)));
+            }
+        });
+    }
+
+    salesFiles: File[] = [];
+
+    openSalesNote(policy: any) {
+        this.selectedPolicy = policy;
+        this.showSalesModal = true;
+        this.salesFiles = [];
+        this.salesNote = '';
+    }
+    closeSalesNote() {
+        this.showSalesModal = false;
+        this.salesFiles = [];
+        this.salesNote = '';
+    }
+    onSalesFilesSelected(event: any) {
+        if (event.target.files.length > 0) {
+            this.salesFiles = Array.from(event.target.files);
+        }
+    }
+    submitSalesNote() {
+        const formData = new FormData();
+        formData.append('team', 'SALES');
+        if (this.salesNote) formData.append('note', this.salesNote);
+        this.salesFiles.forEach(file => formData.append('files', file));
+
+        this.apiService.uploadTeamDocuments(this.selectedPolicy.id, formData).subscribe({
+            next: () => {
+                this.notificationService.showSuccessToast('Sales files and note uploaded successfully.');
+                this.closeSalesNote();
+                this.dataUpdated.emit();
+            },
+            error: (err) => {
+                console.error('Sales upload error:', err);
+                this.notificationService.showErrorModal('Error uploading sales documents: ' + (err.error?.message || err.message || JSON.stringify(err)));
+            }
+        });
+    }
+
+    openUnderwritingUpload(policy: any) {
+        this.selectedPolicy = policy;
+        this.showUnderwritingModal = true;
+        this.underwritingFiles = [];
+        this.underwritingNote = '';
+    }
+    closeUnderwritingUpload() {
+        this.showUnderwritingModal = false;
+        this.underwritingFiles = [];
+        this.underwritingNote = '';
+    }
+    onUnderwritingFilesSelected(event: any) {
+        if (event.target.files.length > 0) {
+            this.underwritingFiles = Array.from(event.target.files);
+        }
+    }
+    submitUnderwritingUpload() {
+        const formData = new FormData();
+        formData.append('team', 'UNDERWRITING');
+        if (this.underwritingNote) formData.append('note', this.underwritingNote);
+        this.underwritingFiles.forEach(file => formData.append('files', file));
+
+        this.apiService.uploadTeamDocuments(this.selectedPolicy.id, formData).subscribe({
+            next: () => {
+                this.notificationService.showSuccessToast('Underwriting document uploaded.');
+                this.closeUnderwritingUpload();
+                this.dataUpdated.emit();
+            },
+            error: (err) => {
+                console.error('Underwriting upload error:', err);
+                this.notificationService.showErrorModal('Error uploading underwriting document: ' + (err.error?.message || err.message || JSON.stringify(err)));
+            }
+        });
+    }
+
+    async deleteTeamDocument(docId: number) {
+        if (await this.notificationService.confirmAction(`Delete this document?`)) {
+            this.apiService.deleteTeamDocument(docId).subscribe({
+                next: () => {
+                    this.notificationService.showSuccessToast('Document deleted.');
+                    this.dataUpdated.emit();
+                    // update local list if possible, but simplest is to close modal or refresh
+                    if (this.selectedPolicyDetails) {
+                        this.selectedPolicyDetails.teamDocuments = this.selectedPolicyDetails.teamDocuments.filter((d: any) => d.id !== docId);
+                    }
+                },
+                error: (err) => this.notificationService.showErrorModal('Error deleting document')
+            });
+        }
+    }
+
+    viewTeamDocument(docId: number) {
+        this.apiService.downloadTeamDocument(docId).subscribe({
+            next: (blob) => {
+                const url = window.URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+            },
+            error: () => this.notificationService.showErrorModal('Failed to view document. It might not exist.')
         });
     }
 }

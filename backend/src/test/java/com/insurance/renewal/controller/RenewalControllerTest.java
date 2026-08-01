@@ -37,7 +37,7 @@ public class RenewalControllerTest {
         policy.setExpiryDate(LocalDate.now().minusYears(1).plusDays(days)); // Expired last year, matching day
         // The controller logic shifts the year to current target year
 
-        given(renewalService.getPoliciesForTimeline(days)).willReturn(Arrays.asList(policy));
+        given(renewalService.getPoliciesForTimeline(org.mockito.ArgumentMatchers.eq(days), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.isNull())).willReturn(Arrays.asList(policy));
 
         // When/Then
         mockMvc.perform(get("/api/renewals/timeline/" + days)

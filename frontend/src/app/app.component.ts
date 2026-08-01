@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -12,10 +12,22 @@ import { ApiService } from './services/api.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'insurance-renewal-app';
+  selectedSourceTeam: string = '';
 
-  constructor(public authService: AuthService, private apiService: ApiService) { }
+  constructor(public authService: AuthService, public apiService: ApiService) { }
+
+  ngOnInit() {
+    this.apiService.selectedSourceTeam$.subscribe(team => {
+      this.selectedSourceTeam = team;
+    });
+  }
+
+  setSourceTeam(team: string) {
+    const newTeam = this.selectedSourceTeam === team ? '' : team;
+    this.apiService.selectedSourceTeamSubject.next(newTeam);
+  }
 
   logout() {
     this.authService.logout();

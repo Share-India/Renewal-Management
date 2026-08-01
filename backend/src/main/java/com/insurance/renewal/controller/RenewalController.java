@@ -29,9 +29,12 @@ public class RenewalController {
     private PolicyRepository policyRepository;
 
     @GetMapping("/timeline/{days}")
-    public List<Policy> getTimelinePolicies(@PathVariable("days") int days) {
+    public List<Policy> getTimelinePolicies(
+            @PathVariable("days") int days,
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "sourceTeam", required = false) String sourceTeam) {
         System.out.println("API Request: /timeline/" + days);
-        List<Policy> policies = renewalService.getPoliciesForTimeline(days);
+        List<Policy> policies = renewalService.getPoliciesForTimeline(days, branch, sourceTeam);
 
         // PROJECT DATES FOR VISUAL CONSISTENCY (As per User "Consider dates according
         // to you")
@@ -70,8 +73,10 @@ public class RenewalController {
     }
 
     @GetMapping("/timeline-counts")
-    public ResponseEntity<Map<Integer, Long>> getTimelineCounts(@RequestParam(value = "branch", required = false) String branch) {
-        return ResponseEntity.ok(renewalService.getTimelineCounts(branch));
+    public ResponseEntity<Map<Integer, Long>> getTimelineCounts(
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "sourceTeam", required = false) String sourceTeam) {
+        return ResponseEntity.ok(renewalService.getTimelineCounts(branch, sourceTeam));
     }
 
     @GetMapping("/todays-work")
@@ -309,6 +314,13 @@ public class RenewalController {
         } catch (java.io.IOException e) {
             throw new RuntimeException("Error processing issuance request: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/policies/{id}")
+    public ResponseEntity<Policy> getPolicyById(@PathVariable("id") Long id) {
+        return policyRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/policies/{id}")

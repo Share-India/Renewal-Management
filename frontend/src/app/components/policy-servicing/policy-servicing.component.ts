@@ -1,3 +1,4 @@
+import { NotificationService } from '../../services/notification.service';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -595,7 +596,7 @@ export class PolicyServicingComponent implements OnInit {
   selectedBranch: string = '';
   availableBranches: string[] = [];
 
-  constructor(private apiService: ApiService) { }
+  constructor(private apiService: ApiService, private notificationService: NotificationService) { }
 
   ngOnInit() {
     this.apiService.getBranches().subscribe(branches => {
@@ -699,7 +700,7 @@ export class PolicyServicingComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           window.open(url, '_blank');
         },
-        error: (err) => alert('Could not load document or no document exists.')
+        error: (err) => this.notificationService.showErrorModal('Could not load document or no document exists.')
       });
     }
   }
@@ -711,7 +712,7 @@ export class PolicyServicingComponent implements OnInit {
           const url = window.URL.createObjectURL(blob);
           window.open(url, '_blank');
         },
-        error: (err) => alert('Could not load policy document or no document exists.')
+        error: (err) => this.notificationService.showErrorModal('Could not load policy document or no document exists.')
       });
     }
   }
@@ -760,12 +761,12 @@ export class PolicyServicingComponent implements OnInit {
 
   submitIssue() {
     if (!this.issueForm.policyNumber || !this.issueForm.netPremium || !this.issueForm.sumInsured || !this.issueForm.policyIssueDate) {
-      alert('Please fill all required fields (*)');
+      this.notificationService.showErrorModal('Please fill all required fields (*)');
       return;
     }
 
     if (!this.selectedFile) {
-      alert('Please upload the policy document (*)');
+      this.notificationService.showErrorModal('Please upload the policy document (*)');
       return;
     }
 
@@ -791,13 +792,13 @@ export class PolicyServicingComponent implements OnInit {
 
     this.apiService.issuePolicy(this.selectedPolicy.id, formData).subscribe({
       next: () => {
-        alert('Policy Issued Successfully!');
+        this.notificationService.showSuccessToast('Policy Issued Successfully!');
         this.isSubmitting = false;
         this.closeIssueModal();
         this.loadPendingPolicies();
       },
       error: (err) => {
-        alert('Failed to issue policy: ' + (err.error?.message || err.message));
+        this.notificationService.showErrorModal('Failed to issue policy: ' + (err.error?.message || err.message));
         this.isSubmitting = false;
       }
     });

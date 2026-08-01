@@ -1,33 +1,41 @@
-<div class="timeline-container relative" style="position: relative;" [class.admin-mode]="adminMode">
-  <button class="btn btn-outline-primary btn-sm" 
-          style="position: absolute; right: 20px; top: 15px;" 
-          (click)="select60Days()"
-          [class.active]="selectedDay === 600">
-    {{ userRole && userRole.includes('RM') ? '30 Days View' : '60 Days View' }}
-  </button>
-  <h3>Renewal Timeline</h3>
+<div class="timeline-container relative" style="position: relative;" [class.admin-mode]="adminMode" [class.team-timeline]="isTeamTimeline">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 text-dark fw-semibold" style="font-size: 1.5rem;">
+      {{ isTeamTimeline ? 'Pending Tasks Timeline' : 'Renewal Timeline' }}
+    </h3>
+    <button class="btn btn-outline-primary btn-sm" 
+            (click)="select60Days()"
+            [class.active]="selectedDay === 600">
+      {{ userRole && userRole.includes('RM') ? '30 Days View' : '60 Days View' }}
+    </button>
+  </div>
+  
   <div class="timeline-scroll">
-    <div *ngFor="let day of days" class="timeline-item" [class.active]="selectedDay === day" (click)="selectDay(day)">
-      <span *ngIf="counts[day] !== undefined" class="timeline-badge">{{ counts[day] }}</span>
-      <span class="day-number">{{ day === 0 ? 'Today' : day }}</span>
-      <span class="day-label">{{ day === 0 ? '' : 'Days Left' }}</span>
-    </div>
+    <ng-container *ngFor="let day of days">
+      <div class="timeline-item" [class.active]="selectedDay === day" [class.today-item]="day === 0 && !isTeamTimeline" (click)="selectDay(day)">
+        <span *ngIf="counts[day] !== undefined" class="timeline-badge" [class.today-badge]="day === 0 && !isTeamTimeline">{{ counts[day] }}</span>
+        <span class="day-number">{{ day === 0 ? 'Today' : (day < 0 ? (0 - day) : day) }}</span>
+        <span class="day-label" *ngIf="day !== 0">{{ isTeamTimeline ? 'DAYS PENDING' : 'DAYS LEFT' }}</span>
+      </div>
+    </ng-container>
   </div>
 
-  <div class="today-section d-flex justify-content-center my-1">
-    <div class="timeline-item today-item" [class.active]="selectedDay === 0" (click)="selectDay(0)">
-      <span *ngIf="counts[0] !== undefined" class="timeline-badge today-badge">{{ counts[0] }}</span>
-      <span class="day-number">Today</span>
+  <ng-container *ngIf="!isTeamTimeline">
+    <div class="today-section d-flex justify-content-center my-4">
+      <div class="timeline-item today-item" [class.active]="selectedDay === 0" (click)="selectDay(0)">
+        <span *ngIf="counts[0] !== undefined" class="timeline-badge today-badge">{{ counts[0] }}</span>
+        <span class="day-number">Today</span>
+      </div>
     </div>
-  </div>
 
-  <h3 class="mt-2">Post-Expiry</h3>
-  <div class="timeline-scroll post-expiry">
-    <div *ngFor="let day of postExpiryDays" class="timeline-item warning" [class.active]="selectedDay === day"
-      (click)="selectDay(day)">
-      <span *ngIf="counts[day] !== undefined" class="timeline-badge warning-badge">{{ counts[day] }}</span>
-      <span class="day-number">{{ day }}</span>
-      <span class="day-label">Days Overdue</span>
+    <h3 class="mt-4 mb-3 text-dark fw-semibold" style="font-size: 1.5rem;">Post-Expiry</h3>
+    <div class="timeline-scroll post-expiry">
+      <div *ngFor="let day of postExpiryDays" class="timeline-item warning" [class.active]="selectedDay === day"
+        (click)="selectDay(day)">
+        <span *ngIf="counts[day] !== undefined" class="timeline-badge warning-badge">{{ counts[day] }}</span>
+        <span class="day-number">{{ (day < 0) ? (0 - day) : day }}</span>
+        <span class="day-label">DAYS OVERDUE</span>
+      </div>
     </div>
-  </div>
+  </ng-container>
 </div>

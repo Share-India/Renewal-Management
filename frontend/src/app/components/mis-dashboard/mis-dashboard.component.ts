@@ -1,3 +1,4 @@
+import { NotificationService } from '../../services/notification.service';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -32,7 +33,7 @@ export class MisDashboardComponent implements OnInit {
 
   selectedPolicy: any = null; // For modal
 
-  constructor(private apiService: ApiService, private router: Router, private http: HttpClient, public authService: AuthService) { }
+  constructor(private apiService: ApiService, private router: Router, private http: HttpClient, public authService: AuthService, private notificationService: NotificationService) { }
 
   ngOnInit(): void {
     this.apiService.getBranches().subscribe(branches => {
@@ -171,14 +172,14 @@ export class MisDashboardComponent implements OnInit {
 
     this.apiService.updatePolicy(this.selectedPolicy.id, this.selectedPolicy).subscribe({
       next: (updatedPolicy) => {
-        alert('Policy details updated successfully!');
+        this.notificationService.showSuccessToast('Policy details updated successfully!');
         this.selectedPolicy = updatedPolicy; // Update view
         this.isEditing = false;
         this.loadPolicies(); // Refresh list to show updates in grid if any
       },
       error: (err) => {
         console.error('Error updating policy:', err);
-        alert('Failed to update policy details.');
+        this.notificationService.showErrorModal('Failed to update policy details.');
       }
     });
   }
@@ -204,7 +205,7 @@ export class MisDashboardComponent implements OnInit {
         const url = window.URL.createObjectURL(blob);
         window.open(url, '_blank');
       },
-      error: (err) => alert('Could not load payment proof or no document exists.')
+      error: (err) => this.notificationService.showErrorModal('Could not load payment proof or no document exists.')
     });
   }
 
@@ -214,7 +215,7 @@ export class MisDashboardComponent implements OnInit {
         const url = window.URL.createObjectURL(blob);
         window.open(url, '_blank');
       },
-      error: (err) => alert('Could not load policy document or no document exists.')
+      error: (err) => this.notificationService.showErrorModal('Could not load policy document or no document exists.')
     });
   }
 
@@ -256,7 +257,7 @@ export class MisDashboardComponent implements OnInit {
 
   exportToExcel(): void {
     if (!this.filteredPolicies || this.filteredPolicies.length === 0) {
-      alert('No records to export in the current view.');
+      this.notificationService.showErrorModal('No records to export in the current view.');
       return;
     }
 
@@ -271,7 +272,7 @@ export class MisDashboardComponent implements OnInit {
 
   exportToPDF(): void {
     if (!this.filteredPolicies || this.filteredPolicies.length === 0) {
-      alert('No records to export in the current view.');
+      this.notificationService.showErrorModal('No records to export in the current view.');
       return;
     }
 

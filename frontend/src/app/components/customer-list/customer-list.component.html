@@ -26,8 +26,11 @@
             </thead>
             <tbody>
                 <tr *ngFor="let policy of policies">
-                    <td class="text-break" style="max-width: 150px; word-break: break-word;">
+                    <td style="word-break: break-all; min-width: 140px;">
                         <div class="fw-bold">{{ policy.policyNumber }}</div>
+                        <div *ngIf="(isAdmin || isClaimsManager || isSalesManager || isUnderwritingManager) && policy.currentAssignee" class="mt-1 small text-muted fw-medium">
+                            <i class="bi bi-person-check-fill text-primary me-1"></i>{{ policy.currentAssignee }}
+                        </div>
                         <div *ngIf="policy.rmUpdate" class="mt-1">
                             <span class="badge bg-info text-dark" style="cursor: pointer;" (click)="openRmUpdateModal(policy)" title="View RM Update">
                                 <i class="bi bi-chat-text me-1"></i>RM Update
@@ -85,28 +88,80 @@
                     </td>
                     <td class="text-center">
                         <div class="d-flex gap-2 justify-content-center">
-                            <button class="btn btn-sm btn-outline-info" (click)="openDetailsModal(policy)"
-                                title="View Details">
-                                <i class="bi bi-eye"></i>
+                            <!-- Standard Actions -->
+                            <button class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #e0f7fa; color: #00838f;" 
+                                (click)="openDetailsModal(policy)" title="View Details">
+                                <i class="bi bi-eye" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button class="btn btn-sm btn-primary" (click)="openLogCall(policy)" title="Log Call">
-                                <i class="bi bi-telephone"></i>
+                            <button *ngIf="!isTeamRole" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #e3f2fd; color: #1e88e5;" 
+                                (click)="openLogCall(policy)" title="Log Call">
+                                <i class="bi bi-telephone" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button class="btn btn-sm btn-success" (click)="openRenewalModal(policy)"
-                                title="Renew Policy">
-                                <i class="bi bi-arrow-repeat"></i>
+                            <button *ngIf="!isTeamRole" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #e8f5e9; color: #43a047;" 
+                                (click)="openRenewalModal(policy)" title="Renew Policy">
+                                <i class="bi bi-arrow-repeat" style="font-size: 1.25rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-secondary" (click)="openHistoryModal(policy)"
-                                title="Call History">
-                                <i class="bi bi-clock-history"></i>
-                            </button>
-                            <button *ngIf="isRm" class="btn btn-sm btn-info text-white fw-bold px-2 shadow-sm" (click)="openRmUpdateModal(policy)"
-                                title="Add RM Update">
+
+                            <button *ngIf="isRm" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center fw-bold" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #e8eaf6; color: #3949ab; font-size: 0.85rem;" 
+                                (click)="openRmUpdateModal(policy)" title="Add RM Update">
                                 RM
                             </button>
-                            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger"
+
+                            <!-- Workflow Buttons -->
+                            <button *ngIf="isClaimsManager || isSalesManager || isUnderwritingManager" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #fff8e1; color: #ffb300;" 
+                                (click)="openAssignModal(policy)" title="Assign Policy">
+                                <i class="bi bi-person-check-fill" style="font-size: 1.25rem;"></i>
+                            </button>
+                            <button *ngIf="isRenewer" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
+                                style="height: 36px; border-radius: 10px; background-color: #e0f7fa; color: #00838f;" 
+                                (click)="openRouteModal(policy)" title="Route Policy">
+                                <i class="bi bi-send" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Route
+                            </button>
+                            <button *ngIf="isClaimsManager || isClaimsUser" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
+                                style="height: 36px; border-radius: 10px; background-color: #e3f2fd; color: #1e88e5;" 
+                                (click)="openClaimsUpload(policy)" title="Upload Claims Documents">
+                                <i class="bi bi-file-earmark-medical" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Upload
+                            </button>
+                            <button *ngIf="isSalesManager || isSalesUser" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
+                                style="height: 36px; border-radius: 10px; background-color: #ede7f6; color: #5e35b1;" 
+                                (click)="openSalesNote(policy)" title="View & Add Sales Note">
+                                <i class="bi bi-journal-text" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Note
+                            </button>
+                            <button *ngIf="isUnderwritingManager || isUnderwritingUser" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
+                                style="height: 36px; border-radius: 10px; background-color: #e8f5e9; color: #43a047;" 
+                                (click)="openUnderwritingUpload(policy)" title="Upload Underwriting Documents">
+                                <i class="bi bi-file-earmark-text" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Upload
+                            </button>
+
+                            <button *ngIf="isClaimsManager || isClaimsUser || isSalesManager || isSalesUser || isUnderwritingManager || isUnderwritingUser" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #fce4ec; color: #d81b60;" 
+                                (click)="sendBackToRenewer(policy)" title="Send Back to Renewer">
+                                <i class="bi bi-arrow-return-left" style="font-size: 1.25rem; -webkit-text-stroke: 0.5px;"></i>
+                            </button>
+                            <button *ngIf="isAdmin" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #ffebee; color: #d32f2f;" 
                                 (click)="onDeletePolicy(policy)" title="Delete Policy">
-                                <i class="bi bi-trash" style="font-size: 1.2em;"></i>
+                                <i class="bi bi-trash" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
+                            </button>
+                            <button class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #f1f3f5; color: #495057;" 
+                                (click)="openHistoryModal(policy)" title="Call History">
+                                <i class="bi bi-clock-history" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
                         </div>
                     </td>
@@ -239,24 +294,34 @@
                     <h4 class="section-title"><i class="bi bi-file-text"></i> Policy Info</h4>
                     <div class="info-row">
                         <label>Insurance:</label>
-                        <span class="fw-bold">{{ selectedPolicyDetails?.insuranceName || 'N/A' }}</span>
+                        <span *ngIf="!isEditing" class="fw-bold">{{ selectedPolicyDetails?.insuranceName || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.insuranceName">
                     </div>
                     <div class="info-row">
                         <label>Product:</label>
-                        <span>{{ selectedPolicyDetails?.productName || 'N/A' }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.productName || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.productName">
                     </div>
                     <div class="info-row">
                         <label>Start Date:</label>
-                        <span>{{ selectedPolicyDetails?.policyStartDate | date:'mediumDate' }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.policyStartDate | date:'mediumDate' }}</span>
+                        <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.policyStartDate">
                     </div>
                     <div class="info-row">
                         <label>End Date:</label>
-                        <span>{{ selectedPolicyDetails?.policyEndDate | date:'mediumDate' }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.policyEndDate | date:'mediumDate' }}</span>
+                        <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.policyEndDate">
                     </div>
                     <div class="info-row">
                         <label>Premium:</label>
-                        <span class="text-success fw-bold">{{ selectedPolicyDetails?.duePremium | currency:'INR'
+                        <span *ngIf="!isEditing" class="text-success fw-bold">{{ selectedPolicyDetails?.duePremium | currency:'INR'
                             }}</span>
+                        <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.duePremium">
                     </div>
 
                     <hr class="my-3 text-muted opacity-25">
@@ -377,34 +442,39 @@
                     <i class="bi bi-check-lg"></i> Save Changes
                 </button>
             </div>
-        </div>
-        <div *ngIf="isAdmin" class="mt-1">
+            
+            <div class="mt-4">
             <h5 class="border-bottom pb-3 mb-3 text-primary ps-3"><i class="bi bi-folder2-open me-2"></i>Attached
                 Documents
             </h5>
 
-            <div class="row g-3">
-                <!-- Payment Proof Card -->
+            <div class="row g-3">                <!-- Payment Proof Card -->
                 <div class="col-md-6">
                     <div class="card h-100 border-0 shadow-sm bg-light">
-                        <div class="card-body d-flex align-items-center justify-content-between p-3">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-square bg-white text-primary rounded p-2 me-3 shadow-sm">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3 gap-2">
+                            <div class="d-flex align-items-center overflow-hidden">
+                                <div class="icon-square bg-white text-primary rounded p-2 me-3 shadow-sm flex-shrink-0">
                                     <i class="bi bi-receipt fs-4"></i>
                                 </div>
-                                <div>
-                                    <div class="fw-bold text-dark">Payment Proof</div>
-                                    <small class="text-muted"
+                                <div class="text-truncate">
+                                    <div class="fw-bold text-dark text-truncate">Payment Proof</div>
+                                    <small class="text-muted text-truncate d-block"
                                         *ngIf="selectedPolicyDetails?.paymentDocumentPath">Available</small>
-                                    <small class="text-danger" *ngIf="!selectedPolicyDetails?.paymentDocumentPath">Not
-                                        Uploaded</small>
+                                    <small class="text-danger text-truncate d-block" *ngIf="!selectedPolicyDetails?.paymentDocumentPath">Not Uploaded</small>
                                 </div>
                             </div>
-                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                                (click)="viewDocument('payment')"
-                                [disabled]="!selectedPolicyDetails?.paymentDocumentPath">
-                                <i class="bi bi-eye me-1"></i> View
-                            </button>
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3 text-nowrap"
+                                    (click)="viewDocument('payment')"
+                                    [disabled]="!selectedPolicyDetails?.paymentDocumentPath">
+                                    <i class="bi bi-eye me-1"></i> View
+                                </button>
+                                <button *ngIf="isAdmin || isRenewer" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                    (click)="deleteDocument(selectedPolicyDetails, 'payment')"
+                                    [disabled]="!selectedPolicyDetails?.paymentDocumentPath" title="Delete Payment Proof">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -412,24 +482,158 @@
                 <!-- Policy Document Card -->
                 <div class="col-md-6">
                     <div class="card h-100 border-0 shadow-sm bg-light">
-                        <div class="card-body d-flex align-items-center justify-content-between p-3">
-                            <div class="d-flex align-items-center">
-                                <div class="icon-square bg-white text-success rounded p-2 me-3 shadow-sm">
+                        <div class="card-body d-flex align-items-center justify-content-between p-3 gap-2">
+                            <div class="d-flex align-items-center overflow-hidden">
+                                <div class="icon-square bg-white text-success rounded p-2 me-3 shadow-sm flex-shrink-0">
                                     <i class="bi bi-file-earmark-check fs-4"></i>
                                 </div>
-                                <div>
-                                    <div class="fw-bold text-dark">Policy Document</div>
-                                    <small class="text-muted"
+                                <div class="text-truncate">
+                                    <div class="fw-bold text-dark text-truncate">Policy Document</div>
+                                    <small class="text-muted text-truncate d-block"
                                         *ngIf="selectedPolicyDetails?.policyDocumentPath">Available</small>
-                                    <small class="text-danger" *ngIf="!selectedPolicyDetails?.policyDocumentPath">Not
-                                        Uploaded</small>
+                                    <small class="text-danger text-truncate d-block" *ngIf="!selectedPolicyDetails?.policyDocumentPath">Not Uploaded</small>
                                 </div>
                             </div>
-                            <button class="btn btn-sm btn-outline-success rounded-pill px-3"
-                                (click)="viewDocument('policy')"
-                                [disabled]="!selectedPolicyDetails?.policyDocumentPath">
-                                <i class="bi bi-eye me-1"></i> View
-                            </button>
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-3 text-nowrap"
+                                    (click)="viewDocument('policy')"
+                                    [disabled]="!selectedPolicyDetails?.policyDocumentPath">
+                                    <i class="bi bi-eye me-1"></i> View
+                                </button>
+                                <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                    (click)="deleteDocument(selectedPolicyDetails, 'policy')"
+                                    [disabled]="!selectedPolicyDetails?.policyDocumentPath" title="Delete Policy Document">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> <!-- Closes row g-3 -->
+
+            <!-- Claims Documents Section -->
+            <div *ngIf="getDocumentsByTeam('CLAIMS').length > 0" class="mt-4">
+                <h6 class="text-secondary fw-bold mb-3"><i class="bi bi-folder-fill text-success me-2"></i>Claims Documents</h6>
+                <div class="row g-3">
+                    <div class="col-md-6" *ngFor="let doc of getDocumentsByTeam('CLAIMS')">
+                        <div class="card h-100 border-0 shadow-sm" style="background-color: #f0fdf4;">
+                            <div class="card-body d-flex align-items-center justify-content-between p-3 gap-2">
+                                <div class="d-flex align-items-center overflow-hidden">
+                                    <div class="icon-square bg-white text-success rounded p-2 me-3 shadow-sm flex-shrink-0">
+                                        <i class="bi bi-file-earmark fs-4"></i>
+                                    </div>
+                                    <div class="text-truncate">
+                                        <div class="fw-bold text-dark text-truncate" [title]="doc.fileName">{{ doc.fileName }}</div>
+                                        <small class="text-muted d-block text-truncate">By: CLAIMS</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-success rounded-pill px-3 text-nowrap"
+                                        (click)="viewTeamDocument(doc.id)">
+                                        <i class="bi bi-eye me-1"></i> View
+                                    </button>
+                                    <button *ngIf="(isClaimsManager || isClaimsUser)" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                        (click)="deleteTeamDocument(doc.id)" title="Delete Document">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Documents Section -->
+            <div *ngIf="getDocumentsByTeam('SALES').length > 0" class="mt-4">
+                <h6 class="text-secondary fw-bold mb-3"><i class="bi bi-folder-fill text-info me-2"></i>Sales Documents</h6>
+                <div class="row g-3">
+                    <div class="col-md-6" *ngFor="let doc of getDocumentsByTeam('SALES')">
+                        <div class="card h-100 border-0 shadow-sm" style="background-color: #f0f9ff;">
+                            <div class="card-body d-flex align-items-center justify-content-between p-3 gap-2">
+                                <div class="d-flex align-items-center overflow-hidden">
+                                    <div class="icon-square bg-white text-info rounded p-2 me-3 shadow-sm flex-shrink-0">
+                                        <i class="bi bi-file-earmark fs-4"></i>
+                                    </div>
+                                    <div class="text-truncate">
+                                        <div class="fw-bold text-dark text-truncate" [title]="doc.fileName">{{ doc.fileName }}</div>
+                                        <small class="text-muted d-block text-truncate">By: SALES</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-info rounded-pill px-3 text-nowrap"
+                                        (click)="viewTeamDocument(doc.id)">
+                                        <i class="bi bi-eye me-1"></i> View
+                                    </button>
+                                    <button *ngIf="(isSalesManager || isSalesUser)" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                        (click)="deleteTeamDocument(doc.id)" title="Delete Document">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Underwriting Documents Section -->
+            <div *ngIf="getDocumentsByTeam('UNDERWRITING').length > 0" class="mt-4">
+                <h6 class="text-secondary fw-bold mb-3"><i class="bi bi-folder-fill text-warning me-2"></i>Underwriting Documents</h6>
+                <div class="row g-3">
+                    <div class="col-md-6" *ngFor="let doc of getDocumentsByTeam('UNDERWRITING')">
+                        <div class="card h-100 border-0 shadow-sm" style="background-color: #fdfae6;">
+                            <div class="card-body d-flex align-items-center justify-content-between p-3 gap-2">
+                                <div class="d-flex align-items-center overflow-hidden">
+                                    <div class="icon-square bg-white text-warning rounded p-2 me-3 shadow-sm flex-shrink-0">
+                                        <i class="bi bi-file-earmark fs-4"></i>
+                                    </div>
+                                    <div class="text-truncate">
+                                        <div class="fw-bold text-dark text-truncate" [title]="doc.fileName">{{ doc.fileName }}</div>
+                                        <small class="text-muted d-block text-truncate">By: UNDERWRITING</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 flex-shrink-0">
+                                    <button class="btn btn-sm btn-outline-warning rounded-pill px-3 text-nowrap"
+                                        (click)="viewTeamDocument(doc.id)">
+                                        <i class="bi bi-eye me-1"></i> View
+                                    </button>
+                                    <button *ngIf="(isUnderwritingManager || isUnderwritingUser)" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                        (click)="deleteTeamDocument(doc.id)" title="Delete Document">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            </div> <!-- Closes mt-4 Attached Documents -->
+            <!-- Team Notes Section -->
+            <div class="mt-4" *ngIf="selectedPolicyDetails?.claimsNote || selectedPolicyDetails?.salesNote || selectedPolicyDetails?.underwritingNote">
+                <h5 class="border-bottom pb-3 mb-3 text-primary ps-3"><i class="bi bi-chat-left-text me-2"></i>Team Notes</h5>
+                <div class="row g-3">
+                    <div class="col-12" *ngIf="selectedPolicyDetails?.claimsNote">
+                        <div class="card border-0 shadow-sm" style="background-color: #f0fdf4;">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold text-success mb-2"><i class="bi bi-file-medical me-2"></i>Claims Note</h6>
+                                <p class="mb-0 text-dark" style="white-space: pre-wrap; font-size: 0.95rem;">{{ selectedPolicyDetails?.claimsNote }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" *ngIf="selectedPolicyDetails?.salesNote">
+                        <div class="card border-0 shadow-sm" style="background-color: #f0f9ff;">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold text-info mb-2"><i class="bi bi-graph-up-arrow me-2"></i>Sales Note</h6>
+                                <p class="mb-0 text-dark" style="white-space: pre-wrap; font-size: 0.95rem;">{{ selectedPolicyDetails?.salesNote }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" *ngIf="selectedPolicyDetails?.underwritingNote">
+                        <div class="card border-0 shadow-sm" style="background-color: #fdfae6;">
+                            <div class="card-body p-3">
+                                <h6 class="fw-bold text-warning mb-2"><i class="bi bi-shield-check me-2"></i>Underwriting Note</h6>
+                                <p class="mb-0 text-dark" style="white-space: pre-wrap; font-size: 0.95rem;">{{ selectedPolicyDetails?.underwritingNote }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -437,8 +641,6 @@
         </div>
     </div>
 </div>
-
-
 
 <!-- Log Call Modal -->
 <div class="modal-overlay" *ngIf="showLogCallModal" (click)="closeModal()">
@@ -510,7 +712,7 @@
 <div class="modal-overlay" *ngIf="showRenewalModal" (click)="closeRenewalModal()">
     <div class="custom-modal-content details-modal" (click)="$event.stopPropagation()">
         <div class="modal-header p-3">
-            <h3 class="mb-0">Renew Policy</h3>
+            <h3 class="mb-0">Edit / Renew Policy</h3>
             <button class="btn-close" (click)="closeRenewalModal()"></button>
         </div>
         <div class="modal-body">
@@ -705,7 +907,12 @@
                             </div>
                             <small class="text-muted">{{ record.callDate | date:'medium' }}</small>
                         </div>
-                        <p class="mb-2">{{ record.notes }}</p>
+                        <div *ngIf="record.notes" class="mb-3 p-3 bg-light rounded-3 border-start border-4 border-primary shadow-sm">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-chat-left-quote-fill text-primary opacity-50 mt-1" style="font-size: 1.1rem;"></i>
+                                <div style="font-size: 0.95rem; color: #495057; line-height: 1.4;">{{ record.notes }}</div>
+                            </div>
+                        </div>
                         <div *ngIf="record.contactTo" class="mb-2 p-2 bg-light rounded border" style="font-size: 0.85rem;">
                             <strong>Contacted {{ record.contactTo }}</strong><span *ngIf="record.contactName || record.contactNumber">:</span>
                             <span *ngIf="record.contactName" class="ms-1">{{ record.contactName }}</span>
@@ -753,9 +960,191 @@
                 </div>
             </ng-template>
         </div>
-        <div class="modal-footer p-3 border-top d-flex justify-content-end bg-light">
-            <button class="btn btn-secondary rounded-pill px-4" (click)="closeRmUpdateModal()">Close</button>
-            <button *ngIf="isRm" class="btn btn-info text-white rounded-pill px-4 shadow-sm fw-bold ms-2" (click)="submitRmUpdate()">Save Update</button>
+        <div class="modal-footer p-3 border-top bg-light">
+            <button class="btn btn-secondary px-4 fw-bold" (click)="closeRmUpdateModal()">Close</button>
+            <button *ngIf="isRm" class="btn btn-primary px-4 fw-bold" (click)="submitRmUpdate()">Save Update</button>
+        </div>
+    </div>
+</div>
+
+<!-- Route Policy Modal -->
+<div class="modal-overlay d-flex align-items-center justify-content-center" *ngIf="showRouteModal" (click)="closeRouteModal()" style="background: rgba(0,0,0,0.6); position: fixed; inset: 0; z-index: 1060; backdrop-filter: blur(4px);">
+    <div class="custom-modal-content bg-white rounded-4 shadow border-0 overflow-hidden" (click)="$event.stopPropagation()" style="width: 100%; max-width: 500px;">
+        
+        <!-- Header -->
+        <div class="modal-header border-0 px-4 pt-4 pb-0 d-flex justify-content-between align-items-start">
+            <div>
+                <h4 class="mb-1 text-dark fw-bold d-flex align-items-center gap-2">
+                    <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3 d-flex align-items-center justify-content-center">
+                        <i class="bi bi-diagram-3-fill fs-5"></i>
+                    </div>
+                    Route Policy
+                </h4>
+                <p class="text-muted small mb-0 ms-1">Select a destination team to route this policy to.</p>
+            </div>
+            <button class="btn-close shadow-none mt-1" (click)="closeRouteModal()" aria-label="Close"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body p-4 pt-4">
+            <div class="d-flex flex-column gap-3">
+                <!-- Claims Team Card -->
+                <label class="route-team-card p-3 rounded-4 border d-flex align-items-center gap-3 cursor-pointer transition-all" [ngClass]="{'border-primary bg-primary bg-opacity-10 shadow-sm': selectedRouteTeam === 'CLAIMS', 'border-light-subtle bg-white hover-bg-light': selectedRouteTeam !== 'CLAIMS'}" style="cursor: pointer;">
+                    <input type="radio" name="routeTeam" value="CLAIMS" [(ngModel)]="selectedRouteTeam" class="d-none">
+                    <div class="icon-circle bg-white text-success rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px;">
+                        <i class="bi bi-file-medical-fill fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold text-dark">Claims Team</h6>
+                        <small class="text-muted">Route for claims processing and updates.</small>
+                    </div>
+                    <i class="bi bi-check-circle-fill text-primary fs-4" *ngIf="selectedRouteTeam === 'CLAIMS'"></i>
+                    <i class="bi bi-circle text-muted fs-4 opacity-50" *ngIf="selectedRouteTeam !== 'CLAIMS'"></i>
+                </label>
+
+                <!-- Sales Team Card -->
+                <label class="route-team-card p-3 rounded-4 border d-flex align-items-center gap-3 cursor-pointer transition-all" [ngClass]="{'border-primary bg-primary bg-opacity-10 shadow-sm': selectedRouteTeam === 'SALES', 'border-light-subtle bg-white hover-bg-light': selectedRouteTeam !== 'SALES'}" style="cursor: pointer;">
+                    <input type="radio" name="routeTeam" value="SALES" [(ngModel)]="selectedRouteTeam" class="d-none">
+                    <div class="icon-circle bg-white text-info rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px;">
+                        <i class="bi bi-graph-up-arrow fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold text-dark">Sales Team</h6>
+                        <small class="text-muted">Route for sales review and adjustments.</small>
+                    </div>
+                    <i class="bi bi-check-circle-fill text-primary fs-4" *ngIf="selectedRouteTeam === 'SALES'"></i>
+                    <i class="bi bi-circle text-muted fs-4 opacity-50" *ngIf="selectedRouteTeam !== 'SALES'"></i>
+                </label>
+
+                <!-- Underwriting Team Card -->
+                <label class="route-team-card p-3 rounded-4 border d-flex align-items-center gap-3 cursor-pointer transition-all" [ngClass]="{'border-primary bg-primary bg-opacity-10 shadow-sm': selectedRouteTeam === 'UNDERWRITING', 'border-light-subtle bg-white hover-bg-light': selectedRouteTeam !== 'UNDERWRITING'}" style="cursor: pointer;">
+                    <input type="radio" name="routeTeam" value="UNDERWRITING" [(ngModel)]="selectedRouteTeam" class="d-none">
+                    <div class="icon-circle bg-white text-warning rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 45px; height: 45px;">
+                        <i class="bi bi-shield-fill-check fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0 fw-bold text-dark">Underwriting Team</h6>
+                        <small class="text-muted">Route for risk assessment and quotes.</small>
+                    </div>
+                    <i class="bi bi-check-circle-fill text-primary fs-4" *ngIf="selectedRouteTeam === 'UNDERWRITING'"></i>
+                    <i class="bi bi-circle text-muted fs-4 opacity-50" *ngIf="selectedRouteTeam !== 'UNDERWRITING'"></i>
+                </label>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer border-0 px-4 pb-4 pt-1 d-flex justify-content-end gap-2">
+            <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill" (click)="closeRouteModal()">Cancel</button>
+            <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitRoute()" [disabled]="!selectedRouteTeam">
+                Route Policy <i class="bi bi-send-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Policy Modal -->
+<div class="modal-overlay" *ngIf="showAssignModal" (click)="closeAssignModal()">
+    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="width: 400px; max-width: 95%;">
+        <div class="modal-header p-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">Assign Policy</h5>
+            <button type="button" class="btn-close shadow-none" (click)="closeAssignModal()" style="font-size: 0.8rem;"></button>
+        </div>
+        <div class="modal-body px-4 py-2">
+            <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Select User in Team</label>
+            <select class="form-select form-select-lg shadow-none border-secondary-subtle focus-ring" [(ngModel)]="selectedAssignUser" style="border-radius: 0.75rem; font-size: 0.95rem;">
+                <option value="">-- Select User --</option>
+                <option *ngFor="let u of availableUsersForTeam" [value]="u.username">{{ u.username }}</option>
+            </select>
+            <div *ngIf="availableUsersForTeam.length === 0" class="text-danger small mt-2 d-flex align-items-center gap-1">
+                <i class="bi bi-exclamation-circle-fill"></i> No users found in your team.
+            </div>
+        </div>
+        <div class="modal-footer border-top-0 p-4 pt-3 d-flex justify-content-end gap-2">
+            <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" (click)="closeAssignModal()">Cancel</button>
+            <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitAssign()" [disabled]="!selectedAssignUser">
+                Assign <i class="bi bi-person-check-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Claims Upload Modal -->
+<div class="modal-overlay" *ngIf="showClaimsUploadModal" (click)="closeClaimsUpload()">
+    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="width: 500px; max-width: 95%;">
+        <div class="modal-header p-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">Upload Claims Documents</h5>
+            <button type="button" class="btn-close shadow-none" (click)="closeClaimsUpload()" style="font-size: 0.8rem;"></button>
+        </div>
+        <div class="modal-body px-4 py-2">
+            <div class="mb-3">
+                <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Select Files</label>
+                <input type="file" multiple class="form-control shadow-none border-secondary-subtle" (change)="onClaimsFilesSelected($event)" accept=".xlsx,.xls,.csv,.pdf,.png,.jpg,.jpeg" style="border-radius: 0.75rem;">
+                <small class="text-muted">You can select multiple files at once.</small>
+            </div>
+            <div class="mb-2">
+                <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Claims Note</label>
+                <textarea class="form-control shadow-none border-secondary-subtle" rows="3" [(ngModel)]="claimsNote" placeholder="e.g. Added details about..." style="border-radius: 0.75rem;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer border-top-0 p-4 pt-3 d-flex justify-content-end gap-2">
+            <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" (click)="closeClaimsUpload()">Cancel</button>
+            <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitClaimsUpload()">
+                Upload & Save <i class="bi bi-cloud-arrow-up-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Underwriting Upload Modal -->
+<div class="modal-overlay" *ngIf="showUnderwritingModal" (click)="closeUnderwritingUpload()">
+    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="width: 500px; max-width: 95%;">
+        <div class="modal-header p-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">Underwriting Feedback</h5>
+            <button type="button" class="btn-close shadow-none" (click)="closeUnderwritingUpload()" style="font-size: 0.8rem;"></button>
+        </div>
+        <div class="modal-body px-4 py-2">
+            <div class="mb-3">
+                <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Upload Documents (Optional)</label>
+                <input type="file" multiple class="form-control shadow-none border-secondary-subtle" (change)="onUnderwritingFilesSelected($event)" style="border-radius: 0.75rem;">
+                <small class="text-muted">You can select multiple files at once.</small>
+            </div>
+            <div class="mb-2">
+                <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Feedback Note (Optional)</label>
+                <textarea class="form-control shadow-none border-secondary-subtle" rows="3" [(ngModel)]="underwritingNote" placeholder="e.g. Rejecting because document XYZ is missing" style="border-radius: 0.75rem;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer border-top-0 p-4 pt-3 d-flex justify-content-end gap-2">
+            <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" (click)="closeUnderwritingUpload()">Cancel</button>
+            <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitUnderwritingUpload()">
+                Save & Upload <i class="bi bi-check-circle-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Note Modal -->
+<div class="modal-overlay" *ngIf="showSalesModal" (click)="closeSalesNote()">
+    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="width: 500px; max-width: 95%;">
+        <div class="modal-header p-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem;">Sales Note</h5>
+            <button type="button" class="btn-close shadow-none" (click)="closeSalesNote()" style="font-size: 0.8rem;"></button>
+        </div>
+        <div class="modal-body px-4 py-2">
+            <div class="mb-3">
+                <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Upload Documents (Optional)</label>
+                <input type="file" multiple class="form-control shadow-none border-secondary-subtle" (change)="onSalesFilesSelected($event)" style="border-radius: 0.75rem;">
+                <small class="text-muted">You can select multiple files at once.</small>
+            </div>
+            <div class="mb-2">
+                <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Sales Note</label>
+                <textarea class="form-control shadow-none border-secondary-subtle" rows="3" [(ngModel)]="salesNote" placeholder="e.g. Revisions needed in document XYZ..." style="border-radius: 0.75rem;"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer border-top-0 p-4 pt-3 d-flex justify-content-end gap-2">
+            <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" (click)="closeSalesNote()">Cancel</button>
+            <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitSalesNote()">
+                Save Note <i class="bi bi-journal-check"></i>
+            </button>
         </div>
     </div>
 </div>

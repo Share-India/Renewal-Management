@@ -26,6 +26,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findPoliciesForTargetDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("branch") String branch);
 
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> findAllPoliciesForTargetDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("branch") String branch);
+
         List<Policy> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
 
         @Query("SELECT p FROM Policy p WHERE (p.expiryDate >= :startDate AND p.expiryDate <= :endDate) OR (p.lastExpiryDate >= :startDate AND p.lastExpiryDate <= :endDate)")
@@ -59,6 +62,13 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         @Query("SELECT DISTINCT p.branch FROM Policy p WHERE p.branch IS NOT NULL")
         List<String> findDistinctBranches();
+
+        // Team routing queries
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.routedAt = :routedAt")
+        List<Policy> findPoliciesByRoutedAt(@Param("routedAt") LocalDate routedAt);
+
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.routedAt IN :routedAts")
+        List<Policy> findPoliciesByRoutedAtIn(@Param("routedAts") List<LocalDate> routedAts);
 
         @Query("SELECT DISTINCT p.rmName FROM Policy p WHERE p.rmName IS NOT NULL AND p.rmName != '' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY p.rmName ASC")
         List<String> findDistinctRmNamesByBranch(@Param("branch") String branch);

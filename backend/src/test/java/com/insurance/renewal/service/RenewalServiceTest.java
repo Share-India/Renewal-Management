@@ -34,11 +34,11 @@ public class RenewalServiceTest {
         Policy policy1 = new Policy();
         policy1.setPolicyNumber("POL-001");
         
-        when(policyRepository.findPoliciesForTimeline(targetDate))
+        when(policyRepository.findAdminPoliciesForTimeline(targetDate, null))
                 .thenReturn(Arrays.asList(policy1));
 
         // When
-        List<Policy> result = renewalService.getPoliciesForTimeline(days);
+        List<Policy> result = renewalService.getPoliciesForTimeline(days, null, null);
 
         // Then
         assertFalse(result.isEmpty());

@@ -1,10 +1,13 @@
+import { NotificationService } from '../../services/notification.service';
 import { Component, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TimelineComponent } from '../timeline/timeline.component';
 import { CustomerListComponent } from '../customer-list/customer-list.component';
 import { WorkProgressComponent } from '../work-progress/work-progress.component';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { forkJoin, of } from 'rxjs';
 
 @Component({
@@ -53,7 +56,7 @@ import { forkJoin, of } from 'rxjs';
                   </div>
                   <div class="text-end flex-shrink-0">
                     <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.75rem;">
-                      ₹{{ p.totalPremium | number:'1.0-0' }}
+                      {{ p.totalPremium | currency:'INR':'symbol':'1.0-0' }}
                     </span>
                   </div>
                 </div>
@@ -67,7 +70,7 @@ import { forkJoin, of } from 'rxjs';
                       <span class="text-muted"> | {{ sub.policyNumber }}</span>
                     </div>
                     <div class="text-success fw-bold flex-shrink-0" style="font-size: 0.7rem;">
-                      ₹{{ (sub.duePremium ? sub.duePremium : (sub.amount || 0)) | number:'1.0-0' }}
+                      {{ (sub.duePremium ? sub.duePremium : (sub.amount || 0)) | currency:'INR':'symbol':'1.0-0' }}
                     </div>
                   </div>
                 </div>
@@ -78,11 +81,17 @@ import { forkJoin, of } from 'rxjs';
       </div>
       <div class="header-section d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2>Renewal Management Console</h2>
-          <p class="text-muted">Centralized hub for tracking policy expiries and managing client follow-ups</p>
+          <h2 class="fw-bold" style="color: #2c3e50;">{{ getDashboardTitle() }}</h2>
+          <p class="text-muted mb-0" style="font-size: 1.1rem;">{{ getDashboardSubtitle() }}</p>
         </div>
+        
         <div class="d-flex gap-2">
-          <button class="btn btn-success" (click)="openTodaysWork()">
+          <!-- Update Filters for Renewer Dashboard -->
+
+          <button class="btn btn-outline-dark" *ngIf="isManager()" (click)="openAddMemberModal()">
+            <i class="bi bi-person-plus-fill"></i> Add Member
+          </button>
+          <button class="btn btn-success" *ngIf="!isTeamRole()" (click)="openTodaysWork()">
             <i class="bi bi-briefcase"></i> Today's Work
           </button>
           <button class="btn btn-primary" (click)="openRenewalModal()">
@@ -91,34 +100,27 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
 
-      <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)"></app-timeline>
+      <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()"></app-timeline>
       
       <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
 
       <div class="row" *ngIf="selectedDay !== null">
         <!-- Main List: Renewals OR Post-Expiry -->
         <div class="col-12 mb-4">
-          <h3 class="section-title" [ngClass]="isUpcoming() ? 'text-primary' : 'text-danger'">
-            <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
-            <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
-            <span *ngIf="selectedDay !== 'todays-work'">{{ getSectionTitle() }}</span>
-          </h3>
-
-          <!-- Controls Container: Shown for all days, but some parts are today-only -->
-          <div class="mb-4 d-flex flex-wrap gap-3 justify-content-between align-items-start">
-            
-            <div class="d-flex gap-2" *ngIf="selectedDay === 'todays-work'">
-              <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setTodaysWorkTab('expiring')">
-                 Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white text-primary' : 'bg-light text-primary'">{{ todaysExpiring.length }}</span>
-              </button>
-              <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white'" (click)="setTodaysWorkTab('followups')">
-                 Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
-              </button>
+          
+          <!-- Row 1: Header and Search Row -->
+          <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3 pb-2" [ngClass]="{'border-bottom': selectedDay !== 'todays-work'}">
+            <!-- Left Side: Title -->
+            <div class="d-flex flex-column align-items-start">
+              <h3 class="section-title mb-0" [ngClass]="isUpcoming() ? 'text-primary' : 'text-danger'">
+                <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
+                <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
+                <span *ngIf="selectedDay !== 'todays-work'">{{ getSectionTitle() }}</span>
+              </h3>
             </div>
 
-            <div class="d-flex flex-grow-1" *ngIf="selectedDay !== 'todays-work'"></div>
-            
-            <div class="d-flex gap-3 align-items-center">
+            <!-- Right Side: Search Bar and Day Filter -->
+            <div class="d-flex flex-wrap gap-3 align-items-start pt-2">
               <!-- Search Bar -->
               <div class="input-group shadow-sm" style="width: 350px;">
                 <select class="form-select border-secondary-subtle text-muted" style="max-width: 160px; background-color: #f8f9fa;" [(ngModel)]="searchBy" (change)="applyFilters()">
@@ -136,11 +138,25 @@ import { forkJoin, of } from 'rxjs';
                 <input type="number" class="form-control border-secondary-subtle text-center" 
                        placeholder="e.g. 1" [(ngModel)]="dayFilter" (input)="applyFilters()" min="0" max="60">
               </div>
+            </div>
+          </div>
 
-              <!-- Filters Stack -->
-              <div *ngIf="selectedDay === 'todays-work'" class="d-flex flex-column align-items-end gap-2">
-                <!-- Type Filter (Today Only) -->
-                <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
+          <!-- Row 2: Tabs and Filters (Today's Work Only) -->
+          <div *ngIf="selectedDay === 'todays-work'" class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3 pb-3 border-bottom">
+            <!-- Left Side: Tab Buttons -->
+            <div class="d-flex gap-2">
+              <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'expiring' ? 'btn-primary' : 'btn-outline-primary bg-white'" (click)="setTodaysWorkTab('expiring')">
+                 Expiring Policies <span class="badge ms-1" [ngClass]="todaysWorkTab === 'expiring' ? 'bg-white' : 'bg-light text-primary'" [style.color]="todaysWorkTab === 'expiring' ? '#0d6efd' : null">{{ todaysExpiring.length }}</span>
+              </button>
+              <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white'" (click)="setTodaysWorkTab('followups')">
+                 Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
+              </button>
+            </div>
+
+            <!-- Right Side: Type and Premium Filters -->
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+              <!-- Type Filter -->
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
@@ -150,7 +166,7 @@ import { forkJoin, of } from 'rxjs';
                 </select>
               </div>
 
-              <!-- Premium Filter (Today Only) -->
+              <!-- Premium Filter -->
               <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-funnel-fill me-1"></i> Premium
@@ -163,11 +179,10 @@ import { forkJoin, of } from 'rxjs';
                   <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
                 </div>
               </div>
-              </div> <!-- close flex-column stack -->
             </div>
           </div>
 
-          <app-customer-list [policies]="policies" [loading]="loading" (dataUpdated)="onDataUpdated()"></app-customer-list>
+          <app-customer-list [policies]="policies" [loading]="loading" [adminViewAs]="adminViewAs" (dataUpdated)="onDataUpdated()"></app-customer-list>
         </div>
         
         <!-- Follow-ups List (Only visible for upcoming days, i.e., selectedDay >= 0) -->
@@ -175,12 +190,12 @@ import { forkJoin, of } from 'rxjs';
           <h3 class="section-title text-warning">
             <i class="bi bi-telephone-fill"></i> Scheduled Follow-ups (Due {{ getFollowUpDueText() }})
           </h3>
-          <app-customer-list [policies]="followUps" [loading]="loading" (dataUpdated)="onDataUpdated()"></app-customer-list>
+          <app-customer-list [policies]="followUps" [loading]="loading" [adminViewAs]="adminViewAs" (dataUpdated)="onDataUpdated()"></app-customer-list>
         </div>
       </div>
       
       <div *ngIf="selectedDay === null" class="text-center mt-5 empty-state">
-        <div class="empty-icon">📅</div>
+        <div class="empty-icon"><i class="bi bi-calendar-event"></i></div>
         <h3>Select a Timeline Bucket</h3>
         <p class="text-muted">Click on a day above to view expiring policies and scheduled calls.</p>
       </div>
@@ -309,115 +324,150 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
     </div>
+
+    <!-- Add Member Modal -->
+    <div class="modal-overlay d-flex align-items-center justify-content-center" *ngIf="showAddMemberModal" (click)="closeAddMemberModal()" style="background: rgba(0,0,0,0.5); position: fixed; inset: 0; z-index: 1060;">
+      <div class="bg-white rounded-4 shadow-lg overflow-hidden" style="width: 100%; max-width: 480px; transform: translateY(-20px); animation: slideDown 0.3s forwards;" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header border-0 bg-primary bg-opacity-10 px-4 py-3 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-3">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+              <i class="bi bi-person-plus-fill fs-5"></i>
+            </div>
+            <h4 class="fw-bold mb-0 text-dark">Add Team Member</h4>
+          </div>
+          <button type="button" class="btn-close shadow-none" (click)="closeAddMemberModal()" aria-label="Close"></button>
+        </div>
+        
+        <div class="modal-body px-4 py-4">
+          <div class="mb-4">
+            <label class="form-label text-muted fw-semibold mb-2 fs-7 text-uppercase tracking-wider">Username</label>
+            <div class="input-group input-group-lg border rounded-3 overflow-hidden shadow-sm" style="background: var(--bs-gray-100)">
+              <span class="input-group-text bg-transparent border-0 text-primary px-3"><i class="bi bi-person-badge"></i></span>
+              <input type="text" class="form-control bg-transparent border-0 shadow-none px-2" [(ngModel)]="newMemberUsername" placeholder="e.g. john.doe">
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="form-label text-muted fw-semibold mb-2 fs-7 text-uppercase tracking-wider">Password</label>
+            <div class="input-group input-group-lg border rounded-3 overflow-hidden shadow-sm" style="background: var(--bs-gray-100)">
+              <span class="input-group-text bg-transparent border-0 text-primary px-3"><i class="bi bi-key"></i></span>
+              <input type="password" class="form-control bg-transparent border-0 shadow-none px-2" [(ngModel)]="newMemberPassword" placeholder="Enter secure password">
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label class="form-label text-muted fw-semibold mb-2 fs-7 text-uppercase tracking-wider">Confirm Password</label>
+            <div class="input-group input-group-lg border rounded-3 overflow-hidden shadow-sm" style="background: var(--bs-gray-100)">
+              <span class="input-group-text bg-transparent border-0 text-primary px-3"><i class="bi bi-shield-check"></i></span>
+              <input type="password" class="form-control bg-transparent border-0 shadow-none px-2" [(ngModel)]="newMemberConfirmPassword" placeholder="Re-enter password">
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer border-top px-4 py-3 bg-light d-flex justify-content-end gap-2">
+          <button class="btn btn-light border px-4 fw-medium text-muted rounded-pill shadow-sm" (click)="closeAddMemberModal()">Cancel</button>
+          <button class="btn btn-primary px-4 fw-medium rounded-pill shadow d-flex align-items-center gap-2" (click)="submitAddMember()">
+            <i class="bi bi-check2-circle"></i> Create Member
+          </button>
+        </div>
+        
+      </div>
+    </div>
   `,
   styles: [`
     .mt-4 { margin-top: 1.5rem; }
     .mb-4 { margin-bottom: 1.5rem; }
+    
     .header-section { 
-      margin-bottom: 35px; 
-      padding-bottom: 25px; 
-      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 2rem; 
+      padding-bottom: 1.5rem; 
+      border-bottom: 1px solid var(--border-color);
     }
     .header-section h2 { 
-      margin-bottom: 8px; 
-      color: #1e293b; 
+      margin-bottom: 0; 
+      color: var(--primary-dark); 
       font-weight: 800;
-      font-size: 2.2rem;
-      letter-spacing: -0.03em;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
     }
     .header-section p {
       font-size: 1.1rem;
-      color: #64748b;
+      color: var(--text-secondary);
       margin: 0;
     }
+    
     .section-title { 
-      border-bottom: 2px solid #dee2e6; 
-      padding-bottom: 10px; 
-      margin-bottom: 15px;
+      border-bottom: 2px solid var(--border-color, #e9ecef); 
+      padding-bottom: 0.75rem; 
+      margin-bottom: 1.5rem;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.75rem;
+      color: #2c3e50;
+      font-weight: 700;
     }
-    .text-primary { color: #0d6efd; }
-    .text-danger { color: #dc3545; }
-    .text-warning { color: #4d3900ff; text-shadow: 0px 0px 1px #997404; }
     
     .empty-state {
-      padding: 40px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 3rem;
+      background: var(--surface-white);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+      border: 1px dashed var(--border-color);
     }
-    .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .empty-icon { font-size: 3.5rem; margin-bottom: 1.5rem; color: var(--text-secondary); opacity: 0.5; }
 
     /* Renewal Modal Styles */
     .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1050;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 1050;
+      animation: fadeIn 0.2s ease-out;
     }
+    
     .custom-modal-content {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      background: var(--surface-white);
+      border-radius: var(--border-radius-lg);
+      box-shadow: var(--shadow-floating);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      max-height: 90vh;
+      display: flex; flex-direction: column; max-height: 90vh;
+      border: 1px solid rgba(255,255,255,0.2);
     }
+    
     .modal-header {
-      padding: 15px 25px;
-      border-bottom: 1px solid #e9ecef;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #f8f9fa;
-      position: relative;
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+      color: white;
+      box-shadow: var(--shadow-md);
     }
-    .modal-header h3 { margin: 0; }
-    .modal-header .btn-close {
-      position: absolute;
-      right: 25px;
-      background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
-      width: 1em; height: 1em; padding: 0.5rem; border: 0; opacity: 0.5; cursor: pointer;
-    }
-    .modal-body { padding: 25px; overflow-y: auto; }
+    .modal-header h3 { margin: 0; font-weight: 700; color: white; }
+    .modal-header .btn-close { filter: invert(1) brightness(200%); opacity: 0.8; }
+    .modal-header .btn-close:hover { opacity: 1; transform: scale(1.1); }
+    
+    .modal-body { padding: 2rem; overflow-y: auto; background: var(--bg-main); }
     .modal-footer {
-      padding: 15px 25px;
-      border-top: 1px solid #e9ecef;
-      display: flex;
-      justify-content: flex-end;
-      background-color: #f8f9fa;
-      gap: 10px;
+      padding: 1.25rem 2rem; border-top: 1px solid var(--border-color);
+      display: flex; justify-content: flex-end; background-color: var(--surface-white); gap: 1rem;
     }
 
-    .renewal-modal { width: 800px; max-width: 95%; }
+    .renewal-modal { width: 850px; max-width: 95%; }
+    
     .search-results {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: white;
-      border: 1px solid #ced4da;
-      border-radius: 0 0 8px 8px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 1000;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: var(--surface-white);
+      border: 1px solid var(--border-color);
+      border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
+      max-height: 250px; overflow-y: auto; z-index: 1000;
+      box-shadow: var(--shadow-md);
     }
     .search-item {
-      padding: 10px 15px;
-      cursor: pointer;
-      border-bottom: 1px solid #f1f3f5;
+      padding: 0.75rem 1rem; cursor: pointer; border-bottom: 1px solid var(--border-color);
+      color: var(--text-primary); transition: background-color 0.2s;
     }
-    .search-item:hover { background-color: #f8f9fa; }
+    .search-item:hover { background-color: var(--surface-hover); color: var(--primary-color); }
     .search-item:last-child { border-bottom: none; }
   `]
 })
@@ -426,19 +476,121 @@ export class RenewalComponent implements OnInit {
   followUps: any[] = [];
   loading: boolean = false;
   selectedDay: number | string | null = null;
+  selectedSourceTeam: string = '';
+
   timelineCounts: { [key: number]: number } = {};
 
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
-  constructor(private apiService: ApiService, private cdr: ChangeDetectorRef) { }
+  adminViewAs: string = '';
+
+  constructor(
+    private apiService: ApiService,
+    public authService: AuthService,
+    private cdr: ChangeDetectorRef,
+    private route: ActivatedRoute,
+    private notificationService: NotificationService
+  ) {}
+
+
+
+  getEffectiveRole(): string {
+    if (this.adminViewAs === 'claims') return 'CLAIMS_MANAGER';
+    if (this.adminViewAs === 'sales') return 'SALES_MANAGER';
+    if (this.adminViewAs === 'underwriting') return 'UNDERWRITING_MANAGER';
+    return this.authService.getCurrentUser()?.role || '';
+  }
+
+  isManager(): boolean {
+    const role = this.getEffectiveRole();
+    return role === 'CLAIMS_MANAGER' || role === 'SALES_MANAGER' || role === 'UNDERWRITING_MANAGER';
+  }
+
+  isClaimsUser(): boolean {
+    return this.getEffectiveRole() === 'CLAIMS';
+  }
+
+  isUnderwritingUser(): boolean {
+    return this.getEffectiveRole() === 'UNDERWRITING';
+  }
+
+  isSalesUser(): boolean {
+    return this.getEffectiveRole() === 'SALES';
+  }
+
+  isSalesManager(): boolean {
+    return this.getEffectiveRole() === 'SALES_MANAGER';
+  }
+
+
+
+  showAddMemberModal = false;
+  newMemberUsername = '';
+  newMemberPassword = '';
+  newMemberConfirmPassword = '';
+
+  openAddMemberModal() {
+    this.showAddMemberModal = true;
+  }
+
+  closeAddMemberModal() {
+    this.showAddMemberModal = false;
+    this.newMemberUsername = '';
+    this.newMemberPassword = '';
+    this.newMemberConfirmPassword = '';
+  }
+
+  submitAddMember() {
+    if (!this.newMemberUsername || !this.newMemberPassword) return;
+    if (this.newMemberPassword !== this.newMemberConfirmPassword) {
+        this.notificationService.showErrorModal('Passwords do not match!');
+        return;
+    }
+
+    this.apiService.createTeamUser(this.newMemberUsername, this.newMemberPassword).subscribe({
+        next: (res) => {
+            this.notificationService.showSuccessToast(`Team member ${res.username} created successfully!`);
+            this.closeAddMemberModal();
+        },
+        error: (err) => {
+            const msg = err.error?.message || err.error || 'Error creating user';
+            this.notificationService.showErrorModal('Error creating team member: ' + msg);
+        }
+    });
+  }
 
   ngOnInit() {
-    this.refreshTimelineCounts();
-    this.fetchTopHighValuePolicies();
+    this.apiService.selectedSourceTeam$.subscribe(team => {
+      if (this.selectedSourceTeam !== team) {
+        this.selectedSourceTeam = team;
+        this.refreshTimelineCounts();
+        if (this.selectedDay !== null && this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value' && this.selectedDay !== 600) {
+          this.onDaySelected(this.selectedDay as number, true);
+        }
+      }
+    });
+
+    this.route.paramMap.subscribe(params => {
+      this.adminViewAs = params.get('managerRole') || '';
+      this.apiService.adminViewAs = this.adminViewAs;
+      
+      this.applyFilters();
+      this.refreshTimelineCounts();
+      this.fetchTopHighValuePolicies();
+
+      // If a day is selected or it's today's work, we need to refresh that too
+      if (this.selectedDay === 600) {
+        this.onDaySelected(600, true);
+      } else if (this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value') {
+        this.onDaySelected(this.selectedDay as number, true);
+      } else if (this.selectedDay === 'todays-work') {
+        this.setTodaysWorkTab(this.todaysWorkTab);
+      }
+    });
   }
 
   refreshTimelineCounts() {
-    this.apiService.getTimelineCounts().subscribe({
+    this.apiService.getTimelineCounts(undefined, this.selectedSourceTeam).subscribe({
       next: (counts) => {
         this.timelineCounts = counts;
       },
@@ -469,12 +621,11 @@ export class RenewalComponent implements OnInit {
         }
       });
       return;
-    }
-
-    forkJoin({
-      policies: this.apiService.getPoliciesForTimeline(day),
-      followUps: this.apiService.getFollowUpsForTimeline(day)
-    }).subscribe({
+    } else {
+      forkJoin({
+        policies: this.apiService.getPoliciesForTimeline(day, undefined, this.selectedSourceTeam),
+        followUps: this.apiService.getFollowUpsForTimeline(day)
+      }).subscribe({
       next: (data) => {
         this.basePolicies = data.policies;
         this.baseFollowUps = (data.followUps as any[]).map((r: any) => {
@@ -490,6 +641,7 @@ export class RenewalComponent implements OnInit {
         this.loading = false;
       }
     });
+    }
   }
 
   todaysWorkTab: 'expiring' | 'followups' = 'expiring';
@@ -604,6 +756,15 @@ export class RenewalComponent implements OnInit {
       }
     };
 
+    const assignmentFilterFn = (p: any) => {
+      const user = this.authService.getCurrentUser();
+      if (!user) return true;
+      if (['CLAIMS', 'SALES', 'UNDERWRITING', 'CLAIMS_MEMBER', 'SALES_MEMBER', 'UNDERWRITING_MEMBER'].includes(user.role)) {
+         return p.currentAssignee === user.username;
+      }
+      return true;
+    };
+
     const premiumFilterFn = (p: any) => {
       if (this.selectedDay !== 'todays-work') return true;
       if (this.selectedPremiumRange === 'all') return true;
@@ -644,14 +805,22 @@ export class RenewalComponent implements OnInit {
       return diffDays === Number(this.dayFilter);
     };
 
+    const targetTeamFilterFn = (p: any) => {
+        if (!this.adminViewAs) return true;
+        if (this.adminViewAs === 'claims') return p.targetTeam === 'CLAIMS';
+        if (this.adminViewAs === 'sales') return p.targetTeam === 'SALES';
+        if (this.adminViewAs === 'underwriting') return p.targetTeam === 'UNDERWRITING';
+        return true;
+    };
+
     if (this.selectedDay === 'todays-work') {
-      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p);
+      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && targetTeamFilterFn(p) && assignmentFilterFn(p);
       this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
       this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
       this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     } else {
-      this.policies = this.basePolicies.filter((p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false));
-      this.followUps = this.baseFollowUps.filter((p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true));
+      this.policies = this.basePolicies.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false) && targetTeamFilterFn(p) && assignmentFilterFn(p));
+      this.followUps = this.baseFollowUps.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true) && targetTeamFilterFn(p) && assignmentFilterFn(p));
     }
   }
 
@@ -728,7 +897,15 @@ export class RenewalComponent implements OnInit {
     return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
   }
 
+  isTeamRole(): boolean {
+    const role = this.getEffectiveRole();
+    if (!role) return false;
+    const teamRoles = ['CLAIMS_MANAGER', 'SALES_MANAGER', 'UNDERWRITING_MANAGER', 'CLAIMS_USER', 'SALES_USER', 'UNDERWRITING_USER', 'CLAIMS_MEMBER', 'SALES_MEMBER', 'UNDERWRITING_MEMBER', 'CLAIMS', 'SALES', 'UNDERWRITING'];
+    return teamRoles.includes(role);
+  }
+
   showFollowUps(): boolean {
+    if (this.isTeamRole()) return false;
     return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
   }
 
@@ -739,14 +916,25 @@ export class RenewalComponent implements OnInit {
     
     if (this.selectedDay === null) return '';
     if (this.selectedDay === 'todays-work') return "Today's Work ";
-    if (this.selectedDay === 600) return 'All Policies Expiring in Next 60 Days';
+
+    const isTeam = this.isTeamRole();
+
+    if (this.selectedDay === 600) {
+        return isTeam ? 'All Tasks' : 'All Policies Expiring in Next 60 Days';
+    }
 
     const day = this.selectedDay as number;
-    if (day === 0) return 'Upcoming Renewals (Expiring Today)';
-    if (day > 0) {
-      return `Upcoming Renewals (Expiring in ${day} days)`;
+    if (isTeam) {
+        if (day === 0) return 'Tasks Assigned Today';
+        if (day < 0) return `Tasks Assigned ${Math.abs(day)} Days Ago`;
+        return `Tasks Assigned in ${day} days`;
     } else {
-      return `Post-Expiry (Expired ${Math.abs(day)} days ago)`;
+        if (day === 0) return 'Upcoming Renewals (Expiring Today)';
+        if (day > 0) {
+          return `Upcoming Renewals (Expiring in ${day} days)`;
+        } else {
+          return `Post-Expiry (Expired ${Math.abs(day)} days ago)`;
+        }
     }
   }
 
@@ -831,7 +1019,7 @@ export class RenewalComponent implements OnInit {
       !this.renewalForm.policyNumber || !this.renewalForm.insuranceName ||
       !this.renewalForm.type || !this.renewalForm.amount ||
       !this.renewalForm.policyStartDate || !this.renewalForm.policyEndDate) {
-      alert('Please fill all required fields marked with *');
+      this.notificationService.showErrorModal('Please fill all required fields marked with *');
       return;
     }
 
@@ -850,7 +1038,7 @@ export class RenewalComponent implements OnInit {
           const today = new Date();
           const daysUntilExpiry = Math.floor((newExpiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-          alert(`Policy updated successfully!\n\nNew expiry date: ${newExpiryDate.toLocaleDateString()}\nDays until expiry: ${daysUntilExpiry}\n\nThe policy has been moved to the appropriate timeline bucket.`);
+          this.notificationService.showSuccessToast(`Policy updated successfully!\n\nNew expiry date: ${newExpiryDate.toLocaleDateString()}\nDays until expiry: ${daysUntilExpiry}\n\nThe policy has been moved to the appropriate timeline bucket.`);
           this.closeRenewalModal();
           // Refresh current view
           if (this.selectedDay === 'todays-work') {
@@ -861,19 +1049,36 @@ export class RenewalComponent implements OnInit {
           // Also refresh the timeline buckets to update counts
           window.location.reload();
         },
-        error: (err: any) => alert('Error updating policy: ' + err.message)
+        error: (err: any) => this.notificationService.showErrorModal('Error updating policy: ' + err.message)
       });
     } else {
       // Create new policy
       this.apiService.createPolicy(this.renewalForm).subscribe({
         next: () => {
-          alert('Policy created successfully!');
+          this.notificationService.showSuccessToast('Policy created successfully!');
           this.closeRenewalModal();
           // Refresh the page to update timeline buckets and counts
           window.location.reload();
         },
-        error: (err: any) => alert('Error creating policy: ' + err.message)
+        error: (err: any) => this.notificationService.showErrorModal('Error creating policy: ' + err.message)
       });
     }
+  }
+
+  getDashboardTitle(): string {
+    const role = this.getEffectiveRole();
+    if (role === 'CLAIMS_MANAGER') return 'Claims Manager Dashboard';
+    if (role === 'CLAIMS') return 'Claims Team Dashboard';
+    if (role === 'SALES_MANAGER') return 'Sales Manager Dashboard';
+    if (role === 'SALES') return 'Sales Team Dashboard';
+    if (role === 'UNDERWRITING_MANAGER') return 'Underwriting Manager Dashboard';
+    if (role === 'UNDERWRITING') return 'Underwriting Team Dashboard';
+    return 'Policy Renewals & Follow-ups';
+  }
+
+  getDashboardSubtitle(): string {
+    if (this.isManager()) return 'Manage team assignments, monitor performance, and oversee policy routing.';
+    if (this.isClaimsUser() || this.isUnderwritingUser() || this.isSalesUser()) return 'Process pending documents, contact customers, and complete assigned tasks.';
+    return 'Manage expiring policies, track follow-ups, and process renewals efficiently.';
   }
 }

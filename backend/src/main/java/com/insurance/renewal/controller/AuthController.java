@@ -90,9 +90,19 @@ public class AuthController {
 
     @GetMapping("/admin/users")
     public java.util.List<User> getUsers() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentRole = auth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
+
         java.util.List<User> users = userRepository.findAll();
-        System.out.println("DEBUG: Found " + users.size() + " users.");
-        users.forEach(u -> System.out.println("DEBUG: User - " + u.getUsername() + ", Active: " + u.isActive()));
+        
+        if (currentRole.equals("CLAIMS_MANAGER")) {
+            users = users.stream().filter(u -> "ROLE_CLAIMS".equals(u.getRole())).collect(java.util.stream.Collectors.toList());
+        } else if (currentRole.equals("SALES_MANAGER")) {
+            users = users.stream().filter(u -> "ROLE_SALES".equals(u.getRole())).collect(java.util.stream.Collectors.toList());
+        } else if (currentRole.equals("UNDERWRITING_MANAGER")) {
+            users = users.stream().filter(u -> "ROLE_UNDERWRITING".equals(u.getRole())).collect(java.util.stream.Collectors.toList());
+        }
+        
         return users;
     }
 

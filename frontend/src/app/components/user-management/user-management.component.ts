@@ -1,3 +1,4 @@
+import { NotificationService } from '../../services/notification.service';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -568,7 +569,7 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
-  constructor(private authService: AuthService, private apiService: ApiService) { }
+  constructor(private authService: AuthService, private apiService: ApiService, private notificationService: NotificationService) { }
 
   ngOnInit() {
     this.apiService.getBranches().subscribe(branches => {
@@ -670,16 +671,16 @@ export class UserManagementComponent implements OnInit {
     return role.replace('ROLE_', '');
   }
 
-  toggleUserStatus(user: any) {
+  async toggleUserStatus(user: any) {
     const action = user.active ? 'deactivate' : 'activate';
-    if (confirm(`Are you sure you want to ${action} user ${user.username}?`)) {
+    if (await this.notificationService.confirmAction(`Are you sure you want to ${action} user ${user.username}?`)) {
       this.authService.deleteUser(user.id).subscribe({
         next: () => {
           this.openUserList(); // Refresh list
         },
         error: (err) => {
           console.error('Error toggling user status:', err);
-          alert('Failed to update user status.');
+          this.notificationService.showErrorModal('Failed to update user status.');
         }
       });
     }
@@ -705,7 +706,7 @@ export class UserManagementComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error deleting user:', err);
-        alert('Failed to delete user.');
+        this.notificationService.showErrorModal('Failed to delete user.');
         this.userToDelete = null;
       }
     });
