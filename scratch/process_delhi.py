@@ -100,7 +100,7 @@ VALUES ({escape_sql(p_number)}, @cust_id, {escape_sql(ins_name)}, {escape_sql(pr
         {amount}, {due_premium}, 'ACTIVE', 'Delhi',
         {escape_sql(rm_name)}, {escape_sql(assoc_name)}, {escape_sql(assoc_code)},
         {escape_sql(veh_reg)}, {escape_sql(veh_model)}, NOW())
-ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code);
+ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
 """
             f.write(policy_sql)
             
