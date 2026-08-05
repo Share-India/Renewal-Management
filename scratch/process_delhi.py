@@ -97,7 +97,7 @@ INSERT INTO policies (policy_number, customer_id, insurance_name, product_name, 
                       vehicle_reg_no, vehicle_model, created_at)
 VALUES ({escape_sql(p_number)}, @cust_id, {escape_sql(ins_name)}, {escape_sql(prod_name)}, 'General',
         {start_date}, {end_date}, {expiry_date},
-        {amount}, {due_premium}, 'ACTIVE', 'Noida',
+        {amount}, {due_premium}, 'ACTIVE', 'Delhi',
         {escape_sql(rm_name)}, {escape_sql(assoc_name)}, {escape_sql(assoc_code)},
         {escape_sql(veh_reg)}, {escape_sql(veh_model)}, NOW())
 ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code);
