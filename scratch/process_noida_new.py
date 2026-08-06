@@ -50,7 +50,9 @@ try:
 
             # --- Other Columns ---
             full_name = str(row.get('Customer Name', '')).strip()
-            first_name = full_name.split(' ')[0] if full_name else 'Unknown'
+            if full_name.lower() == 'nan' or not full_name:
+                full_name = 'Unknown'
+            first_name = full_name.split(' ')[0]
             last_name = ' '.join(full_name.split(' ')[1:]) if len(full_name.split(' ')) > 1 else '.'
             
             email = str(row.get('Email ID', '')).strip()

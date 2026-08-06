@@ -29594,7 +29594,7 @@ VALUES ('12391175', @cust_id, 'Care Health Insurance', 'Care', 'General',
 ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
 
 INSERT INTO customers (first_name, last_name, email, phone, address, city, state, billing_frequency, created_at)
-VALUES (NULL, '.', '-', '9897339398', 
+VALUES ('Unknown', '.', '-', '9897339398', 
         '-', '-', '-', '-', NOW())
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), phone=VALUES(phone);
 SET @cust_id = LAST_INSERT_ID();
@@ -29612,7 +29612,7 @@ VALUES ('11263773', @cust_id, 'Care Health Insurance', 'Enhance - 1', 'General',
 ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
 
 INSERT INTO customers (first_name, last_name, email, phone, address, city, state, billing_frequency, created_at)
-VALUES (NULL, '.', '-', '9310122544', 
+VALUES ('Unknown', '.', '-', '9310122544', 
         '-', '-', '-', '-', NOW())
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), phone=VALUES(phone);
 SET @cust_id = LAST_INSERT_ID();
@@ -29648,7 +29648,7 @@ VALUES ('P/161121/01/2020/003785', @cust_id, 'Star Health Insurance', 'Family He
 ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
 
 INSERT INTO customers (first_name, last_name, email, phone, address, city, state, billing_frequency, created_at)
-VALUES (NULL, '.', '-', '9310122544', 
+VALUES ('Unknown', '.', '-', '9310122544', 
         '-', '-', '-', '-', NOW())
 ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), phone=VALUES(phone);
 SET @cust_id = LAST_INSERT_ID();
