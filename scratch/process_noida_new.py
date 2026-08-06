@@ -86,29 +86,36 @@ SET @cust_id = LAST_INSERT_ID();
             
             ins_name = str(row.get('Insurer Name', '')).strip()
             prod_name = str(row.get('Product Name', '')).strip()
+            ins_type = str(row.get('Insurance Type', '')).strip()
+            if not ins_type or ins_type.lower() in ['nan', '-']:
+                ins_type = 'General'
             start_date = format_date(row.get('Policy Start Date'))
             end_date = format_date(row.get('Policy End Date'))
             expiry_date = format_date(row.get('Renewal Due date'))
-            amount = clean_decimal(row.get('Amount'))
-            due_premium = clean_decimal(row.get('Premium'))
+            
+            amount = row.get('Amount')
+            amount = float(amount) if not pd.isna(amount) else 0.0
+            due_premium = row.get('Premium')
+            due_premium = float(due_premium) if not pd.isna(due_premium) else 0.0
+            
             rm_name = str(row.get('RM Name', '')).strip()
             assoc_name = str(row.get('Associate name', '')).strip()
             assoc_code = str(row.get('Associate Code', '')).strip()
             veh_reg = str(row.get('Car/RegNo', '')).strip()
             veh_model = str(row.get('Model Name', '')).strip()
-            
+
             policy_sql = f"""
 INSERT INTO policies (policy_number, customer_id, insurance_name, product_name, type, 
                       policy_start_date, policy_end_date, expiry_date, 
                       amount, due_premium, status, branch,
                       rm_name, associate_name, associate_code, 
                       vehicle_reg_no, vehicle_model, created_at)
-VALUES ({escape_sql(p_number)}, @cust_id, {escape_sql(ins_name)}, {escape_sql(prod_name)}, 'General',
+VALUES ({escape_sql(p_number)}, @cust_id, {escape_sql(ins_name)}, {escape_sql(prod_name)}, {escape_sql(ins_type)},
         {start_date}, {end_date}, {expiry_date},
         {amount}, {due_premium}, 'ACTIVE', 'Noida',
         {escape_sql(rm_name)}, {escape_sql(assoc_name)}, {escape_sql(assoc_code)},
         {escape_sql(veh_reg)}, {escape_sql(veh_model)}, NOW())
-ON DUPLICATE KEY UPDATE customer_id=VALUES(customer_id), amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
+ON DUPLICATE KEY UPDATE customer_id=VALUES(customer_id), type=VALUES(type), amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
 """
             f.write(policy_sql)
             
