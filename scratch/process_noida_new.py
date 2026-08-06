@@ -43,7 +43,7 @@ try:
                 phone_sql = "NULL"
             else:
                 s_phone = str(raw_phone).replace('.0', '').strip()
-                if s_phone == '0' or not s_phone:
+                if s_phone == '0' or not s_phone or s_phone == '-':
                     phone_sql = "NULL"
                 else:
                     phone_sql = f"'{s_phone}'"
@@ -56,13 +56,19 @@ try:
             last_name = ' '.join(full_name.split(' ')[1:]) if len(full_name.split(' ')) > 1 else '.'
             
             email = str(row.get('Email ID', '')).strip()
-            if email.lower() == 'nan' or not email:
+            if email.lower() in ['nan', '-', 'na', 'n/a', 'none'] or not email:
                  email = f"no_email_{index}_{datetime.datetime.now().timestamp()}@example.com"
 
             address = str(row.get('Address 1', '')).strip()
             city = str(row.get('City', '')).strip()
             state = str(row.get('State', '')).strip()
             billing = str(row.get('Billing Frequency', '')).strip()
+            
+            # clean up hyphens in other string fields
+            if address == '-': address = ''
+            if city == '-': city = ''
+            if state == '-': state = ''
+            if billing == '-': billing = ''
             
             cust_sql = f"""
 INSERT INTO customers (first_name, last_name, email, phone, address, city, state, billing_frequency, created_at)
@@ -102,7 +108,7 @@ VALUES ({escape_sql(p_number)}, @cust_id, {escape_sql(ins_name)}, {escape_sql(pr
         {amount}, {due_premium}, 'ACTIVE', 'Noida',
         {escape_sql(rm_name)}, {escape_sql(assoc_name)}, {escape_sql(assoc_code)},
         {escape_sql(veh_reg)}, {escape_sql(veh_model)}, NOW())
-ON DUPLICATE KEY UPDATE amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
+ON DUPLICATE KEY UPDATE customer_id=VALUES(customer_id), amount=VALUES(amount), branch=VALUES(branch), due_premium=VALUES(due_premium), rm_name=VALUES(rm_name), associate_name=VALUES(associate_name), associate_code=VALUES(associate_code), policy_start_date=VALUES(policy_start_date), policy_end_date=VALUES(policy_end_date), expiry_date=VALUES(expiry_date);
 """
             f.write(policy_sql)
             
