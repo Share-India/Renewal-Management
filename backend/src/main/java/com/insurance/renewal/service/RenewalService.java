@@ -346,10 +346,9 @@ public class RenewalService {
 
     public List<Policy> getHighValueDeals(String branch) {
         LocalDate today = LocalDate.now();
-        LocalDate pastWeek = today.minusDays(7);
-        LocalDate nextWeek = today.plusDays(7);
+        LocalDate nextMonth = today.plusDays(30);
         
-        List<Policy> upcomingPolicies = policyRepository.findAllPoliciesForTargetDateRange(pastWeek, nextWeek, branch);
+        List<Policy> upcomingPolicies = policyRepository.findAllPoliciesForTargetDateRange(today, nextMonth, branch);
         
         return applyRenewerFilters(upcomingPolicies);
     }
