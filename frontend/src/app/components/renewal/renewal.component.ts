@@ -85,8 +85,18 @@ import { forkJoin, of } from 'rxjs';
           <p class="text-muted mb-0" style="font-size: 1.1rem;">{{ getDashboardSubtitle() }}</p>
         </div>
         
-        <div class="d-flex gap-2">
-          <!-- Update Filters for Renewer Dashboard -->
+        <div class="d-flex gap-2 align-items-center">
+          <!-- Branch Switcher for Multi-Branch Renewers -->
+          <ng-container *ngIf="availableBranches.length > 1">
+            <div class="input-group shadow-sm me-2" style="width: auto;">
+              <span class="input-group-text bg-white border-end-0 text-primary">
+                <i class="bi bi-geo-alt-fill"></i>
+              </span>
+              <select class="form-select border-start-0 fw-bold" [(ngModel)]="selectedBranch" (change)="onBranchChange()">
+                <option *ngFor="let branch of availableBranches" [value]="branch">{{ branch }}</option>
+              </select>
+            </div>
+          </ng-container>
 
           <button class="btn btn-outline-dark" *ngIf="isManager()" (click)="openAddMemberModal()">
             <i class="bi bi-person-plus-fill"></i> Add Member
@@ -102,7 +112,7 @@ import { forkJoin, of } from 'rxjs';
 
       <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()"></app-timeline>
       
-      <app-work-progress *ngIf="selectedDay === 'todays-work'"></app-work-progress>
+      <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedBranch"></app-work-progress>
 
       <div class="row" *ngIf="selectedDay !== null">
         <!-- Main List: Renewals OR Post-Expiry -->
@@ -480,6 +490,9 @@ export class RenewalComponent implements OnInit {
 
   timelineCounts: { [key: number]: number } = {};
 
+  availableBranches: string[] = [];
+  selectedBranch: string = '';
+
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
   adminViewAs: string = '';
@@ -560,6 +573,14 @@ export class RenewalComponent implements OnInit {
   }
 
   ngOnInit() {
+    const user = this.authService.getCurrentUser();
+    if (user && user.assignedBranch && user.assignedBranch !== 'null') {
+      this.availableBranches = user.assignedBranch.split(',').map((b: string) => b.trim());
+      if (this.availableBranches.length > 0) {
+        this.selectedBranch = this.availableBranches[0]; // Default to first branch
+      }
+    }
+
     this.apiService.selectedSourceTeam$.subscribe(team => {
       if (this.selectedSourceTeam !== team) {
         this.selectedSourceTeam = team;
@@ -578,6 +599,9 @@ export class RenewalComponent implements OnInit {
       this.refreshTimelineCounts();
       this.fetchTopHighValuePolicies();
 
+      // Ensure API Service has selectedBranch if needed
+      // (Most API calls will now take this.selectedBranch as parameter)
+
       // If a day is selected or it's today's work, we need to refresh that too
       if (this.selectedDay === 600) {
         this.onDaySelected(600, true);
@@ -589,8 +613,20 @@ export class RenewalComponent implements OnInit {
     });
   }
 
+  onBranchChange() {
+    this.refreshTimelineCounts();
+    this.fetchTopHighValuePolicies();
+    if (this.selectedDay === 600) {
+      this.onDaySelected(600, true);
+    } else if (this.selectedDay !== null && this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value') {
+      this.onDaySelected(this.selectedDay as number, true);
+    } else if (this.selectedDay === 'todays-work') {
+      this.setTodaysWorkTab(this.todaysWorkTab);
+    }
+  }
+
   refreshTimelineCounts() {
-    this.apiService.getTimelineCounts(undefined, this.selectedSourceTeam).subscribe({
+    this.apiService.getTimelineCounts(this.selectedBranch, this.selectedSourceTeam).subscribe({
       next: (counts) => {
         this.timelineCounts = counts;
       },
@@ -621,11 +657,11 @@ export class RenewalComponent implements OnInit {
         }
       });
       return;
-    } else {
-      forkJoin({
-        policies: this.apiService.getPoliciesForTimeline(day, undefined, this.selectedSourceTeam),
-        followUps: this.apiService.getFollowUpsForTimeline(day)
-      }).subscribe({
+      } else {
+        forkJoin({
+          policies: this.apiService.getPoliciesForTimeline(day, this.selectedBranch, this.selectedSourceTeam),
+          followUps: this.apiService.getFollowUpsForTimeline(day)
+        }).subscribe({
       next: (data) => {
         this.basePolicies = data.policies;
         this.baseFollowUps = (data.followUps as any[]).map((r: any) => {
@@ -662,7 +698,7 @@ export class RenewalComponent implements OnInit {
   topHighValuePolicies: any[] = [];
 
   fetchTopHighValuePolicies() {
-    this.apiService.getHighValueDeals().subscribe({
+    this.apiService.getHighValueDeals(this.selectedBranch).subscribe({
       next: (policies) => {
         if (!policies) {
           this.topHighValuePolicies = [];
@@ -837,10 +873,10 @@ export class RenewalComponent implements OnInit {
   openTodaysWork() {
     this.listSearchTerm = '';
     this.searchBy = 'customer';
-    this.selectedDay = 'todays-work';
-    this.loading = true;
-    this.apiService.getTodaysWork().subscribe({
-      next: (policies) => {
+      this.selectedDay = 'todays-work';
+      this.loading = true;
+      this.apiService.getTodaysWork(this.selectedBranch).subscribe({
+        next: (policies) => {
         const todayStr = new Date().toISOString().split('T')[0];
 
         const normalizeDate = (val: any) => {

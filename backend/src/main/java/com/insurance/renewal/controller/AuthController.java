@@ -79,12 +79,23 @@ public class AuthController {
         if (branch == null || branch.trim().isEmpty() || branch.equals("null")) {
             return ResponseEntity.ok(java.util.Collections.emptyList());
         }
+        if (branch.contains(",")) {
+            java.util.List<String> branches = java.util.Arrays.asList(branch.split(","));
+            return ResponseEntity.ok(policyRepository.findDistinctCustomerNamesByBranches(branches));
+        }
         return ResponseEntity.ok(policyRepository.findDistinctCustomerNamesByBranch(branch));
     }
 
     @GetMapping("/admin/rm-names")
     @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<java.util.List<String>> getRmNamesByBranch(@RequestParam(value = "branch", required = false) String branch) {
+        if (branch == null || branch.trim().isEmpty() || branch.equals("null")) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+        if (branch.contains(",")) {
+            java.util.List<String> branches = java.util.Arrays.asList(branch.split(","));
+            return ResponseEntity.ok(policyRepository.findDistinctRmNamesByBranches(branches));
+        }
         return ResponseEntity.ok(policyRepository.findDistinctRmNamesByBranch(branch));
     }
 

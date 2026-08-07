@@ -73,8 +73,14 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT DISTINCT p.rmName FROM Policy p WHERE p.rmName IS NOT NULL AND p.rmName != '' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY p.rmName ASC")
         List<String> findDistinctRmNamesByBranch(@Param("branch") String branch);
 
+        @Query("SELECT DISTINCT p.rmName FROM Policy p WHERE p.rmName IS NOT NULL AND p.rmName != '' AND (p.branch IN :branches) ORDER BY p.rmName ASC")
+        List<String> findDistinctRmNamesByBranches(@Param("branches") List<String> branches);
+
         @Query("SELECT DISTINCT CONCAT(c.firstName, ' ', c.lastName) FROM Policy p JOIN p.customer c WHERE (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<String> findDistinctCustomerNamesByBranch(@Param("branch") String branch);
+
+        @Query("SELECT DISTINCT CONCAT(c.firstName, ' ', c.lastName) FROM Policy p JOIN p.customer c WHERE (p.branch IN :branches)")
+        List<String> findDistinctCustomerNamesByBranches(@Param("branches") List<String> branches);
 
         long countByBranchIgnoreCase(String branch);
         List<Policy> findByBranchIgnoreCase(String branch);

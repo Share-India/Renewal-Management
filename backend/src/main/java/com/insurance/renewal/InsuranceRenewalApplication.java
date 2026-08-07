@@ -15,6 +15,8 @@ import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
 @org.springframework.scheduling.annotation.EnableScheduling
 public class InsuranceRenewalApplication {
 
+
+
 	public static void main(String[] args) {
 		SpringApplication.run(InsuranceRenewalApplication.class, args);
 	}

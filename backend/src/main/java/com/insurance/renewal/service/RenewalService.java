@@ -127,8 +127,16 @@ public class RenewalService {
             // Role RENEWER Logic
             if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
                     && !user.getAssignedBranch().equals("null")) {
-                if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
-                    return false;
+                if (p.getBranch() == null) return false;
+                String[] assignedBranches = user.getAssignedBranch().split("\\s*,\\s*");
+                boolean branchMatch = false;
+                for (String branch : assignedBranches) {
+                    if (branch.equalsIgnoreCase(p.getBranch())) {
+                        branchMatch = true;
+                        break;
+                    }
+                }
+                if (!branchMatch) return false;
             }
             if (user.getAssignedCustomers() != null && !user.getAssignedCustomers().isEmpty()
                     && !user.getAssignedCustomers().equals("null")) {
@@ -222,8 +230,16 @@ public class RenewalService {
             if (effectiveUser.getRole().contains("RM")) {
                 if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().isEmpty()
                         && !effectiveUser.getAssignedBranch().equals("null")) {
-                    if (p.getBranch() == null || !effectiveUser.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
-                        return false;
+                    if (p.getBranch() == null) return false;
+                    String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                    boolean branchMatch = false;
+                    for (String branch : assignedBranches) {
+                        if (branch.equalsIgnoreCase(p.getBranch())) {
+                            branchMatch = true;
+                            break;
+                        }
+                    }
+                    if (!branchMatch) return false;
                 }
                 if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().isEmpty()
                         && !effectiveUser.getAssignedRm().equals("null")) {
@@ -247,8 +263,16 @@ public class RenewalService {
 
             if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().isEmpty()
                     && !effectiveUser.getAssignedBranch().equals("null")) {
-                if (p.getBranch() == null || !effectiveUser.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
-                    return false;
+                if (p.getBranch() == null) return false;
+                String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                boolean branchMatch = false;
+                for (String branch : assignedBranches) {
+                    if (branch.equalsIgnoreCase(p.getBranch())) {
+                        branchMatch = true;
+                        break;
+                    }
+                }
+                if (!branchMatch) return false;
             }
             if (effectiveUser.getAssignedCustomers() != null && !effectiveUser.getAssignedCustomers().isEmpty()
                     && !effectiveUser.getAssignedCustomers().equals("null")) {
