@@ -2091,6 +2091,7 @@ export class AdminDashboardComponent implements OnInit {
         'PT': '',
         'Payment Date': paymentDate || '',
         'Renewer Name': rem?.lastUpdatedBy && rem?.lastUpdatedBy !== 'System' ? rem.lastUpdatedBy : '',
+        'Outcome': rem?.lastCallOutcome || '',
         'Renewer Note': rem?.notes || '',
         'Update Time': rem?.lastReminderSentAt ? new Date(rem.lastReminderSentAt).toLocaleTimeString() : ''
       };
