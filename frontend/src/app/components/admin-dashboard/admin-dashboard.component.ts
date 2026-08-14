@@ -140,6 +140,9 @@ import * as XLSX from 'xlsx';
                     <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'followups' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark bg-white'" (click)="setAdminTodaysWorkTab('followups')">
                        Today's Follow-ups <span class="badge ms-1" [ngClass]="todaysWorkTab === 'followups' ? 'bg-white text-dark' : 'bg-warning text-dark'">{{ todaysFollowUps.length }}</span>
                     </button>
+                    <button class="btn shadow-sm" [ngClass]="todaysWorkTab === 'updated' ? 'btn-success' : 'btn-outline-success bg-white'" (click)="setAdminTodaysWorkTab('updated')">
+                       Updated Today <span class="badge ms-1" [ngClass]="todaysWorkTab === 'updated' ? 'bg-white text-success' : 'bg-success'">{{ todaysUpdated.length }}</span>
+                    </button>
                   </div>
                 </div>
                 <!-- Filters Container -->
@@ -150,6 +153,17 @@ import * as XLSX from 'xlsx';
                       <span class="input-group-text bg-white border-secondary-subtle text-muted fw-bold">Day</span>
                       <input type="number" class="form-control border-secondary-subtle text-center" 
                              placeholder="e.g. 1" [(ngModel)]="dayFilter" (input)="applyDayFilter()" min="0" max="60">
+                    </div>
+
+                    <!-- Renewer Filter -->
+                    <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="selectedDay === 'todays-work'" style="min-width: 200px;">
+                      <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                        <i class="bi bi-person-badge-fill me-1"></i> Renewer
+                      </span>
+                      <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedRenewerFilter" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
+                        <option value="all">All</option>
+                        <option *ngFor="let renewer of availableRenewers" [value]="renewer.username">{{ renewer.username }}</option>
+                      </select>
                     </div>
                     
                     <!-- Type Filter -->
@@ -1699,17 +1713,21 @@ export class AdminDashboardComponent implements OnInit {
     }
   }
 
-  todaysWorkTab: 'expiring' | 'followups' = 'expiring';
+  todaysWorkTab: 'expiring' | 'followups' | 'updated' = 'expiring';
   todaysExpiring: any[] = [];
   todaysFollowUps: any[] = [];
+  todaysUpdated: any[] = [];
   allTodaysExpiring: any[] = [];
   allTodaysFollowUps: any[] = [];
+  allTodaysUpdated: any[] = [];
   all60DaysExpiring: any[] = [];
   all60DaysFollowUps: any[] = [];
   dayFilter: string | null = null;
   selectedPremiumRange: string = 'all';
   selectedPolicyType: string = 'all';
   availablePolicyTypes: string[] = [];
+  selectedRenewerFilter: string = 'all';
+  availableRenewers: any[] = [];
 
   applyPremiumFilter() {
     const filterFn = (p: any) => {
@@ -1727,14 +1745,65 @@ export class AdminDashboardComponent implements OnInit {
         isTypeMatch = p.type === this.selectedPolicyType;
       }
 
-      return isPremiumMatch && isTypeMatch;
+      let isRenewerMatch = true;
+      if (this.selectedRenewerFilter !== 'all') {
+        const rUser = this.availableRenewers.find(u => u.username === this.selectedRenewerFilter);
+        if (rUser) {
+           let matchesBranch = true;
+           if (rUser.assignedBranch && rUser.assignedBranch !== 'null') {
+              const branches = rUser.assignedBranch.split(',').map((b: string) => b.trim().toLowerCase());
+              matchesBranch = p.branch && branches.includes(p.branch.toLowerCase());
+           }
+           let matchesPremium = true;
+           if (rUser.assignedPremiumRange && rUser.assignedPremiumRange !== 'null') {
+              const rangesStr = rUser.assignedPremiumRange;
+              const amt = p.amount || 0;
+              matchesPremium = false;
+              if (rangesStr.includes('<50,000') && amt <= 50000) matchesPremium = true;
+              if (rangesStr.includes('50,000-1,00,000') && amt > 50000 && amt <= 100000) matchesPremium = true;
+              if (rangesStr.includes('>1,00,000') && amt > 100000) matchesPremium = true;
+              if (rangesStr.trim() === '') matchesPremium = true;
+           }
+           let matchesType = true;
+           if (rUser.assignedProductType && rUser.assignedProductType !== 'null') {
+              const types = rUser.assignedProductType.split(',').map((t: string) => t.trim().toLowerCase());
+              matchesType = p.type && types.includes(p.type.toLowerCase());
+           }
+           let matchesCustomer = true;
+           if (rUser.assignedCustomers && rUser.assignedCustomers !== 'null') {
+              const customers = rUser.assignedCustomers.split(',').map((c: string) => c.trim().toLowerCase());
+              const cName = p.customer && typeof p.customer === 'string' ? p.customer.toLowerCase() : (p.customer?.firstName ? p.customer.firstName.toLowerCase() : '');
+              matchesCustomer = false;
+              for (const c of customers) {
+                 if (cName.includes(c)) { matchesCustomer = true; break; }
+              }
+              if (customers.length === 0 || rUser.assignedCustomers.trim() === '') matchesCustomer = true;
+           }
+           
+           const matchesRules = matchesBranch && matchesPremium && matchesType && matchesCustomer;
+           const isLastUpdatedBy = p.reminder && p.reminder.lastUpdatedBy === this.selectedRenewerFilter;
+           
+           isRenewerMatch = matchesRules || isLastUpdatedBy;
+        } else {
+           isRenewerMatch = p.reminder && p.reminder.lastUpdatedBy === this.selectedRenewerFilter;
+        }
+      }
+
+      return isPremiumMatch && isTypeMatch && isRenewerMatch;
     };
 
     this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
     this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
+    this.todaysUpdated = this.allTodaysUpdated.filter(filterFn);
 
     if (this.selectedDateRecords) {
-      this.selectedDateRecords.expiringPolicies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+      if (this.todaysWorkTab === 'expiring') {
+        this.selectedDateRecords.expiringPolicies = this.todaysExpiring;
+      } else if (this.todaysWorkTab === 'followups') {
+        this.selectedDateRecords.expiringPolicies = this.todaysFollowUps;
+      } else {
+        this.selectedDateRecords.expiringPolicies = this.todaysUpdated;
+      }
     }
   }
 
@@ -1743,10 +1812,16 @@ export class AdminDashboardComponent implements OnInit {
     this.applyPremiumFilter();
   }
 
-  setAdminTodaysWorkTab(tab: 'expiring' | 'followups') {
+  setAdminTodaysWorkTab(tab: 'expiring' | 'followups' | 'updated') {
     this.todaysWorkTab = tab;
     if (this.selectedDateRecords) {
-      this.selectedDateRecords.expiringPolicies = tab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+      if (tab === 'expiring') {
+        this.selectedDateRecords.expiringPolicies = this.todaysExpiring;
+      } else if (tab === 'followups') {
+        this.selectedDateRecords.expiringPolicies = this.todaysFollowUps;
+      } else {
+        this.selectedDateRecords.expiringPolicies = this.todaysUpdated;
+      }
     }
   }
 
@@ -1784,11 +1859,33 @@ export class AdminDashboardComponent implements OnInit {
         });
         this.availablePolicyTypes = Array.from(typesSet).sort();
 
+        // Populate Updated Today records
+        const updatedToday = this.renewerRecords.filter(r => {
+          if (!r.reminder || !r.reminder.lastReminderSentAt) return false;
+          return normalizeDate(r.reminder.lastReminderSentAt) === todayStr;
+        });
+
+        this.allTodaysUpdated = updatedToday.map(r => {
+          const p = r.reminder.policy ? { ...r.reminder.policy } : {};
+          p.customer = r.customer;
+          p.reminder = r.reminder;
+          p.policyNumber = p.policyNumber || r.policyNumber;
+          return p;
+        });
+
+        // Get available Renewers
+        this.authService.getUsers().subscribe({
+          next: (users) => {
+            this.availableRenewers = users.filter((u: any) => u.role.includes('RENEWER'));
+          },
+          error: (err) => console.error('Failed to load renewers:', err)
+        });
+
         // Apply filter initially
         this.applyPremiumFilter();
 
         this.selectedDateRecords = {
-          expiringPolicies: this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps,
+          expiringPolicies: this.todaysWorkTab === 'expiring' ? this.todaysExpiring : (this.todaysWorkTab === 'followups' ? this.todaysFollowUps : this.todaysUpdated),
           scheduledFollowUps: [],
           workedOnPolicies: []
         };
