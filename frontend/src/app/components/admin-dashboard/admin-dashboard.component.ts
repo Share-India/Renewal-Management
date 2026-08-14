@@ -146,8 +146,8 @@ import * as XLSX from 'xlsx';
                   </div>
                 </div>
                 <!-- Filters Container -->
-                <div class="d-flex flex-column align-items-end gap-2">
-                  <div class="d-flex align-items-center gap-2">
+                <div class="d-flex flex-column align-items-end gap-2 ms-auto">
+                  <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
                     <!-- Day Match Filter (Only for 60 Days View) -->
                     <div class="input-group shadow-sm" style="width: 140px;" *ngIf="selectedDay === 600">
                       <span class="input-group-text bg-white border-secondary-subtle text-muted fw-bold">Day</span>
@@ -156,38 +156,52 @@ import * as XLSX from 'xlsx';
                     </div>
 
                     <!-- Renewer Filter -->
-                    <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="selectedDay === 'todays-work'" style="min-width: 200px;">
+                    <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="selectedDay === 'todays-work'" style="width: 180px;">
                       <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                         <i class="bi bi-person-badge-fill me-1"></i> Renewer
                       </span>
-                      <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedRenewerFilter" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
+                      <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" [(ngModel)]="selectedRenewerFilter" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
                         <option value="all">All</option>
                         <option *ngFor="let renewer of availableRenewers" [value]="renewer.username">{{ renewer.username }}</option>
                       </select>
                     </div>
                     
+
                     <!-- Type Filter -->
-                    <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
+                    <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="width: 200px;">
                       <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                         <i class="bi bi-tags-fill me-1"></i> Type
                       </span>
-                      <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
+                      <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" [(ngModel)]="selectedPolicyType" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
                         <option value="all">All Types</option>
                         <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
                       </select>
                     </div>
                   </div>
 
-                <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
-                  <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
-                    <i class="bi bi-funnel-fill me-1"></i> Premium
-                  </span>
-                  <div class="btn-group h-100" role="group">
-                    <button class="btn btn-sm rounded-0 border-0 py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('all')">All</button>
-                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('0-1')">0-1L</button>
-                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('1-3')">1L-3L</button>
-                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('3-5')">3L-5L</button>
-                    <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-3 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
+                <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
+                  <!-- RM Filter -->
+                  <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="selectedDay === 'todays-work'" style="width: 180px;">
+                    <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                      <i class="bi bi-briefcase-fill me-1"></i> RM
+                    </span>
+                    <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" [(ngModel)]="selectedRmFilter" (change)="applyPremiumFilter()" style="cursor: pointer; outline: none; box-shadow: none;">
+                      <option value="all">All RMs</option>
+                      <option *ngFor="let rm of availableRmNames" [value]="rm">{{ rm }}</option>
+                    </select>
+                  </div>
+                  
+                  <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
+                    <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                      <i class="bi bi-funnel-fill me-1"></i> Premium
+                    </span>
+                    <div class="btn-group h-100" role="group">
+                      <button class="btn btn-sm rounded-0 border-0 py-2 px-2 fw-bold" [ngClass]="selectedPremiumRange === 'all' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('all')">All</button>
+                      <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-2 fw-bold" [ngClass]="selectedPremiumRange === '0-1' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('0-1')">0-1L</button>
+                      <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-2 fw-bold" [ngClass]="selectedPremiumRange === '1-3' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('1-3')">1L-3L</button>
+                      <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-2 fw-bold" [ngClass]="selectedPremiumRange === '3-5' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('3-5')">3L-5L</button>
+                      <button class="btn btn-sm rounded-0 border-0 border-start py-2 px-2 fw-bold" [ngClass]="selectedPremiumRange === '5+' ? 'btn-dark text-white' : 'btn-white text-secondary'" (click)="setPremiumRange('5+')">>&nbsp;5L</button>
+                    </div>
                   </div>
                 </div>
                 </div>
@@ -1728,6 +1742,8 @@ export class AdminDashboardComponent implements OnInit {
   availablePolicyTypes: string[] = [];
   selectedRenewerFilter: string = 'all';
   availableRenewers: any[] = [];
+  selectedRmFilter: string = 'all';
+  availableRmNames: string[] = [];
 
   applyPremiumFilter() {
     const filterFn = (p: any) => {
@@ -1789,7 +1805,12 @@ export class AdminDashboardComponent implements OnInit {
         }
       }
 
-      return isPremiumMatch && isTypeMatch && isRenewerMatch;
+      let isRmMatch = true;
+      if (this.selectedRmFilter !== 'all') {
+        isRmMatch = p.rmName === this.selectedRmFilter;
+      }
+
+      return isPremiumMatch && isTypeMatch && isRenewerMatch && isRmMatch;
     };
 
     this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
@@ -1858,6 +1879,13 @@ export class AdminDashboardComponent implements OnInit {
           if (p.type) typesSet.add(p.type);
         });
         this.availablePolicyTypes = Array.from(typesSet).sort();
+
+        // Extract available RMs
+        const rmSet = new Set<string>();
+        [...this.allTodaysExpiring, ...this.allTodaysFollowUps].forEach(p => {
+          if (p.rmName) rmSet.add(p.rmName);
+        });
+        this.availableRmNames = Array.from(rmSet).sort();
 
         // Populate Updated Today records
         const updatedToday = this.renewerRecords.filter(r => {
