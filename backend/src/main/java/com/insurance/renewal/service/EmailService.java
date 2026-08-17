@@ -31,7 +31,6 @@ public class EmailService {
         
         String[] ccArray = {
             "pranav.mandal@shareindia.co.in",
-            "amar.sawant@shareindia.co.in",
             "shubham.shejul@shareindia.co.in"
         };
 
