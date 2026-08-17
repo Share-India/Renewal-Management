@@ -1162,6 +1162,10 @@ public class RenewalService {
             logChange(policyId, "RM Name", existingPolicy.getRmName(), updatedPolicy.getRmName(), agentName);
             existingPolicy.setRmName(updatedPolicy.getRmName());
         }
+        if (updatedPolicy.getRmEmail() != null && !updatedPolicy.getRmEmail().equals(existingPolicy.getRmEmail())) {
+            logChange(policyId, "RM Email", existingPolicy.getRmEmail(), updatedPolicy.getRmEmail(), agentName);
+            existingPolicy.setRmEmail(updatedPolicy.getRmEmail());
+        }
         if (updatedPolicy.getAssociateName() != null
                 && !updatedPolicy.getAssociateName().equals(existingPolicy.getAssociateName())) {
             logChange(policyId, "Associate Name", existingPolicy.getAssociateName(), updatedPolicy.getAssociateName(),

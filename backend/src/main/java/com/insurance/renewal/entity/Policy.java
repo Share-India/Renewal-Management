@@ -59,6 +59,9 @@ public class Policy {
     @Column(name = "rm_name")
     private String rmName;
 
+    @Column(name = "rm_email")
+    private String rmEmail;
+
     @Column(name = "associate_name")
     private String associateName;
 

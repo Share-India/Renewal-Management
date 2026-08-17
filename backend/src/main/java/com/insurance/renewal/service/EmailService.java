@@ -63,4 +63,43 @@ public class EmailService {
 
         mailSender.send(message);
     }
+
+    public void sendRmEmail(Policy policy, String agentName) {
+        if (policy.getRmEmail() == null || policy.getRmEmail().trim().isEmpty()) {
+            throw new RuntimeException("RM email address is missing or not configured for this policy.");
+        }
+
+        String customerName = policy.getCustomer() != null ? policy.getCustomer().getFirstName() + " " + policy.getCustomer().getLastName() : "Customer";
+        String policyType = policy.getType() != null ? policy.getType() : "Insurance";
+        String policyEndDate = policy.getExpiryDate() != null ? policy.getExpiryDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")) : "N/A";
+        String premium = policy.getDuePremium() != null ? policy.getDuePremium().toString() : "N/A";
+        String associateName = policy.getAssociateName() != null ? policy.getAssociateName() : "N/A";
+        String rmName = policy.getRmName() != null ? policy.getRmName() : "RM";
+
+        String subject = "Insurance Policy Renewal – " + customerName + " – " + policyEndDate;
+        
+        String body = "Dear Sir/Madam,\n" +
+                rmName + "\n\n" +
+                "This is to bring to your notice that the below-mentioned insurance policy is due for renewal " + policyEndDate + ".\n\n" +
+                "We request you to review the policy details and confirm if any changes or amendments are required at the time of renewal. This will enable us to complete the renewal process without any delay or lapse in coverage.\n\n" +
+                "Policy Details:\n" +
+                "• Insured Name: " + customerName + "\n" +
+                "• Type of Policy: " + policyType + "\n" +
+                "• Renewal Date: " + policyEndDate + "\n" +
+                "• Premium: " + premium + "\n" +
+                "• Associate Name: " + associateName + "\n\n" +
+                "We look forward to your prompt response and confirmation regarding the renewal, along with details of any changes required.\n\n" +
+                "Regards,\n" +
+                agentName + "\n" +
+                "Renewal Department\n" +
+                "Share India Insurance Brokers Pvt Ltd";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromEmail);
+        message.setTo(policy.getRmEmail().toLowerCase().trim());
+        message.setSubject(subject);
+        message.setText(body);
+
+        mailSender.send(message);
+    }
 }

@@ -147,6 +147,23 @@ public class RenewalController {
         return ResponseEntity.ok(Map.of("message", "Email sent successfully"));
     }
 
+    @PostMapping("/{policyId}/email-rm")
+    public ResponseEntity<Map<String, String>> sendRmEmail(@PathVariable("policyId") Long policyId) {
+        String agentName = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+
+        if (agentName == null || agentName.equals("anonymousUser")) {
+            agentName = "System Admin";
+        }
+
+        Policy policy = policyRepository.findById(policyId)
+                .orElseThrow(() -> new RuntimeException("Policy not found with ID: " + policyId));
+
+        emailService.sendRmEmail(policy, agentName);
+
+        return ResponseEntity.ok(Map.of("message", "RM Email sent successfully"));
+    }
+
     @PostMapping("/{policyId}/rm-update")
     public ResponseEntity<Policy> saveRmUpdate(@PathVariable("policyId") Long policyId,
             @RequestBody Map<String, String> payload,

@@ -245,10 +245,13 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/renewals/${policyId}/send-email`, {}, { headers: this.getHeaders() });
   }
 
+  sendRmEmail(policyId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/renewals/${policyId}/email-rm`, {}, { headers: this.getHeaders() });
+  }
+
   saveRmUpdate(policyId: number, rmUpdate: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/renewals/${policyId}/rm-update`, { rmUpdate }, { headers: this.getHeaders() });
   }
-
   getRenewerMonthlyStats(date?: string, agentName?: string): Observable<any[]> {
     let url = `${this.baseUrl}/renewals/admin/renewer-stats`;
     const params: string[] = [];
@@ -332,6 +335,7 @@ export interface Policy {
     productName?: string;
     duePremium?: number;
     rmName?: string;
+    rmEmail?: string;
     associateName?: string;
     associateCode?: string;
     vehicleRegNo?: string;

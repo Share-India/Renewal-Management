@@ -24,6 +24,7 @@ export class CustomerListComponent {
     showLogCallModal: boolean = false;
     showDetailsModal: boolean = false;
     sendingEmail: boolean = false;
+    sendingRmEmail: boolean = false;
     
     // Routing & Workflow Logic
     showRouteModal: boolean = false;
@@ -224,6 +225,23 @@ export class CustomerListComponent {
                 console.error('Error sending email', err);
                 this.notificationService.showErrorModal('Failed to send email. Ensure the customer has a valid email address.');
                 this.sendingEmail = false;
+            }
+        });
+    }
+
+    sendRmEmail() {
+        if (!this.selectedPolicy) return;
+
+        this.sendingRmEmail = true;
+        this.apiService.sendRmEmail(this.selectedPolicy.id).subscribe({
+            next: (response) => {
+                this.notificationService.showSuccessToast('RM Email sent successfully!');
+                this.sendingRmEmail = false;
+            },
+            error: (err) => {
+                console.error('Error sending RM email', err);
+                this.notificationService.showErrorModal(err.error?.message || 'Failed to send RM email. Ensure the policy has a valid RM email address.');
+                this.sendingRmEmail = false;
             }
         });
     }

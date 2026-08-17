@@ -333,6 +333,12 @@
                             [(ngModel)]="selectedPolicyDetails.rmName">
                     </div>
                     <div class="info-row">
+                        <label>RM Email:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.rmEmail || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="email" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.rmEmail" [disabled]="!isAdmin">
+                    </div>
+                    <div class="info-row">
                         <label>POSP:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.associateName || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
@@ -694,12 +700,20 @@
             </div>
         </div>
             <div class="modal-footer border-top-0 d-flex justify-content-between">
-                <button type="button" class="btn btn-outline-info d-flex align-items-center" 
-                        (click)="sendEmail()" [disabled]="sendingEmail">
-                    <i class="bi bi-envelope-fill me-2" *ngIf="!sendingEmail"></i>
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="sendingEmail"></span>
-                    {{ sendingEmail ? 'Sending...' : 'Email Customer' }}
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-info d-flex align-items-center px-3" 
+                            (click)="sendEmail()" [disabled]="sendingEmail">
+                        <i class="bi bi-envelope-fill me-2" *ngIf="!sendingEmail"></i>
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="sendingEmail"></span>
+                        {{ sendingEmail ? 'Sending...' : 'Email Customer' }}
+                    </button>
+                    <button type="button" class="btn btn-outline-primary d-flex align-items-center px-3" 
+                            (click)="sendRmEmail()" [disabled]="sendingRmEmail">
+                        <i class="bi bi-envelope-at-fill me-2" *ngIf="!sendingRmEmail"></i>
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" *ngIf="sendingRmEmail"></span>
+                        {{ sendingRmEmail ? 'Sending...' : 'Email RM' }}
+                    </button>
+                </div>
                 <div>
                     <button type="button" class="btn btn-secondary me-2" (click)="closeModal()">Cancel</button>
                     <button type="button" class="btn btn-primary px-4" (click)="submitLogCall()">Save Log</button>
@@ -778,15 +792,19 @@
                     <div class="col-12 mt-3">
                         <h6 class="text-muted">Additional Information</h6>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">RM Name</label>
                         <input type="text" class="form-control" [(ngModel)]="renewalForm.rmName">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
+                        <label class="form-label">RM Email</label>
+                        <input type="email" class="form-control" [(ngModel)]="renewalForm.rmEmail" [disabled]="!isAdmin">
+                    </div>
+                    <div class="col-md-6">
                         <label class="form-label">POSP Name</label>
                         <input type="text" class="form-control" [(ngModel)]="renewalForm.associateName">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">POSP Code</label>
                         <input type="text" class="form-control" [(ngModel)]="renewalForm.associateCode">
                     </div>
