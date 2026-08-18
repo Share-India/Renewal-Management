@@ -131,6 +131,17 @@ import { forkJoin, of } from 'rxjs';
 
             <!-- Right Side: Search Bar and Day Filter -->
             <div class="d-flex flex-wrap gap-3 align-items-start pt-2">
+              <!-- Type Filter -->
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 180px;">
+                <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                  <i class="bi bi-tags-fill me-1"></i> Type
+                </span>
+                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyFilters()" style="cursor: pointer; outline: none; box-shadow: none;">
+                  <option value="all">All Types</option>
+                  <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
+                </select>
+              </div>
+
               <!-- Search Bar -->
               <div class="input-group shadow-sm" style="width: 350px;">
                 <select class="form-select border-secondary-subtle text-muted" style="max-width: 160px; background-color: #f8f9fa;" [(ngModel)]="searchBy" (change)="applyFilters()">
@@ -165,17 +176,6 @@ import { forkJoin, of } from 'rxjs';
 
             <!-- Right Side: Type and Premium Filters -->
             <div class="d-flex flex-wrap gap-3 align-items-center">
-              <!-- Type Filter -->
-              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 220px;">
-                <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
-                  <i class="bi bi-tags-fill me-1"></i> Type
-                </span>
-                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyFilters()" style="cursor: pointer; outline: none; box-shadow: none;">
-                  <option value="all">All Types</option>
-                  <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
-                </select>
-              </div>
-
               <!-- Premium Filter -->
               <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
@@ -648,6 +648,14 @@ export class RenewalComponent implements OnInit {
         next: (data) => {
           this.basePolicies = data.expiringPolicies || [];
           this.baseFollowUps = data.scheduledFollowUps || [];
+
+          // Extract available types for dropdown
+          const typesSet = new Set<string>();
+          [...this.basePolicies, ...this.baseFollowUps].forEach(p => {
+            if (p.type) typesSet.add(p.type);
+          });
+          this.availablePolicyTypes = Array.from(typesSet).sort();
+
           this.applyFilters();
           this.loading = false;
         },
@@ -669,6 +677,14 @@ export class RenewalComponent implements OnInit {
           p.reminder = r;
           return p;
         });
+
+        // Extract available types for dropdown
+        const typesSet = new Set<string>();
+        [...this.basePolicies, ...this.baseFollowUps].forEach(p => {
+          if (p.type) typesSet.add(p.type);
+        });
+        this.availablePolicyTypes = Array.from(typesSet).sort();
+
         this.applyFilters();
         this.loading = false;
       },
@@ -813,7 +829,6 @@ export class RenewalComponent implements OnInit {
     };
 
     const typeFilterFn = (p: any) => {
-      if (this.selectedDay !== 'todays-work') return true;
       if (this.selectedPolicyType === 'all') return true;
       return p.type === this.selectedPolicyType;
     };
