@@ -670,9 +670,9 @@
             <div class="form-group mb-3">
                 <label class="form-label d-block text-secondary mb-2">Contact To</label>
                 <div class="custom-segmented-control">
-                    <div class="segment" [class.active]="contactTo === 'Client'" (click)="contactTo = 'Client'">Client</div>
-                    <div class="segment" [class.active]="contactTo === 'RM'" (click)="contactTo = 'RM'">RM</div>
-                    <div class="segment" [class.active]="contactTo === 'Associate'" (click)="contactTo = 'Associate'">Associate</div>
+                    <div class="segment" [class.active]="contactTo === 'Client'" (click)="setContactTo('Client')">Client</div>
+                    <div class="segment" [class.active]="contactTo === 'RM'" (click)="setContactTo('RM')">RM</div>
+                    <div class="segment" [class.active]="contactTo === 'Associate'" (click)="setContactTo('Associate')">Associate</div>
                 </div>
             </div>
             

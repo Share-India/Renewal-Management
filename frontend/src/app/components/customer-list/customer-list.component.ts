@@ -295,6 +295,23 @@ export class CustomerListComponent {
         this.contactNumber = '';
     }
 
+    setContactTo(role: string) {
+        this.contactTo = role;
+        this.contactName = '';
+        this.contactNumber = '';
+        
+        if (!this.selectedPolicy) return;
+
+        if (role === 'Client' && this.selectedPolicy.customer) {
+            this.contactName = `${this.selectedPolicy.customer.firstName || ''} ${this.selectedPolicy.customer.lastName || ''}`.trim();
+            this.contactNumber = this.selectedPolicy.customer.phone || '';
+        } else if (role === 'RM') {
+            this.contactName = this.selectedPolicy.rmName || '';
+        } else if (role === 'Associate') {
+            this.contactName = this.selectedPolicy.associateName || '';
+        }
+    }
+
     closeModal() {
         this.showLogCallModal = false;
         this.selectedPolicy = null;
