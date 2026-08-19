@@ -161,6 +161,10 @@ export class ApiService {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/late-renewals`, { headers: this.getHeaders() });
     }
 
+    getReturnedToRenewerPolicies(): Observable<any[]> {
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/returned-to-renewer`, { headers: this.getHeaders() });
+    }
+
     deletePolicy(id: number): Observable<void> {
         return this.http.delete<void>(`${this.baseUrl}/renewals/policies/${id}`, { headers: this.getHeaders() });
     }

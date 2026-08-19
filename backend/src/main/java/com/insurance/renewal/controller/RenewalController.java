@@ -368,6 +368,11 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getAuditLogs(id));
     }
 
+    @GetMapping("/returned-to-renewer")
+    public ResponseEntity<List<Policy>> getReturnedToRenewerPolicies() {
+        return ResponseEntity.ok(renewalService.getReturnedToRenewerPolicies());
+    }
+
     @GetMapping("/{id}/payment-proof")
     public ResponseEntity<org.springframework.core.io.Resource> getPaymentProof(@PathVariable("id") Long id) {
         try {

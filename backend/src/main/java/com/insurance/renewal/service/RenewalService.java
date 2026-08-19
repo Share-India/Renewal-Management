@@ -377,6 +377,31 @@ public class RenewalService {
         return applyRenewerFilters(upcomingPolicies);
     }
 
+    public List<Policy> getReturnedToRenewerPolicies() {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated())
+            return new java.util.ArrayList<>();
+
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(auth.getName()).orElse(null);
+        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+        if (effectiveUser == null || effectiveUser.getRole() == null)
+            return new java.util.ArrayList<>();
+
+        String role = effectiveUser.getRole();
+        String team = null;
+        if (role.contains("CLAIMS")) team = "CLAIMS";
+        else if (role.contains("SALES")) team = "SALES";
+        else if (role.contains("UNDERWRITING")) team = "UNDERWRITING";
+
+        if (team == null) return new java.util.ArrayList<>();
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(75);
+
+        return policyRepository.findReturnedToRenewerPolicies(team, startDate, today);
+    }
+
     // Get reminders scheduled for follow-up in 'days'
     public List<Reminder> getFollowUpsForTimeline(int days) {
         LocalDate targetDate = LocalDate.now().plusDays(days);

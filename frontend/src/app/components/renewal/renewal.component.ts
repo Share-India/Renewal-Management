@@ -98,6 +98,9 @@ import { forkJoin, of } from 'rxjs';
             </div>
           </ng-container>
 
+          <button class="btn btn-warning" *ngIf="isManager()" (click)="openReturnedToRenewer()">
+            <i class="bi bi-arrow-return-left"></i> Returned to Renewer (75 Days)
+          </button>
           <button class="btn btn-outline-dark" *ngIf="isManager()" (click)="openAddMemberModal()">
             <i class="bi bi-person-plus-fill"></i> Add Member
           </button>
@@ -858,6 +861,7 @@ export class RenewalComponent implements OnInit {
 
     const targetTeamFilterFn = (p: any) => {
         if (!this.adminViewAs) return true;
+        if (this.selectedDay === 'returned-to-renewer') return true;
         if (this.adminViewAs === 'claims') return p.targetTeam === 'CLAIMS';
         if (this.adminViewAs === 'sales') return p.targetTeam === 'SALES';
         if (this.adminViewAs === 'underwriting') return p.targetTeam === 'UNDERWRITING';
@@ -883,6 +887,32 @@ export class RenewalComponent implements OnInit {
   setTodaysWorkTab(tab: 'expiring' | 'followups') {
     this.todaysWorkTab = tab;
     this.policies = tab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
+  }
+
+  openReturnedToRenewer() {
+    this.listSearchTerm = '';
+    this.searchBy = 'customer';
+    this.selectedDay = 'returned-to-renewer';
+    this.loading = true;
+    this.apiService.getReturnedToRenewerPolicies().subscribe({
+      next: (policies) => {
+        this.basePolicies = policies;
+        this.baseFollowUps = [];
+        
+        const typesSet = new Set<string>();
+        this.basePolicies.forEach(p => {
+          if (p.type) typesSet.add(p.type);
+        });
+        this.availablePolicyTypes = Array.from(typesSet).sort();
+
+        this.applyFilters();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching returned to renewer policies', err);
+        this.loading = false;
+      }
+    });
   }
 
   openTodaysWork() {
@@ -938,6 +968,8 @@ export class RenewalComponent implements OnInit {
     this.refreshTimelineCounts();
     if (this.selectedDay === 'todays-work') {
       this.openTodaysWork();
+    } else if (this.selectedDay === 'returned-to-renewer') {
+      this.openReturnedToRenewer();
     } else if (this.selectedDay !== null && typeof this.selectedDay === 'number') {
       this.onDaySelected(this.selectedDay);
     }
@@ -945,6 +977,7 @@ export class RenewalComponent implements OnInit {
 
   isUpcoming(): boolean {
     if (this.selectedDay === 'todays-work') return true;
+    if (this.selectedDay === 'returned-to-renewer') return true;
     return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
   }
 
@@ -967,6 +1000,7 @@ export class RenewalComponent implements OnInit {
     
     if (this.selectedDay === null) return '';
     if (this.selectedDay === 'todays-work') return "Today's Work ";
+    if (this.selectedDay === 'returned-to-renewer') return "Policies Returned to Renewer (75 Days)";
 
     const isTeam = this.isTeamRole();
 

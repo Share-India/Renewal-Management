@@ -55,6 +55,9 @@ import { ApiService } from '../../services/api.service';
                   <option value="MIS">MIS</option>
                   <option value="ADMIN">Administrator</option>
                   <option value="RM">Relationship Manager</option>
+                  <option value="CLAIMS_MANAGER">Claims Manager</option>
+                  <option value="SALES_MANAGER">Sales Manager</option>
+                  <option value="UNDERWRITING_MANAGER">Underwriting Manager</option>
                 </select>
               </div>
             </div>
@@ -713,6 +716,9 @@ export class UserManagementComponent implements OnInit {
     if (role.includes('MIS')) return 'bg-info text-dark';
     if (role.includes('SERVICING')) return 'bg-warning text-dark';
     if (role.includes('RENEWER')) return 'bg-info';
+    if (role.includes('CLAIMS')) return 'bg-danger';
+    if (role.includes('SALES')) return 'bg-success';
+    if (role.includes('UNDERWRITING')) return 'bg-dark';
     return 'bg-secondary';
   }
 

@@ -57,6 +57,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT p FROM Policy p WHERE p.status = :status AND p.policyIssueDate IS NOT NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch) ORDER BY p.policyIssueDate DESC")
         List<Policy> findByStatusAndPolicyIssueDateIsNotNullOrderByPolicyIssueDateDesc(@Param("status") String status, @Param("branch") String branch);
 
+        @Query("SELECT p FROM Policy p WHERE p.targetTeam = 'RENEWER' AND p.lastRoutedFrom = :team AND p.routedAt >= :startDate AND p.routedAt <= :endDate")
+        List<Policy> findReturnedToRenewerPolicies(@Param("team") String team, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
         @Query("SELECT p FROM Policy p WHERE p.id NOT IN (SELECT r.policy.id FROM Reminder r)")
         List<Policy> findPoliciesWithoutReminders();
 
