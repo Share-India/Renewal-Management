@@ -84,6 +84,11 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getTodaysWork(branch));
     }
 
+    @GetMapping("/todays-report")
+    public ResponseEntity<Map<String, List<Policy>>> getTodaysReport(@RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getTodaysReport(branch));
+    }
+
     @GetMapping("/high-value-deals")
     public ResponseEntity<List<Policy>> getHighValueDeals(@RequestParam(value = "branch", required = false) String branch) {
         return ResponseEntity.ok(renewalService.getHighValueDeals(branch));

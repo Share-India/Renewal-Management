@@ -1366,6 +1366,59 @@ public class RenewalService {
         return getTodaysWork(LocalDate.now(), true, branch);
     }
 
+    public Map<String, List<Policy>> getTodaysReport(String branch) {
+        Map<String, List<Policy>> result = new HashMap<>();
+        LocalDate today = LocalDate.now();
+        
+        // 1. Get policies assigned for today (Expiring + Pending follow-ups up to today)
+        List<Policy> allTodaysWork = getTodaysWork(today, false, branch);
+        
+        // 2. Get policies that were UPDATED today (in case they were scheduled for future but touched today)
+        java.time.LocalDateTime startOfDay = today.atStartOfDay();
+        java.time.LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
+        List<Reminder> updatedReminders = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay, branch);
+        
+        java.util.Set<Long> processedPolicyIds = new java.util.HashSet<>();
+        java.util.List<Policy> mergedPolicies = new java.util.ArrayList<>();
+        
+        for (Policy p : allTodaysWork) {
+            if (processedPolicyIds.add(p.getId())) {
+                mergedPolicies.add(p);
+            }
+        }
+        
+        for (Reminder r : updatedReminders) {
+            Policy p = r.getPolicy();
+            if (p != null) {
+                p.setReminder(r);
+                if (processedPolicyIds.add(p.getId())) {
+                    mergedPolicies.add(p);
+                }
+            }
+        }
+        
+        java.util.List<Policy> expiring = new java.util.ArrayList<>();
+        java.util.List<Policy> followups = new java.util.ArrayList<>();
+        
+        for (Policy p : mergedPolicies) {
+            boolean isFollowUp = false;
+            if (p.getReminder() != null && p.getReminder().getFollowUpDate() != null) {
+                if (!p.getReminder().getFollowUpDate().toLocalDate().isAfter(today)) {
+                    isFollowUp = true;
+                }
+            }
+            if (isFollowUp) {
+                followups.add(p);
+            } else {
+                expiring.add(p);
+            }
+        }
+        
+        result.put("expiringPolicies", expiring);
+        result.put("scheduledFollowUps", followups);
+        return result;
+    }
+
     private List<Policy> getTodaysWork(LocalDate today, boolean filterCompleted, String branch) {
         List<Integer> buckets = java.util.Arrays.asList(
                 75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today

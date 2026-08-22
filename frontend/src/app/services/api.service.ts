@@ -63,6 +63,14 @@ export class ApiService {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders(), params });
     }
 
+    getTodaysReport(branch?: string): Observable<{expiringPolicies: any[], scheduledFollowUps: any[]}> {
+        let params = new HttpParams();
+        if (branch && branch.trim() !== '') {
+            params = params.set('branch', branch.trim());
+        }
+        return this.http.get<{expiringPolicies: any[], scheduledFollowUps: any[]}>(`${this.baseUrl}/renewals/todays-report`, { headers: this.getHeaders(), params });
+    }
+
     getHighValueDeals(branch?: string): Observable<any[]> {
         let params = new HttpParams();
         if (branch && branch.trim() !== '') {
