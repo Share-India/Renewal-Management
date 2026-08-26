@@ -12,14 +12,21 @@ import { ApiService } from '../../services/api.service';
   template: `
     <div class="user-mgmt-container">
       <div class="mgmt-card">
-        <div class="card-header">
+        <div class="card-header pb-0 border-bottom-0 text-center">
           <h3><i class="bi bi-people-fill"></i> User Management</h3>
-          <p class="text-muted">Create and manage system access</p>
+          <p class="text-muted mb-2">Create and manage system access</p>
+          
+          <div class="custom-switch-container mb-3">
+            <button class="switch-btn" [class.active]="activeTab === 'add-user'" (click)="activeTab = 'add-user'">
+              <i class="bi bi-person-plus"></i> Add New User
+            </button>
+            <button class="switch-btn" [class.active]="activeTab === 'bulk-assign'" (click)="activeTab = 'bulk-assign'">
+              <i class="bi bi-file-earmark-spreadsheet"></i> Bulk Assign Policies
+            </button>
+          </div>
         </div>
         
-        <div class="card-body">
-          <h4 class="form-title">Add New User</h4>
-          
+        <div class="card-body pt-4" *ngIf="activeTab === 'add-user'">
           <div class="form-grid">
             <div class="form-group">
               <label>Username</label>
@@ -231,6 +238,61 @@ import { ApiService } from '../../services/api.service';
             <i class="bi bi-list-ul"></i> View All Users
           </button>
         </div>
+
+        <!-- Bulk Assign via Excel -->
+        <div class="card-body pt-4" *ngIf="activeTab === 'bulk-assign'">
+          
+          <div class="modern-form-group mb-4">
+            <label class="modern-label">Assign To Renewer</label>
+            <div class="modern-input-wrapper">
+              <i class="bi bi-person-badge modern-input-icon"></i>
+              <select class="form-select modern-select" [(ngModel)]="uploadSelectedRenewer">
+                <option value="" disabled selected>Choose a renewer from the list...</option>
+                <option *ngFor="let user of getRenewerUsers()" [value]="user.username">{{ user.username }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modern-form-group mb-4">
+            <label class="modern-label">Target Branch</label>
+            <div class="modern-input-wrapper">
+              <i class="bi bi-building modern-input-icon"></i>
+              <select class="form-select modern-select" [(ngModel)]="uploadSelectedBranch">
+                <option value="" disabled selected>Choose the associated branch...</option>
+                <option *ngFor="let branch of availableBranches" [value]="branch">{{ branch }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modern-form-group mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <label class="modern-label mb-0">Upload Excel Data</label>
+              <button class="btn btn-sm modern-format-btn" (click)="downloadFormatExcel()" title="Download the required Excel template">
+                <i class="bi bi-file-earmark-arrow-down me-1"></i> Get Template
+              </button>
+            </div>
+            
+            <div class="modern-file-dropzone" [class.has-file]="selectedExcelFile">
+              <input type="file" class="modern-file-input" accept=".xlsx, .xls" (change)="onExcelFileSelected($event)" id="excelUpload">
+              <label for="excelUpload" class="modern-file-label text-center w-100 py-4 cursor-pointer">
+                <i class="bi bi-cloud-arrow-up text-primary mb-2" style="font-size: 2rem;"></i>
+                <span class="d-block fw-semibold text-dark">{{ selectedExcelFile ? selectedExcelFile.name : 'Click to browse or drag file here' }}</span>
+                <span class="d-block text-muted small mt-1">Must exactly match the provided template columns</span>
+              </label>
+            </div>
+          </div>
+
+          <button class="btn modern-submit-btn w-100" (click)="uploadExcelAndAssign()" [disabled]="uploadingExcel || !uploadSelectedRenewer || !uploadSelectedBranch || !selectedExcelFile">
+            <span *ngIf="!uploadingExcel"><i class="bi bi-rocket-takeoff me-2"></i> Upload and Assign Policies</span>
+            <span *ngIf="uploadingExcel" class="spinner-border spinner-border-sm"></span>
+          </button>
+
+          <div *ngIf="uploadMessage" class="alert mt-3" [class.alert-success]="uploadSuccess" [class.alert-danger]="!uploadSuccess">
+            <i class="bi" [class.bi-check-circle-fill]="uploadSuccess" [class.bi-exclamation-triangle-fill]="!uploadSuccess"></i>
+            {{ uploadMessage }}
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -329,8 +391,33 @@ import { ApiService } from '../../services/api.service';
       padding: 30px 30px 10px;
       border-bottom: none;
     }
-    .card-header h3 { margin: 0; color: #2c3e50; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .card-header h3 { margin: 0; color: #2c3e50; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 10px; }
     .text-muted { color: #6c757d; margin-top: 5px; }
+
+    .custom-switch-container {
+      display: inline-flex;
+      background-color: #f1f5f9;
+      border-radius: 30px;
+      padding: 4px;
+      margin-top: 10px;
+    }
+    .switch-btn {
+      background: transparent;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 26px;
+      color: #64748b;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .switch-btn:hover {
+      color: #3b82f6;
+    }
+    .switch-btn.active {
+      background-color: white;
+      color: #0d6efd;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
     
     .card-body { padding: 30px; }
     .form-title { font-size: 1.1rem; color: #495057; margin-bottom: 25px; font-weight: 600; border-left: 4px solid #0d6efd; padding-left: 10px; }
@@ -376,6 +463,24 @@ import { ApiService } from '../../services/api.service';
     .modal-body { padding: 20px; overflow-y: auto; }
     .modal-footer { padding: 15px 20px; border-top: 1px solid #dee2e6; text-align: right; }
     .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #aaa; }
+    
+    /* Modern Form UI */
+    .modern-form-group { position: relative; }
+    .modern-label { font-size: 0.9rem; font-weight: 600; color: #4b5563; margin-bottom: 0.5rem; }
+    .modern-input-wrapper { position: relative; display: flex; align-items: center; }
+    .modern-input-icon { position: absolute; left: 1rem; color: #6b7280; font-size: 1.1rem; z-index: 10; pointer-events: none; }
+    .modern-select { padding-left: 2.75rem; border-radius: 10px; border: 1px solid #d1d5db; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: border-color 0.2s, box-shadow 0.2s; min-height: 2.75rem; appearance: none; }
+    .modern-select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2); outline: none; }
+    .modern-format-btn { color: #4f46e5; background-color: #e0e7ff; border: none; font-weight: 500; border-radius: 8px; transition: background-color 0.2s; }
+    .modern-format-btn:hover { background-color: #c7d2fe; }
+    .modern-file-dropzone { border: 2px dashed #d1d5db; border-radius: 12px; background-color: #f9fafb; transition: all 0.2s; position: relative; }
+    .modern-file-dropzone:hover { border-color: #6366f1; background-color: #eff6ff; }
+    .modern-file-dropzone.has-file { border-color: #10b981; border-style: solid; background-color: #ecfdf5; }
+    .modern-file-dropzone.has-file i { color: #10b981 !important; }
+    .modern-file-input { opacity: 0; position: absolute; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; z-index: 5; }
+    .modern-submit-btn { background-color: #4f46e5; border: none; color: white; border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2); transition: all 0.2s; }
+    .modern-submit-btn:hover:not(:disabled) { background-color: #4338ca; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); transform: translateY(-1px); }
+    .cursor-pointer { cursor: pointer; }
   `]
 })
 export class UserManagementComponent implements OnInit {
@@ -575,9 +680,6 @@ export class UserManagementComponent implements OnInit {
   }
 
   // User List
-  showUserList = false;
-  users: any[] = [];
-  loadingUsers = false;
   availableRmNames: string[] = [];
   selectedRms: string[] = [];
   loadingRmNames = false;
@@ -611,9 +713,85 @@ export class UserManagementComponent implements OnInit {
     }
   }
 
-  constructor(private authService: AuthService, private apiService: ApiService, private notificationService: NotificationService) { }
+  // User List State
+  showUserList = false;
+  users: any[] = [];
+  loadingUsers = false;
+  selectedRoleFilter: string = '';
 
-  ngOnInit() {
+  // Tabs
+  activeTab: 'add-user' | 'bulk-assign' = 'add-user';
+
+  // Excel Bulk Assign State
+  uploadSelectedRenewer: string = '';
+  uploadSelectedBranch: string = '';
+  selectedExcelFile: File | null = null;
+  uploadingExcel = false;
+  uploadMessage = '';
+  uploadSuccess = false;
+
+  constructor(
+    private authService: AuthService,
+    private apiService: ApiService,
+    private notificationService: NotificationService
+  ) {}
+
+  ngOnInit(): void {
+    this.extractBranches();
+    this.loadUsers();
+  }
+
+  getRenewerUsers() {
+    return this.users.filter(u => u.role && u.role.includes('RENEWER'));
+  }
+
+  onExcelFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedExcelFile = file;
+    }
+  }
+
+  downloadFormatExcel() {
+    this.apiService.downloadFormat().subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Format.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.notificationService.showErrorModal('Failed to download Format.xlsx');
+      }
+    });
+  }
+
+  uploadExcelAndAssign() {
+    if (!this.selectedExcelFile || !this.uploadSelectedRenewer || !this.uploadSelectedBranch) return;
+    
+    this.uploadingExcel = true;
+    this.uploadMessage = '';
+    
+    this.apiService.uploadAssignPolicies(this.selectedExcelFile, this.uploadSelectedRenewer, this.uploadSelectedBranch).subscribe({
+      next: (res) => {
+        this.uploadingExcel = false;
+        this.uploadSuccess = true;
+        this.uploadMessage = 'Policies successfully uploaded and assigned!';
+        this.selectedExcelFile = null;
+        this.uploadSelectedRenewer = '';
+        this.uploadSelectedBranch = '';
+      },
+      error: (err) => {
+        this.uploadingExcel = false;
+        this.uploadSuccess = false;
+        this.uploadMessage = err.error?.error || 'Failed to upload and assign policies.';
+      }
+    });
+  }
+
+  extractBranches() {
     this.apiService.getBranches().subscribe(branches => {
       this.availableBranches = branches;
     });

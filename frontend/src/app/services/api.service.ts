@@ -79,6 +79,24 @@ export class ApiService {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/high-value-deals`, { headers: this.getHeaders(), params });
     }
 
+    uploadAssignPolicies(file: File, renewerUsername: string, branch: string): Observable<any> {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('renewerUsername', renewerUsername);
+        formData.append('branch', branch);
+        
+        let headers = this.getHeaders();
+        // Remove Content-Type so browser sets it correctly with boundary
+        headers = headers.delete('Content-Type');
+        
+        return this.http.post(`${this.baseUrl}/renewals/policies/upload-assign`, formData, { headers });
+    }
+
+    downloadFormat() {
+        return this.http.get(`${this.baseUrl}/renewals/policies/download-format`, { responseType: 'blob', headers: this.getHeaders() });
+    }
+
+
     getTodaysWorkProgress(branch?: string): Observable<{total: number, completed: number}> {
         let params = new HttpParams();
         if (branch && branch.trim() !== '') {

@@ -94,6 +94,9 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getHighValueDeals(branch));
     }
 
+    @Autowired
+    private com.insurance.renewal.service.ExcelUploadService excelUploadService;
+
     @PostMapping("/policies")
     public ResponseEntity<Policy> createPolicy(@RequestBody Policy policy) {
         // Get current user
@@ -105,6 +108,53 @@ public class RenewalController {
         }
 
         return ResponseEntity.ok(renewalService.createPolicy(policy, agentName));
+    }
+
+    @GetMapping("/policies/download-format")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadFormat() {
+        try {
+            org.springframework.core.io.ClassPathResource resource = new org.springframework.core.io.ClassPathResource("Format.xlsx");
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=Format.xlsx")
+                    .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @Autowired
+    private com.insurance.renewal.repository.UserRepository userRepository;
+
+    @PostMapping(value = "/policies/upload-assign", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadAndAssignPolicies(
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @org.springframework.web.bind.annotation.RequestParam("renewerUsername") String renewerUsername,
+            @org.springframework.web.bind.annotation.RequestParam("branch") String branch) {
+        try {
+            excelUploadService.processAndAssignExcel(file, renewerUsername, branch);
+            
+            // Update Renewer's assigned branches to include this new branch
+            userRepository.findByUsername(renewerUsername).ifPresent(user -> {
+                String currentBranches = user.getAssignedBranch();
+                if (currentBranches == null || currentBranches.trim().isEmpty() || currentBranches.equals("null")) {
+                    user.setAssignedBranch(branch);
+                    userRepository.save(user);
+                } else {
+                    java.util.List<String> branches = new java.util.ArrayList<>(java.util.Arrays.asList(currentBranches.split(",")));
+                    boolean exists = branches.stream().anyMatch(b -> b.trim().equalsIgnoreCase(branch.trim()));
+                    if (!exists) {
+                        user.setAssignedBranch(currentBranches + "," + branch);
+                        userRepository.save(user);
+                    }
+                }
+            });
+            
+            return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Policies uploaded and assigned successfully."));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("error", "Error uploading file: " + e.getMessage()));
+        }
     }
 
     @PostMapping("/{policyId}/log-call")

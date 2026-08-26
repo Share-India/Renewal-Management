@@ -10,6 +10,8 @@ import java.util.List;
 
 @Repository
 public interface PolicyRepository extends JpaRepository<Policy, Long> {
+
+    java.util.Optional<Policy> findByPolicyNumber(String policyNumber);
         List<Policy> findByExpiryDate(LocalDate expiryDate);
         @Query("SELECT COUNT(p) FROM Policy p WHERE p.expiryDate = :expiryDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         long countByExpiryDate(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);

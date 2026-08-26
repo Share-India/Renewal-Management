@@ -125,6 +125,10 @@ public class RenewalService {
             }
 
             // Role RENEWER Logic
+            if (user.getUsername().equals(p.getCurrentAssignee())) {
+                return true;
+            }
+
             if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
                     && !user.getAssignedBranch().equals("null")) {
                 if (p.getBranch() == null) return false;
@@ -260,6 +264,9 @@ public class RenewalService {
             }
 
             // Role RENEWER Logic
+            if (effectiveUser.getUsername().equals(p.getCurrentAssignee())) {
+                return true;
+            }
 
             if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().isEmpty()
                     && !effectiveUser.getAssignedBranch().equals("null")) {
