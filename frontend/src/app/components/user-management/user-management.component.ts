@@ -514,7 +514,7 @@ export class UserManagementComponent implements OnInit {
   customerSearchTerm = '';
 
   availableProductTypes = [
-    'Engineering Policy', 'GMC', 'GPA', 'GTL', 'Health Insurance',
+    'Engineering Policy', 'General', 'General Insurance', 'GMC', 'GPA', 'GTL', 'Health Insurance',
     'Home/Property Insurance', 'Life Insurance', 'Marine Insurance',
     'Miscellaneous Insurance', 'Motor Insurance', 'PA',
     'Professional Indemnity', 'Stock Broker Indemnity', 'Travel Insurance',
