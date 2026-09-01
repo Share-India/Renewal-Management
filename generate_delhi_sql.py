@@ -31,9 +31,11 @@ def generate_sql():
     resolved_emails = {}
     
     for idx, row in df.iterrows():
-        policy_no = clean_val(row.get(get_col(['policy no', 'policy no 1', 'policy number'])))
-        if not policy_no:
+        policy_no_raw = clean_val(row.get(get_col(['policy no', 'policy no 1', 'policy number'])))
+        if not policy_no_raw:
             continue
+        policy_no = str(policy_no_raw).lstrip("'")
+        policy_no_sql = policy_no.replace("'", "''")
             
         customer_name = clean_val(row.get(get_col(['customer name']))) or 'Unknown'
         parts = customer_name.split(' ', 1)
@@ -126,7 +128,7 @@ def generate_sql():
         sql_lines.append(f"INSERT INTO policies (policy_number, type, amount, due_premium, expiry_date, status, branch, "
                          f"target_team, insurance_name, product_name, rm_name, rm_email, associate_name, associate_code, "
                          f"vehicle_reg_no, vehicle_model, policy_start_date, policy_end_date, customer_id) "
-                         f"VALUES ('{policy_no}', '{ins_type_sql}', {amt_val}, {prem_val}, {expiry}, '{status}', '{branch}', '{target_team}', "
+                         f"VALUES ('{policy_no_sql}', '{ins_type_sql}', {amt_val}, {prem_val}, {expiry}, '{status}', '{branch}', '{target_team}', "
                          f"{repr(insurer_name) if insurer_name else 'NULL'}, {repr(product_name) if product_name else 'NULL'}, "
                          f"{repr(rm_name) if rm_name else 'NULL'}, {repr(rm_email) if rm_email else 'NULL'}, "
                          f"{repr(assoc) if assoc else 'NULL'}, {repr(assoc_code) if assoc_code else 'NULL'}, "
