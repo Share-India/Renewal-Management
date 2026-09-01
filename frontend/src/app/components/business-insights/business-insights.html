@@ -1,0 +1,116 @@
+<div class="insights-container">
+    <div class="insights-header">
+        <div class="header-titles">
+            <h1>Business Insights</h1>
+            <p>Analyze performance metrics and upcoming renewals.</p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2">
+            <div class="dropdown-filter d-flex align-items-center bg-white border rounded px-3 py-2 shadow-sm w-100">
+                <i class="bi bi-person-workspace text-muted me-2"></i>
+                <select class="form-select border-0 bg-transparent shadow-none w-100" [(ngModel)]="selectedTeam" (change)="onTeamChange()">
+                    <option *ngFor="let team of teams" [value]="team">{{ team }}</option>
+                </select>
+            </div>
+            <div class="d-flex gap-2">
+                <div class="dropdown-filter d-flex align-items-center bg-white border rounded px-3 py-2 shadow-sm">
+                    <i class="bi bi-geo-alt text-muted me-2"></i>
+                    <select class="form-select border-0 bg-transparent shadow-none" [(ngModel)]="selectedBranch" (change)="onBranchChange()">
+                        <option *ngFor="let branch of branches" [value]="branch">{{ branch }}</option>
+                    </select>
+                </div>
+                <div class="dropdown-filter d-flex align-items-center bg-white border rounded px-3 py-2 shadow-sm">
+                    <i class="bi bi-calendar3 text-muted me-2"></i>
+                    <select class="form-select border-0 bg-transparent shadow-none" [(ngModel)]="selectedMonth" (change)="onMonthChange()">
+                        <option *ngFor="let m of availableMonths" [value]="m">{{ m }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div *ngIf="!loading">
+        <!-- Customer Wise Analysis -->
+        <div class="analysis-card">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <h2 class="section-title mb-0">
+                    <i class="bi bi-people-fill"></i> Customer Wise Analysis
+                </h2>
+                <div class="d-flex gap-3 align-items-center">
+                    <div class="search-box">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" class="form-control custom-input search-input" placeholder="Search customer..." [(ngModel)]="customerSearchQuery">
+                    </div>
+                    <select class="form-select custom-input sort-select" [(ngModel)]="customerSortOrder">
+                        <option value="none">Sort by Premium</option>
+                        <option value="desc">Premium: High to Low</option>
+                        <option value="asc">Premium: Low to High</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="enterprise-table">
+                    <thead>
+                        <tr>
+                            <th>NAME OF CUSTOMER</th>
+                            <th class="text-center">TOTAL POLICIES</th>
+                            <th>POLICY DUE STATUS</th>
+                            <th class="text-end">PREMIUM</th>
+                            <th class="text-end">AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let c of filteredCustomerInsights" [ngClass]="{'urgent-row': c.policyDueStatuses.join(',').includes('-')}">
+                            <td class="fw-bold">{{ c.customerName }}</td>
+                            <td class="text-center">{{ c.totalPolicies }}</td>
+                            <td>
+                                <span *ngFor="let status of c.policyDueStatuses" [class]="getStatusClass(status) + ' me-1 mb-1'">
+                                    {{ status }}
+                                </span>
+                            </td>
+                            <td class="text-end">{{ c.premium | currency:'INR':'symbol':'1.0-2' }}</td>
+                            <td class="text-end fw-bold">{{ c.amount | currency:'INR':'symbol':'1.0-2' }}</td>
+                        </tr>
+                        <tr *ngIf="filteredCustomerInsights.length === 0">
+                            <td colspan="5" class="text-center text-muted py-4">No customers found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Product Distribution -->
+        <div class="analysis-card mt-4">
+            <h2 class="section-title">
+                <i class="bi bi-box-seam"></i> Product Distribution
+            </h2>
+            <div class="table-responsive">
+                <table class="enterprise-table">
+                    <thead>
+                        <tr>
+                            <th>PRODUCT NAME</th>
+                            <th class="text-center">TOTAL POLICIES</th>
+                            <th class="text-end">PREMIUM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let p of productInsights">
+                            <td class="fw-bold">{{ p.productName }}</td>
+                            <td class="text-center">{{ p.totalPolicies }}</td>
+                            <td class="text-end fw-bold">{{ p.premium | currency:'INR':'symbol':'1.0-2' }}</td>
+                        </tr>
+                        <tr *ngIf="productInsights.length === 0">
+                            <td colspan="3" class="text-center text-muted py-4">No products found for this month.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

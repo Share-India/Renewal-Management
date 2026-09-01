@@ -125,6 +125,9 @@ public class RenewalService {
             }
 
             // Role RENEWER Logic
+            if (p.getTargetTeam() != null && !p.getTargetTeam().equalsIgnoreCase("RENEWER")) {
+                return false;
+            }
             if (user.getUsername().equals(p.getCurrentAssignee())) {
                 return true;
             }
@@ -264,6 +267,9 @@ public class RenewalService {
             }
 
             // Role RENEWER Logic
+            if (p.getTargetTeam() != null && !p.getTargetTeam().equalsIgnoreCase("RENEWER")) {
+                return false;
+            }
             if (effectiveUser.getUsername().equals(p.getCurrentAssignee())) {
                 return true;
             }
@@ -369,7 +375,7 @@ public class RenewalService {
         }
         
         if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
-            policies = policies.stream().filter(p -> sourceTeam.equals(p.getTargetTeam())).collect(java.util.stream.Collectors.toList());
+            policies = policies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
         }
         
         return applyRenewerFilters(policies);
@@ -524,7 +530,7 @@ public class RenewalService {
                         policyRepository.findAdminPoliciesForTimeline(targetDate, branch));
                 
                 if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
-                    expiringPolicies = expiringPolicies.stream().filter(p -> sourceTeam.equals(p.getTargetTeam())).collect(java.util.stream.Collectors.toList());
+                    expiringPolicies = expiringPolicies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
                 }
                 
                 long expiringCount = expiringPolicies.size();

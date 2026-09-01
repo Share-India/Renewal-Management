@@ -32,6 +32,7 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         List<Policy> findAllPoliciesForTargetDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("branch") String branch);
 
         List<Policy> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
+        List<Policy> findByTargetTeamIgnoreCase(String targetTeam);
 
         @Query("SELECT p FROM Policy p WHERE (p.expiryDate >= :startDate AND p.expiryDate <= :endDate) OR (p.lastExpiryDate >= :startDate AND p.lastExpiryDate <= :endDate)")
         List<Policy> findPoliciesOriginallyExpiringInRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);

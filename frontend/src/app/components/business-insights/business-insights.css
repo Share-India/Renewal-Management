@@ -1,0 +1,188 @@
+.insights-container {
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-family: 'Manrope', 'Inter', sans-serif;
+    background-color: transparent;
+    min-height: 100vh;
+}
+
+.insights-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header-titles h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0b1c30; /* on_surface */
+    margin-bottom: 0.25rem;
+}
+
+.header-titles p {
+    color: #45464d; /* on_surface_variant */
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.month-filter {
+    display: flex;
+    align-items: center;
+    background: #ffffff; /* surface_container_lowest */
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(11, 28, 48, 0.05);
+}
+
+.month-filter i {
+    color: #45464d;
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.month-filter select {
+    font-weight: 600;
+    color: #0b1c30;
+    cursor: pointer;
+    background-color: transparent;
+}
+
+.month-filter select:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.analysis-card {
+    background: #ffffff; /* surface_container_lowest */
+    border-radius: 0.75rem;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(11, 28, 48, 0.03);
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0b1c30;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-title i {
+    color: #006c49; /* secondary */
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+}
+
+.enterprise-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.enterprise-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #45464d;
+    font-weight: 700;
+    padding: 1rem;
+    border-bottom: 2px solid #eff4ff; /* surface-container-low */
+    background: #f8f9ff;
+}
+
+.enterprise-table td {
+    padding: 1.25rem 1rem;
+    font-size: 0.95rem;
+    color: #45464d;
+    border-bottom: 1px solid #f8f9ff;
+    transition: background-color 0.2s ease;
+    vertical-align: middle;
+}
+
+.enterprise-table tbody tr {
+    position: relative;
+}
+
+.enterprise-table tbody tr:hover td {
+    background-color: #eff4ff; /* surface-container-low hover state */
+}
+
+/* Red left border for urgent rows */
+.urgent-row td:first-child {
+    border-left: 3px solid #ba1a1a !important; /* error */
+}
+
+.enterprise-table td.fw-bold {
+    color: #0b1c30;
+    font-weight: 600;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-badge.blue {
+    background: #c9e6ff; /* tertiary_fixed */
+    color: #004c6e; /* on_tertiary_fixed_variant */
+}
+
+.status-badge.green {
+    background: #6cf8bb; /* secondary_container */
+    color: #005236; /* on_secondary_fixed_variant */
+}
+
+.status-badge.red {
+    background: #ffdad6; /* error_container */
+    color: #93000a; /* on_error_container */
+}
+
+/* Custom Inputs for Search and Sort */
+.custom-input {
+    background-color: #f8f9ff !important;
+    border: 1px solid transparent !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 2px 6px rgba(11, 28, 48, 0.04) !important;
+    color: #0b1c30 !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+    font-size: 0.95rem !important;
+}
+
+.custom-input:focus {
+    background-color: #ffffff !important;
+    border: 1px solid #006c49 !important;
+    box-shadow: 0 0 0 4px rgba(0, 108, 73, 0.1) !important;
+    outline: none !important;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    color: #45464d;
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.search-input {
+    padding-left: 2.75rem !important;
+    width: 250px !important;
+}
+
+.sort-select {
+    width: 220px !important;
+    cursor: pointer !important;
+}

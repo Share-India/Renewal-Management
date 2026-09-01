@@ -26,6 +26,12 @@ export const routes: Routes = [
         data: { roles: ['ADMIN'] }
     },
     {
+        path: 'admin/business-insights',
+        loadComponent: () => import('./components/business-insights/business-insights').then(m => m.BusinessInsights),
+        canActivate: [AuthGuard],
+        data: { roles: ['ADMIN', 'RM'] }
+    },
+    {
         path: 'admin/dashboard/:managerRole',
         component: RenewalComponent,
         canActivate: [AuthGuard],
