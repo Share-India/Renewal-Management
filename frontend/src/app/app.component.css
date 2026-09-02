@@ -53,13 +53,13 @@
     object-fit: contain;
     background-color: white;
     border-radius: 8px;
-    padding: 4px;
+    padding: 1px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .nav-brand span {
     color: white;
-    font-size: 1.25rem;
+    font-size: 1.75rem;
     font-weight: 700;
     letter-spacing: 0.02em;
     white-space: nowrap;
