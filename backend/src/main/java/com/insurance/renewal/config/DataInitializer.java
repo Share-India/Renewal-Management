@@ -33,34 +33,7 @@ public class DataInitializer {
                 System.out.println("Admin 'ShareIndia' created.");
             });
 
-            // Seed Team Users
-            String[] teamUsers = {
-                "ClaimsManager:ROLE_CLAIMS_MANAGER", "ClaimsUser:ROLE_CLAIMS",
-                "SalesManager:ROLE_SALES_MANAGER", "SalesUser:ROLE_SALES",
-                "UnderwritingManager:ROLE_UNDERWRITING_MANAGER", "UnderwritingUser:ROLE_UNDERWRITING"
-            };
-            
-            for (String tu : teamUsers) {
-                String[] parts = tu.split(":");
-                String username = parts[0];
-                String role = parts[1];
-                userRepository.findByUsername(username).ifPresentOrElse(u -> {
-                    if (!u.getRole().equals(role) || !u.isActive()) {
-                        u.setRole(role);
-                        u.setActive(true);
-                        userRepository.save(u);
-                        System.out.println("User '" + username + "' updated with role " + role);
-                    }
-                }, () -> {
-                    User u = new User();
-                    u.setUsername(username);
-                    u.setPassword(passwordEncoder.encode("ShareIndia@123"));
-                    u.setRole(role);
-                    u.setActive(true);
-                    userRepository.save(u);
-                    System.out.println("User '" + username + "' created with role " + role);
-                });
-            }
+
             // FIX: Ensure all existing users are active and have valid roles
             userRepository.findAll().forEach(user -> {
                 boolean changed = false;
