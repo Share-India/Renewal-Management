@@ -1390,6 +1390,7 @@ public class RenewalService {
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
         java.time.LocalDateTime endOfDay = today.plusDays(1).atStartOfDay();
         List<Reminder> updatedReminders = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay, branch);
+        updatedReminders = applyRenewerFiltersToReminders(updatedReminders);
         
         java.util.Set<Long> processedPolicyIds = new java.util.HashSet<>();
         java.util.List<Policy> mergedPolicies = new java.util.ArrayList<>();
