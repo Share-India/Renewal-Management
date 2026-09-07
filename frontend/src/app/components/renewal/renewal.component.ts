@@ -135,14 +135,31 @@ import { forkJoin, of } from 'rxjs';
             <!-- Right Side: Search Bar and Day Filter -->
             <div class="d-flex flex-wrap gap-3 align-items-start pt-2">
               <!-- Type Filter -->
-              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" style="min-width: 180px;">
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 180px;">
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
-                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white" [(ngModel)]="selectedPolicyType" (change)="applyFilters()" style="cursor: pointer; outline: none; box-shadow: none;">
-                  <option value="all">All Types</option>
-                  <option *ngFor="let t of availablePolicyTypes" [value]="t">{{ t }}</option>
-                </select>
+                <div class="dropdown flex-grow-1" style="height: 100%;">
+                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: white; text-align: left; padding: 0.375rem 2.25rem 0.375rem 0.75rem;">
+                    <span class="text-truncate" style="max-width: 120px;">{{ getSelectedTypesText() }}</span>
+                    <i class="bi bi-chevron-down" style="position: absolute; right: 0.75rem;"></i>
+                  </button>
+                  <ul class="dropdown-menu w-100 shadow-sm border-0 py-2" (click)="$event.stopPropagation()">
+                    <li>
+                      <label class="dropdown-item d-flex align-items-center gap-2" style="cursor: pointer;">
+                        <input class="form-check-input mt-0" type="checkbox" [checked]="selectedPolicyTypes.length === 0" (change)="togglePolicyType('all')">
+                        <span>All Types</span>
+                      </label>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li *ngFor="let t of availablePolicyTypes">
+                      <label class="dropdown-item d-flex align-items-center gap-2" style="cursor: pointer;">
+                        <input class="form-check-input mt-0" type="checkbox" [checked]="selectedPolicyTypes.includes(t)" (change)="togglePolicyType(t)">
+                        <span>{{ t }}</span>
+                      </label>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               <!-- Search Bar -->
@@ -709,12 +726,32 @@ export class RenewalComponent implements OnInit {
   basePolicies: any[] = [];
   baseFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
-  selectedPolicyType: string = 'all';
+  selectedPolicyTypes: string[] = [];
   availablePolicyTypes: string[] = [];
   dayFilter: string | number | null = null;
 
   showHighValuePopup: boolean = false;
   topHighValuePolicies: any[] = [];
+
+  getSelectedTypesText(): string {
+    if (this.selectedPolicyTypes.length === 0) return 'All Types';
+    if (this.selectedPolicyTypes.length === 1) return this.selectedPolicyTypes[0];
+    return `${this.selectedPolicyTypes.length} Types Selected`;
+  }
+
+  togglePolicyType(type: string) {
+    if (type === 'all') {
+      this.selectedPolicyTypes = [];
+    } else {
+      const idx = this.selectedPolicyTypes.indexOf(type);
+      if (idx > -1) {
+        this.selectedPolicyTypes.splice(idx, 1);
+      } else {
+        this.selectedPolicyTypes.push(type);
+      }
+    }
+    this.applyFilters();
+  }
 
   fetchTopHighValuePolicies() {
     this.apiService.getHighValueDeals(this.selectedBranch).subscribe({
@@ -832,8 +869,8 @@ export class RenewalComponent implements OnInit {
     };
 
     const typeFilterFn = (p: any) => {
-      if (this.selectedPolicyType === 'all') return true;
-      return p.type === this.selectedPolicyType;
+      if (this.selectedPolicyTypes.length === 0) return true;
+      return this.selectedPolicyTypes.includes(p.type);
     };
 
     const dayFilterFn = (p: any, isFollowUp: boolean) => {
