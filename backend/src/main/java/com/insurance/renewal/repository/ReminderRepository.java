@@ -43,13 +43,13 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
 
     List<Reminder> findByLastReminderSentAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.lastReminderSentAt BETWEEN :start AND :end AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.lastReminderSentAt BETWEEN :start AND :end AND p.status != 'PENDING_ISSUANCE' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
     List<Reminder> findByLastReminderSentAtBetweenWithValidPolicy(
         @org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, 
         @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end,
         @org.springframework.data.repository.query.Param("branch") String branch);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate BETWEEN :start AND :end AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate BETWEEN :start AND :end AND p.status != 'PENDING_ISSUANCE' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
     List<Reminder> findByFollowUpDateBetweenWithValidPolicy(
         @org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start, 
         @org.springframework.data.repository.query.Param("end") java.time.LocalDateTime end,
@@ -62,10 +62,10 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
     @org.springframework.data.jpa.repository.Query(value = "INSERT INTO reminders (policy_id, reminder_status, last_call_outcome, last_updated_by) SELECT p.id, 'PENDING', 'Pending', 'System' FROM policies p LEFT JOIN reminders r ON p.id = r.policy_id WHERE r.id IS NULL", nativeQuery = true)
     int bulkCreateMissingReminders();
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE FUNCTION('DATE', r.followUpDate) IN :targetDates")
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE FUNCTION('DATE', r.followUpDate) IN :targetDates AND p.status != 'PENDING_ISSUANCE'")
     List<Reminder> findByFollowUpDateInWithValidPolicy(@org.springframework.data.repository.query.Param("targetDates") List<LocalDate> targetDates);
 
-    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate < :endOfTargetDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Reminder r JOIN FETCH r.policy p WHERE r.followUpDate < :endOfTargetDate AND p.status != 'PENDING_ISSUANCE' AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
     List<Reminder> findPendingFollowUpsUpTo(
         @org.springframework.data.repository.query.Param("endOfTargetDate") java.time.LocalDateTime endOfTargetDate, 
         @org.springframework.data.repository.query.Param("branch") String branch);
