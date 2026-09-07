@@ -1,5 +1,5 @@
 import { NotificationService } from '../../services/notification.service';
-import { Component, ViewChild, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TimelineComponent } from '../timeline/timeline.component';
@@ -135,16 +135,16 @@ import { forkJoin, of } from 'rxjs';
             <!-- Right Side: Search Bar and Day Filter -->
             <div class="d-flex flex-wrap gap-3 align-items-start pt-2">
               <!-- Type Filter -->
-              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 180px;">
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 180px;" #typeDropdown>
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
-                <div class="dropdown flex-grow-1" style="height: 100%;">
-                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: white; text-align: left; padding: 0.375rem 2.25rem 0.375rem 0.75rem;">
+                <div class="dropdown flex-grow-1" style="height: 100%;" [class.show]="isDropdownOpen">
+                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" (click)="isDropdownOpen = !isDropdownOpen" style="background: white; text-align: left; padding: 0.375rem 2.25rem 0.375rem 0.75rem;">
                     <span class="text-truncate" style="max-width: 120px;">{{ getSelectedTypesText() }}</span>
                     <i class="bi bi-chevron-down" style="position: absolute; right: 0.75rem;"></i>
                   </button>
-                  <ul class="dropdown-menu w-100 shadow-sm border-0 py-2" (click)="$event.stopPropagation()">
+                  <ul class="dropdown-menu w-100 shadow-sm border-0 py-2" [class.show]="isDropdownOpen" (click)="$event.stopPropagation()">
                     <li>
                       <label class="dropdown-item d-flex align-items-center gap-2" style="cursor: pointer;">
                         <input class="form-check-input mt-0" type="checkbox" [checked]="selectedPolicyTypes.length === 0" (change)="togglePolicyType('all')">
@@ -729,6 +729,16 @@ export class RenewalComponent implements OnInit {
   selectedPolicyTypes: string[] = [];
   availablePolicyTypes: string[] = [];
   dayFilter: string | number | null = null;
+  isDropdownOpen: boolean = false;
+
+  @ViewChild('typeDropdown') typeDropdownRef!: ElementRef;
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event) {
+    if (this.isDropdownOpen && this.typeDropdownRef && !this.typeDropdownRef.nativeElement.contains(event.target)) {
+      this.isDropdownOpen = false;
+    }
+  }
 
   showHighValuePopup: boolean = false;
   topHighValuePolicies: any[] = [];
