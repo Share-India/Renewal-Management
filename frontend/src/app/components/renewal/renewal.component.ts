@@ -671,7 +671,7 @@ export class RenewalComponent implements OnInit {
       } else {
         forkJoin({
           policies: this.apiService.getPoliciesForTimeline(day, this.selectedBranch, this.selectedSourceTeam),
-          followUps: this.apiService.getFollowUpsForTimeline(day)
+          followUps: this.apiService.getFollowUpsForTimeline(day, this.selectedBranch, this.selectedSourceTeam)
         }).subscribe({
       next: (data) => {
         this.basePolicies = data.policies;

@@ -32,14 +32,17 @@ export class ApiService {
     }
 
     getPoliciesForTimeline(days: number, branch?: string, sourceTeam?: string): Observable<any[]> {
-        let params = new HttpParams();
+        let params = new HttpParams().set('_t', Date.now().toString());
         if (branch) params = params.set('branch', branch);
         if (sourceTeam) params = params.set('sourceTeam', sourceTeam);
         return this.http.get<any[]>(`${this.baseUrl}/renewals/timeline/${days}`, { headers: this.getHeaders(), params });
     }
 
-    getFollowUpsForTimeline(days: number): Observable<any[]> {
-        return this.http.get<any[]>(`${this.baseUrl}/renewals/follow-ups/${days}`, { headers: this.getHeaders() });
+    getFollowUpsForTimeline(days: number, branch?: string, sourceTeam?: string): Observable<any[]> {
+        let params = new HttpParams().set('_t', Date.now().toString());
+        if (branch) params = params.set('branch', branch);
+        if (sourceTeam) params = params.set('sourceTeam', sourceTeam);
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/follow-ups/${days}`, { headers: this.getHeaders(), params });
     }
 
     getAdminStats(branch?: string): Observable<any> {
@@ -49,7 +52,7 @@ export class ApiService {
     }
 
     getTimelineCounts(branch?: string, sourceTeam?: string): Observable<{ [key: number]: number }> {
-        let params = new HttpParams();
+        let params = new HttpParams().set('_t', Date.now().toString());
         if (branch) params = params.set('branch', branch);
         if (sourceTeam) params = params.set('sourceTeam', sourceTeam);
         return this.http.get<{ [key: number]: number }>(`${this.baseUrl}/renewals/timeline-counts`, { headers: this.getHeaders(), params });

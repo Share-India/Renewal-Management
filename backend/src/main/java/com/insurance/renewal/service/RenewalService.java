@@ -415,11 +415,25 @@ public class RenewalService {
         return policyRepository.findReturnedToRenewerPolicies(team, startDate, today);
     }
 
-    // Get reminders scheduled for follow-up in 'days'
-    public List<Reminder> getFollowUpsForTimeline(int days) {
+    public List<Policy> getFollowUpsForTimeline(int days, String branch, String sourceTeam) {
         LocalDate targetDate = LocalDate.now().plusDays(days);
-        return applyRenewerFiltersToReminders(
-                reminderRepository.findByFollowUpDateBetween(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59)));
+        List<Reminder> reminders = applyRenewerFiltersToReminders(
+                reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch));
+        
+        List<Policy> policies = reminders.stream()
+                .filter(reminder -> reminder.getPolicy() != null)
+                .map(reminder -> {
+                    Policy policy = reminder.getPolicy();
+                    policy.setReminder(reminder);
+                    return policy;
+                })
+                .collect(java.util.stream.Collectors.toList());
+
+        if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
+            policies = policies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+        }
+
+        return policies;
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)

@@ -63,8 +63,11 @@ public class RenewalController {
     }
 
     @GetMapping("/follow-ups/{days}")
-    public ResponseEntity<List<Reminder>> getFollowUpsByTimeline(@PathVariable("days") int days) {
-        return ResponseEntity.ok(renewalService.getFollowUpsForTimeline(days));
+    public ResponseEntity<List<Policy>> getFollowUpsByTimeline(
+            @PathVariable("days") int days,
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "sourceTeam", required = false) String sourceTeam) {
+        return ResponseEntity.ok(renewalService.getFollowUpsForTimeline(days, branch, sourceTeam));
     }
 
     @GetMapping("/admin/stats")
