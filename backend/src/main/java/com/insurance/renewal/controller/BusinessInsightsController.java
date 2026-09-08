@@ -42,7 +42,7 @@ public class BusinessInsightsController {
         LocalDate today = LocalDate.now();
         
         for (Policy p : policies) {
-            if (p.getCustomer() == null) continue;
+            if (p.getCustomer() == null) continue   ;
             
             // Branch filtering
             if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("All Branches") && !branch.equalsIgnoreCase("All Branches Globally")) {
