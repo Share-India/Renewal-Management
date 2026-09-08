@@ -692,11 +692,7 @@ export class RenewalComponent implements OnInit {
         }).subscribe({
       next: (data) => {
         this.basePolicies = data.policies;
-        this.baseFollowUps = (data.followUps as any[]).map((r: any) => {
-          const p = r.policy;
-          p.reminder = r;
-          return p;
-        });
+        this.baseFollowUps = data.followUps;
 
         // Extract available types for dropdown
         const typesSet = new Set<string>();
