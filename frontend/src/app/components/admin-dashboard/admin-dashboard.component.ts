@@ -2189,6 +2189,7 @@ export class AdminDashboardComponent implements OnInit {
       const vehicleRegNo = actPolicy.vehicleRegNo;
       const vehicleModel = actPolicy.vehicleModel;
       const paymentDate = actPolicy.paymentDate;
+      const branch = actPolicy.branch;
 
       return {
         'Sr. No.': '', // will fill later
@@ -2220,6 +2221,7 @@ export class AdminDashboardComponent implements OnInit {
         'PPT': '',
         'PT': '',
         'Payment Date': paymentDate || '',
+        'Branch': branch || '',
         'Renewer Name': (updatedToday && rem?.lastUpdatedBy && rem?.lastUpdatedBy !== 'System') ? rem.lastUpdatedBy : '',
         'Outcome': updatedToday ? (rem?.lastCallOutcome || '') : '',
         'Renewer Note': updatedToday ? (rem?.notes || '') : '',
@@ -2247,7 +2249,7 @@ export class AdminDashboardComponent implements OnInit {
         'Renewal Due date': '==== FOLLOW-UPS ====', 'Product Name': '==== FOLLOW-UPS ====', 'Amount': '==== FOLLOW-UPS ====', 'Premium': '==== FOLLOW-UPS ====', 'RM Name': '==== FOLLOW-UPS ====',
         'Associate name': '==== FOLLOW-UPS ====', 'Associate Code': '==== FOLLOW-UPS ====', 'Address 1': '==== FOLLOW-UPS ====', 'City': '==== FOLLOW-UPS ====', 'State': '==== FOLLOW-UPS ====',
         'Pin Code': '==== FOLLOW-UPS ====', 'Car/RegNo': '==== FOLLOW-UPS ====', 'Model Name': '==== FOLLOW-UPS ====', 'Mgf Year': '==== FOLLOW-UPS ====', 'Billing Frequency': '==== FOLLOW-UPS ====',
-        'PPT': '==== FOLLOW-UPS ====', 'PT': '==== FOLLOW-UPS ====', 'Payment Date': '==== FOLLOW-UPS ====', 'Renewer Name': '==== FOLLOW-UPS ====', 'Outcome': '==== FOLLOW-UPS ====', 'Renewer Note': '==== FOLLOW-UPS ====', 'Update Time': '==== FOLLOW-UPS ===='
+        'PPT': '==== FOLLOW-UPS ====', 'PT': '==== FOLLOW-UPS ====', 'Payment Date': '==== FOLLOW-UPS ====', 'Branch': '==== FOLLOW-UPS ====', 'Renewer Name': '==== FOLLOW-UPS ====', 'Outcome': '==== FOLLOW-UPS ====', 'Renewer Note': '==== FOLLOW-UPS ====', 'Update Time': '==== FOLLOW-UPS ===='
       });
       
       followUps.forEach((p, i) => {
