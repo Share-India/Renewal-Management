@@ -995,7 +995,7 @@ public class RenewalService {
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for next 60 days");
 
         records.put("expiringPolicies", expiring);
-        records.put("scheduledFollowUps", new ArrayList<>()); // Return empty list since we hide this section anyway
+        records.put("scheduledFollowUps", new java.util.ArrayList<>()); // Return empty list since we hide this section anyway
 
         return records;
     }
