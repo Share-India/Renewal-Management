@@ -1037,6 +1037,7 @@ export class RenewalComponent implements OnInit {
 
   showFollowUps(): boolean {
     if (this.isTeamRole()) return false;
+    if (this.selectedDay === 600) return false;
     return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
   }
 
@@ -1052,7 +1053,7 @@ export class RenewalComponent implements OnInit {
     const isTeam = this.isTeamRole();
 
     if (this.selectedDay === 600) {
-        return isTeam ? 'All Tasks' : 'All Policies Expiring in Next 60 Days';
+        return isTeam ? 'All Tasks' : 'All Policies in Next 60 Days';
     }
 
     const day = this.selectedDay as number;
