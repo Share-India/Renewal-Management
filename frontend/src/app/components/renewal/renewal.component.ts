@@ -139,8 +139,8 @@ import { forkJoin, of } from 'rxjs';
                 <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
-                <div class="dropdown flex-grow-1" style="height: 100%;" [class.show]="isDropdownOpen">
-                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" (click)="isDropdownOpen = !isDropdownOpen" style="background: white; text-align: left; padding: 0.375rem 2.25rem 0.375rem 0.75rem;">
+                <div #typeDropdown class="dropdown flex-grow-1" style="height: 100%;" [class.show]="isDropdownOpen">
+                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" (click)="isDropdownOpen = !isDropdownOpen; $event.stopPropagation()" style="background: white; text-align: left; padding: 0.375rem 2.25rem 0.375rem 0.75rem;">
                     <span class="text-truncate" style="max-width: 120px;">{{ getSelectedTypesText() }}</span>
                     <i class="bi bi-chevron-down" style="position: absolute; right: 0.75rem;"></i>
                   </button>
@@ -1034,7 +1034,7 @@ export class RenewalComponent implements OnInit {
   showFollowUps(): boolean {
     if (this.isTeamRole()) return false;
     if (this.selectedDay === 600) return false;
-    return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
+    return typeof this.selectedDay === 'number';
   }
 
   getSectionTitle(): string {
