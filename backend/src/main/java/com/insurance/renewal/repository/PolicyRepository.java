@@ -16,19 +16,19 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT COUNT(p) FROM Policy p WHERE p.expiryDate = :expiryDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         long countByExpiryDate(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) != 'pending issuance') AND r.followUpDate IS NULL")
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) NOT IN ('pending issuance', 'renewed', 'externally renewed')) AND r.followUpDate IS NULL")
         List<Policy> findPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) != 'pending issuance') AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate = :expiryDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) NOT IN ('pending issuance', 'renewed', 'externally renewed')) AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findAdminPoliciesForTimeline(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate IN :targetDates AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) != 'pending issuance') AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate IN :targetDates AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) NOT IN ('pending issuance', 'renewed', 'externally renewed')) AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findPoliciesForTodaysWork(@Param("targetDates") List<LocalDate> targetDates, @Param("branch") String branch);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) != 'pending issuance') AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) NOT IN ('pending issuance', 'renewed', 'externally renewed')) AND r.followUpDate IS NULL AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findPoliciesForTargetDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("branch") String branch);
 
-        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) != 'pending issuance') AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.expiryDate >= :startDate AND p.expiryDate <= :endDate AND p.status != 'PENDING_ISSUANCE' AND (r.lastCallOutcome IS NULL OR LOWER(r.lastCallOutcome) NOT IN ('pending issuance', 'renewed', 'externally renewed')) AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findAllPoliciesForTargetDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate, @Param("branch") String branch);
 
         List<Policy> findByExpiryDateBetween(LocalDate startDate, LocalDate endDate);
