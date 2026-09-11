@@ -129,6 +129,9 @@ public class RenewalController {
     @Autowired
     private com.insurance.renewal.repository.UserRepository userRepository;
 
+    @Autowired
+    private com.insurance.renewal.repository.AuditLogRepository auditLogRepository;
+
     @PostMapping(value = "/policies/upload-assign", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadAndAssignPolicies(
             @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file,
@@ -201,6 +204,15 @@ public class RenewalController {
                 .orElseThrow(() -> new RuntimeException("Policy not found with ID: " + policyId));
 
         emailService.sendCustomerRenewalEmail(policy, agentName);
+        
+        com.insurance.renewal.entity.AuditLog log = new com.insurance.renewal.entity.AuditLog();
+        log.setPolicyId(policy.getId());
+        log.setFieldName("Action");
+        log.setOldValue("");
+        log.setNewValue("Customer Mailed");
+        log.setUpdatedBy(agentName);
+        log.setUpdatedAt(java.time.LocalDateTime.now());
+        auditLogRepository.save(log);
 
         return ResponseEntity.ok(Map.of("message", "Email sent successfully"));
     }
@@ -218,6 +230,15 @@ public class RenewalController {
                 .orElseThrow(() -> new RuntimeException("Policy not found with ID: " + policyId));
 
         emailService.sendRmEmail(policy, agentName);
+        
+        com.insurance.renewal.entity.AuditLog log = new com.insurance.renewal.entity.AuditLog();
+        log.setPolicyId(policy.getId());
+        log.setFieldName("Action");
+        log.setOldValue("");
+        log.setNewValue("RM Mailed");
+        log.setUpdatedBy(agentName);
+        log.setUpdatedAt(java.time.LocalDateTime.now());
+        auditLogRepository.save(log);
 
         return ResponseEntity.ok(Map.of("message", "RM Email sent successfully"));
     }

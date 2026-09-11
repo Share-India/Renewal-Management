@@ -1,0 +1,83 @@
+<div class="progress-container">
+  <div class="header">
+    <div class="title-section">
+      <h2>Policy Progress Tracker</h2>
+      <p>Monitor renewal countdown milestones and dispatch statuses.</p>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button [class.active]="activeTab === 'RETAIL'" (click)="setTab('RETAIL')">
+      Retail <span class="badge">{{activeTab === 'RETAIL' ? progressData.length : ''}}</span>
+    </button>
+    <button [class.active]="activeTab === 'COMMERCIAL'" (click)="setTab('COMMERCIAL')">
+      Commercial <span class="badge">{{activeTab === 'COMMERCIAL' ? progressData.length : ''}}</span>
+    </button>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!loading">
+    <table class="progress-table">
+      <thead>
+        <tr>
+          <th class="sticky-col">Policy Number</th>
+          <th class="sticky-col-2">Customer</th>
+          <th class="sticky-col-3">RM</th>
+          <th *ngFor="let m of milestones">{{m}}d</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of progressData">
+          <td class="sticky-col font-mono">{{p.policyNumber}}<br><small class="text-gray">{{p.type}}</small></td>
+          <td class="sticky-col-2">{{p.customerName}}</td>
+          <td class="sticky-col-3">{{p.rmName || '-'}}</td>
+          
+          <td *ngFor="let m of milestones" class="milestone-cell">
+            <div class="checklist">
+              
+              <!-- Commercial Early Stage Routing (75d - 30d) -->
+              <ng-container *ngIf="activeTab === 'COMMERCIAL' && m >= 30">
+                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Claims')">
+                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Claims') ? 'bi-check-circle-fill text-primary' : 'bi-circle text-gray'"></i> Claims
+                </div>
+                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Sales')">
+                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Sales') ? 'bi-check-circle-fill text-primary' : 'bi-circle text-gray'"></i> Sales
+                </div>
+                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Underwriting')">
+                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Underwriting') ? 'bi-check-circle-fill text-primary' : 'bi-circle text-gray'"></i> Underwriting
+                </div>
+              </ng-container>
+
+              <!-- Standard Retail OR Commercial Late Stage (15d - 1d) -->
+              <ng-container *ngIf="activeTab === 'RETAIL' || (activeTab === 'COMMERCIAL' && m < 30)">
+                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Contacted')">
+                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Contacted') ? 'bi-check-circle-fill text-success' : 'bi-circle text-gray'"></i> Contacted
+                  <div class="subtext" *ngIf="hasCheck(p.milestones[m], 'Contacted')">
+                    {{getContactData(p.milestones[m]).status}}
+                    <span *ngIf="getContactData(p.milestones[m]).followUp"><br>FU: {{getContactData(p.milestones[m]).followUp | date:'shortDate'}}</span>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Mails are always visible -->
+              <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Customer Mailed')">
+                <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Customer Mailed') ? 'bi-check-circle-fill text-purple' : 'bi-circle text-gray'"></i> Cust. Mailed
+              </div>
+              <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'RM Mailed')">
+                <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'RM Mailed') ? 'bi-check-circle-fill text-warning' : 'bi-circle text-gray'"></i> RM Mailed
+              </div>
+
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="progressData.length === 0">
+          <td colspan="12" class="text-center">No active policies found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div *ngIf="loading" class="text-center p-5">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p>Loading timeline...</p>
+  </div>
+</div>

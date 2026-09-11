@@ -32,6 +32,12 @@ export const routes: Routes = [
         data: { roles: ['ADMIN', 'RM'] }
     },
     {
+        path: 'admin/policy-progress',
+        loadComponent: () => import('./components/policy-progress/policy-progress').then(m => m.PolicyProgress),
+        canActivate: [AuthGuard],
+        data: { roles: ['ADMIN', 'RM'] }
+    },
+    {
         path: 'admin/dashboard/:managerRole',
         component: RenewalComponent,
         canActivate: [AuthGuard],
