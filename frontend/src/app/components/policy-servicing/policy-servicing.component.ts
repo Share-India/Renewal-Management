@@ -419,7 +419,7 @@ import { ApiService } from '../../services/api.service';
                      <input type="number" class="form-control" [(ngModel)]="issueForm.netPremium">
                 </div>
                  <div class="col-md-6">
-                     <label class="form-label">Sum Assured / Insured *</label>
+                     <label class="form-label">Amount *</label>
                      <input type="number" class="form-control" [(ngModel)]="issueForm.sumInsured">
                 </div>
                 
