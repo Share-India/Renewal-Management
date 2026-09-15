@@ -39,9 +39,12 @@
       <option *ngFor="let r of uniqueRMs" [value]="'Assigned RM: ' + r">Assigned RM: {{r}}</option>
     </select>
     
-    <div class="input-group input-group-sm" style="max-width: 150px;">
+    <div class="input-group input-group-sm" style="max-width: 180px;">
       <span class="input-group-text bg-white text-muted"><i class="bi bi-calendar"></i></span>
-      <input type="text" class="form-control" value="Expiry: Q4 2024" readonly>
+      <select class="form-select border-start-0" [(ngModel)]="expiryFilter" (change)="currentPage = 1">
+        <option value="Expiry: All">Expiry: All</option>
+        <option *ngFor="let e of uniqueExpiries" [value]="'Expiry: ' + e">Expiry: {{e}}</option>
+      </select>
     </div>
     
     <div class="ms-auto d-flex gap-2">
@@ -49,20 +52,22 @@
     </div>
   </div>
 
+  <!-- Legend is moved outside the scrolling table so it is always visible -->
+  <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+    <div class="text-primary fw-bold" style="font-size: 0.9rem;">
+      <i class="bi bi-funnel-fill"></i> {{activeTab === 'RETAIL' ? 'Retail' : 'Commercial'}} Portfolio Cohort
+      <span class="text-muted fw-normal ms-2" style="font-size: 0.85rem;">| Standard Timeline: 9 Expiration Gates · 3 Activity Checklists Per Cell (Contacted, Customer Mailed, RM Mailed)</span>
+    </div>
+    <div class="d-none d-md-block text-end fw-normal">
+      <span class="legend-item"><i class="bi bi-circle-fill text-success small"></i> Checked / Completed</span>
+      <span class="legend-item ms-3"><i class="bi bi-circle-fill text-warning small"></i> Partial / In Progress</span>
+      <span class="legend-item ms-3"><i class="bi bi-circle-fill text-secondary small"></i> Unchecked / Pending</span>
+    </div>
+  </div>
+
   <div class="table-wrapper" *ngIf="!loading">
     <table class="progress-table">
       <thead>
-        <tr class="table-super-header bg-white">
-          <th colspan="3" class="text-start border-end">
-            <span class="text-primary me-2"><i class="bi bi-funnel-fill"></i> Retail Portfolio Cohort</span> 
-            <span class="text-muted fw-normal" style="font-size: 0.85rem;">| Standard Timeline: 9 Expiration Gates · 3 Activity Checklists Per Cell (Contacted, Customer Mailed, RM Mailed)</span>
-          </th>
-          <th colspan="9" class="text-end fw-normal">
-            <span class="legend-item"><i class="bi bi-circle-fill text-success small"></i> Checked / Completed</span>
-            <span class="legend-item ms-3"><i class="bi bi-circle-fill text-warning small"></i> Partial / In Progress</span>
-            <span class="legend-item ms-3"><i class="bi bi-circle-fill text-secondary small"></i> Unchecked / Pending</span>
-          </th>
-        </tr>
         <tr class="table-header-row bg-white text-center">
           <th class="sticky-col">Policy Number</th>
           <th class="sticky-col-2">Customer</th>

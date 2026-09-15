@@ -36,10 +36,12 @@ export class PolicyProgress implements OnInit {
   branchFilter: string = 'All Branches (Global)';
   statusFilter: string = 'All';
   rmFilter: string = 'All Agents';
+  expiryFilter: string = 'Expiry: All';
 
   uniqueBranches: string[] = [];
   uniqueStatuses: string[] = [];
   uniqueRMs: string[] = [];
+  uniqueExpiries: string[] = [];
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
@@ -73,16 +75,28 @@ export class PolicyProgress implements OnInit {
     const branches = new Set<string>();
     const statuses = new Set<string>();
     const rms = new Set<string>();
+    const expiries = new Set<string>();
     
     this.progressData.forEach(p => {
       if (p.branch) branches.add(p.branch);
       if (p.status) statuses.add(p.status);
       if (p.rmName) rms.add(p.rmName);
+      if (p.expiryDate) {
+        const date = new Date(p.expiryDate);
+        if (!isNaN(date.getTime())) {
+          const q = Math.floor(date.getMonth() / 3) + 1;
+          const year = date.getFullYear();
+          expiries.add(`Q${q} ${year}`);
+          // save formatted for filter matching
+          p.formattedExpiryQ = `Q${q} ${year}`;
+        }
+      }
     });
     
     this.uniqueBranches = Array.from(branches).sort();
     this.uniqueStatuses = Array.from(statuses).sort();
     this.uniqueRMs = Array.from(rms).sort();
+    this.uniqueExpiries = Array.from(expiries).sort();
   }
   
   get filteredData() {
@@ -102,6 +116,9 @@ export class PolicyProgress implements OnInit {
       
       const rmFilt = this.rmFilter.replace('Assigned RM: ', '');
       if (rmFilt !== 'All Agents' && p.rmName !== rmFilt) return false;
+      
+      const expFilt = this.expiryFilter.replace('Expiry: ', '');
+      if (expFilt !== 'All' && p.formattedExpiryQ !== expFilt) return false;
       
       return true;
     });

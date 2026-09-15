@@ -95,6 +95,9 @@ public class PolicyProgressService {
             policyMap.put("branch", p.getBranch());
             policyMap.put("status", p.getStatus());
             policyMap.put("type", p.getType());
+            if (p.getExpiryDate() != null) {
+                policyMap.put("expiryDate", p.getExpiryDate().toString());
+            }
             
             // Initialize milestones
             Map<Integer, Map<String, Object>> milestones = new HashMap<>();
