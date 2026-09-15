@@ -1,89 +1,188 @@
 <div class="progress-container">
-  <div class="header">
+  
+  <div class="breadcrumb text-muted small mb-2">Policies &gt; Policy Progress Tracking</div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="title-section">
-      <h2>Policy Progress Tracker</h2>
-      <p>Monitor renewal countdown milestones and dispatch statuses.</p>
+      <h2 class="mb-1" style="font-weight: 700;">Policy Progress Tracker</h2>
+      <p class="text-muted mb-0" style="font-size: 0.9rem;">Detailed milestone activity checklists across expiration countdown gates for Retail and Commercial portfolios.</p>
+    </div>
+    
+    <div class="tabs-group d-flex p-1" style="background: #f1f3f4; border-radius: 8px;">
+      <button class="btn btn-sm d-flex align-items-center me-1" [class.btn-white]="activeTab === 'RETAIL'" [class.text-primary]="activeTab === 'RETAIL'" [class.shadow-sm]="activeTab === 'RETAIL'" (click)="setTab('RETAIL')" style="border-radius: 6px; font-weight: 600;">
+        <i class="bi bi-person me-2"></i> Retail <span class="badge ms-2" [ngClass]="activeTab === 'RETAIL' ? 'bg-primary text-white' : 'text-muted'">{{activeTab === 'RETAIL' ? progressData.length : ''}} {{activeTab === 'RETAIL' ? 'Active' : ''}}</span>
+      </button>
+      <button class="btn btn-sm d-flex align-items-center" [class.btn-white]="activeTab === 'COMMERCIAL'" [class.text-primary]="activeTab === 'COMMERCIAL'" [class.shadow-sm]="activeTab === 'COMMERCIAL'" (click)="setTab('COMMERCIAL')" style="border-radius: 6px; font-weight: 600;">
+        <i class="bi bi-building me-2"></i> Commercial <span class="badge ms-2" [ngClass]="activeTab === 'COMMERCIAL' ? 'bg-primary text-white' : 'text-muted'">{{activeTab === 'COMMERCIAL' ? progressData.length : ''}} {{activeTab === 'COMMERCIAL' ? 'Active' : ''}}</span>
+      </button>
     </div>
   </div>
 
-  <div class="tabs">
-    <button [class.active]="activeTab === 'RETAIL'" (click)="setTab('RETAIL')">
-      Retail <span class="badge">{{activeTab === 'RETAIL' ? progressData.length : ''}}</span>
-    </button>
-    <button [class.active]="activeTab === 'COMMERCIAL'" (click)="setTab('COMMERCIAL')">
-      Commercial <span class="badge">{{activeTab === 'COMMERCIAL' ? progressData.length : ''}}</span>
-    </button>
+  <div class="filters-bar d-flex flex-wrap gap-2 mb-3 p-2 border rounded bg-white align-items-center">
+    <div class="input-group input-group-sm" style="max-width: 250px;">
+      <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+      <input type="text" class="form-control border-start-0" placeholder="Search Policy #, Insured, or RM..." [(ngModel)]="searchTerm" (input)="currentPage = 1">
+    </div>
+    
+    <select class="form-select form-select-sm" style="max-width: 180px;" [(ngModel)]="branchFilter">
+      <option>All Branches (Global)</option>
+    </select>
+    
+    <select class="form-select form-select-sm" style="max-width: 150px;" [(ngModel)]="statusFilter">
+      <option>Renewal Status: All</option>
+    </select>
+    
+    <select class="form-select form-select-sm" style="max-width: 180px;" [(ngModel)]="rmFilter">
+      <option>Assigned RM: All Agents</option>
+    </select>
+    
+    <div class="input-group input-group-sm" style="max-width: 150px;">
+      <span class="input-group-text bg-white text-muted"><i class="bi bi-calendar"></i></span>
+      <input type="text" class="form-control" value="Expiry: Q4 2024" readonly>
+    </div>
+    
+    <div class="ms-auto d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary d-flex align-items-center" (click)="fetchData()"><i class="bi bi-arrow-clockwise"></i></button>
+    </div>
   </div>
 
   <div class="table-wrapper" *ngIf="!loading">
     <table class="progress-table">
       <thead>
-        <tr>
+        <tr class="table-super-header bg-white">
+          <th colspan="3" class="text-start border-end">
+            <span class="text-primary me-2"><i class="bi bi-funnel-fill"></i> Retail Portfolio Cohort</span> 
+            <span class="text-muted fw-normal" style="font-size: 0.85rem;">| Standard Timeline: 9 Expiration Gates · 3 Activity Checklists Per Cell (Contacted, Customer Mailed, RM Mailed)</span>
+          </th>
+          <th colspan="9" class="text-end fw-normal">
+            <span class="legend-item"><i class="bi bi-circle-fill text-success small"></i> Checked / Completed</span>
+            <span class="legend-item ms-3"><i class="bi bi-circle-fill text-warning small"></i> Partial / In Progress</span>
+            <span class="legend-item ms-3"><i class="bi bi-circle-fill text-secondary small"></i> Unchecked / Pending</span>
+          </th>
+        </tr>
+        <tr class="table-header-row bg-white text-center">
           <th class="sticky-col">Policy Number</th>
           <th class="sticky-col-2">Customer</th>
           <th class="sticky-col-3">RM</th>
-          <th *ngFor="let m of milestones">{{m}}d</th>
+          <th *ngFor="let m of milestones" style="width: 180px;">
+            <div class="text-primary">{{m.day}}D GATE</div>
+            <div class="text-muted fw-normal" style="font-size: 0.8rem;">{{m.label}}</div>
+          </th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let p of paginatedData">
-          <td class="sticky-col font-mono">{{p.policyNumber}}<br><small class="text-gray">{{p.type}}</small></td>
-          <td class="sticky-col-2">{{p.customerName}}</td>
-          <td class="sticky-col-3">{{p.rmName || '-'}}</td>
+          <td class="sticky-col align-middle"><div class="fw-bold">{{p.policyNumber}}</div><small class="text-muted">{{p.type}}</small></td>
+          <td class="sticky-col-2 align-middle">{{p.customerName}}</td>
+          <td class="sticky-col-3 align-middle">{{p.rmName || '-'}}</td>
           
           <td *ngFor="let m of milestones" class="milestone-cell">
-            <div class="checklist">
+            <div class="checklist border rounded p-2" [ngClass]="{'border-success bg-light-success': hasCheck(p.milestones[m.day], 'Contacted') && hasCheck(p.milestones[m.day], 'Customer Mailed') && hasCheck(p.milestones[m.day], 'RM Mailed')}">
               
               <!-- Commercial Early Stage Routing (75d - 30d) -->
-              <ng-container *ngIf="activeTab === 'COMMERCIAL' && m >= 30">
-                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Claims')">
-                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Claims') ? 'bi-check-circle-fill text-primary' : 'bi-circle text-gray'"></i> Claims
+              <ng-container *ngIf="activeTab === 'COMMERCIAL' && m.day >= 30">
+                <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Claims')">
+                  <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Claims') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Claims</span>
+                  <span class="text-muted small" *ngIf="hasCheck(p.milestones[m.day], 'Claims')">Done</span>
                 </div>
-                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Sales')">
-                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Sales') ? 'bi-check-circle-fill text-primary' : 'bi-circle text-gray'"></i> Sales
+                <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Sales')">
+                  <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Sales') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Sales</span>
+                  <span class="text-muted small" *ngIf="hasCheck(p.milestones[m.day], 'Sales')">Done</span>
                 </div>
-                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Underwriting')">
-                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Underwriting') ? 'bi-check-circle-fill text-primary' : 'bi-circle text-gray'"></i> Underwriting
+                <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Underwriting')">
+                  <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Underwriting') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Underwriting</span>
+                  <span class="text-muted small" *ngIf="hasCheck(p.milestones[m.day], 'Underwriting')">Done</span>
                 </div>
               </ng-container>
 
               <!-- Standard Retail OR Commercial Late Stage (15d - 1d) -->
-              <ng-container *ngIf="activeTab === 'RETAIL' || (activeTab === 'COMMERCIAL' && m < 30)">
-                <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Contacted')">
-                  <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Contacted') ? 'bi-check-circle-fill text-success' : 'bi-circle text-gray'"></i> Contacted
-                  <div class="subtext" *ngIf="hasCheck(p.milestones[m], 'Contacted')">
-                    {{getContactData(p.milestones[m]).status}}
-                    <span *ngIf="getContactData(p.milestones[m]).followUp"><br>FU: {{getContactData(p.milestones[m]).followUp | date:'shortDate'}}</span>
-                  </div>
+              <ng-container *ngIf="activeTab === 'RETAIL' || (activeTab === 'COMMERCIAL' && m.day < 30)">
+                <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Contacted')" [class.text-muted]="!hasCheck(p.milestones[m.day], 'Contacted')">
+                  <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Contacted') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Contacted</span>
+                  <span class="text-muted small fw-normal" *ngIf="hasCheck(p.milestones[m.day], 'Contacted')">
+                    {{getContactData(p.milestones[m.day]).status}}
+                  </span>
                 </div>
               </ng-container>
 
               <!-- Mails are always visible -->
-              <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'Customer Mailed')">
-                <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'Customer Mailed') ? 'bi-check-circle-fill text-purple' : 'bi-circle text-gray'"></i> Cust. Mailed
+              <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Customer Mailed')" [class.text-muted]="!hasCheck(p.milestones[m.day], 'Customer Mailed')">
+                <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Customer Mailed') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Cust. Mailed</span>
+                <span class="text-muted small fw-normal" *ngIf="hasCheck(p.milestones[m.day], 'Customer Mailed')">Sent</span>
+                <span class="text-muted small fw-normal" *ngIf="!hasCheck(p.milestones[m.day], 'Customer Mailed')">—</span>
               </div>
-              <div class="check-item" [class.checked]="hasCheck(p.milestones[m], 'RM Mailed')">
-                <i class="bi" [ngClass]="hasCheck(p.milestones[m], 'RM Mailed') ? 'bi-check-circle-fill text-warning' : 'bi-circle text-gray'"></i> RM Mailed
+              <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'RM Mailed')" [class.text-muted]="!hasCheck(p.milestones[m.day], 'RM Mailed')">
+                <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'RM Mailed') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> RM Mailed</span>
+                <span class="text-muted small fw-normal" *ngIf="hasCheck(p.milestones[m.day], 'RM Mailed')">Sent</span>
+                <span class="text-muted small fw-normal" *ngIf="!hasCheck(p.milestones[m.day], 'RM Mailed')">—</span>
               </div>
 
             </div>
           </td>
         </tr>
-        <tr *ngIf="progressData.length === 0">
-          <td colspan="12" class="text-center">No active policies found.</td>
+        <tr *ngIf="filteredData.length === 0">
+          <td colspan="12" class="text-center p-5 text-muted">No policies match the criteria.</td>
         </tr>
       </tbody>
     </table>
     
-    <div class="pagination-controls" *ngIf="progressData.length > 0">
-      <button class="btn btn-sm btn-outline-secondary" (click)="prevPage()" [disabled]="currentPage === 1">Previous</button>
-      <span class="mx-3">Page {{currentPage}} of {{totalPages}}</span>
-      <button class="btn btn-sm btn-outline-secondary" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+    <div class="pagination-controls d-flex justify-content-between align-items-center p-3 bg-light border-top" *ngIf="filteredData.length > 0">
+      <div class="text-muted small">
+        Showing {{ (currentPage - 1) * pageSize + 1 }}-{{ (currentPage * pageSize > filteredData.length) ? filteredData.length : currentPage * pageSize }} of {{filteredData.length}} {{activeTab.toLowerCase()}} policies
+      </div>
+      <div class="d-flex gap-1 align-items-center">
+        <button class="btn btn-sm btn-outline-secondary bg-white text-muted" (click)="prevPage()" [disabled]="currentPage === 1">Prev</button>
+        <span class="mx-2 small text-muted">{{currentPage}} / {{totalPages}}</span>
+        <button class="btn btn-sm btn-outline-secondary bg-white text-muted" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+      </div>
     </div>
   </div>
   
   <div *ngIf="loading" class="text-center p-5">
     <div class="spinner-border text-primary" role="status"></div>
-    <p>Loading timeline...</p>
+    <p class="mt-2 text-muted">Loading timeline...</p>
+  </div>
+
+  <div class="row mt-4" *ngIf="!loading">
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="card-title text-primary"><i class="bi bi-funnel"></i> RETAIL MILESTONE PROTOCOL (ALL 9 GATES)</h6>
+          <p class="small text-muted mb-3">Every cell explicitly tracks three discrete activities to ensure zero statutory coverage lapses:</p>
+          <ul class="list-unstyled small">
+            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> <strong>Contacted:</strong> Direct verbal or confirmed response touchpoint with insured entity or policyholder.</li>
+            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> <strong>Customer Mailed:</strong> Formal policy schedule & renewal invoice sent via automated batch dispatch.</li>
+            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i> <strong>RM Mailed:</strong> Internal prompt dispatched to Relationship Manager for personal intervention.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="card-title text-warning"><i class="bi bi-shield-check"></i> COMMERCIAL 5-ITEM GATE PROTOCOL (75D-30D)</h6>
+          <p class="small text-muted mb-3">Complex accounts must clear all 5 institutional controls before release:</p>
+          <div class="row small">
+            <div class="col-6 mb-2"><strong>1. Claims Audit</strong><br><span class="text-muted">Open claims & loss-ratio signoff</span></div>
+            <div class="col-6 mb-2"><strong>2. Sales Negotiation</strong><br><span class="text-muted">Broker engagement & term review</span></div>
+            <div class="col-6 mb-2"><strong>3. Underwriting</strong><br><span class="text-muted">Authority tier rating sign-off</span></div>
+            <div class="col-6 mb-2"><strong>4. Cust. Mailed</strong><br><span class="text-muted">Dispatched binding quote schedule</span></div>
+            <div class="col-6 mb-2"><strong>5. RM Mailed</strong><br><span class="text-muted">Broker Relationship Manager briefed</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm h-100 bg-light">
+        <div class="card-body d-flex flex-column">
+          <div class="badge bg-secondary align-self-start mb-2">STAGE PIPELINE FLOW</div>
+          <h6 class="card-title">Commercial 15d Transition</h6>
+          <p class="small text-muted flex-grow-1">Once underwriting and claims locks are satisfied by the 30d gate, Commercial accounts automatically pivot to the standard <strong>3-Item Direct Outreach</strong> checklist (Contacted, Cust. Mailed, RM Mailed) for rapid close.</p>
+          <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+            <span class="small text-muted">Auto-synced from Underwriting Engine</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
