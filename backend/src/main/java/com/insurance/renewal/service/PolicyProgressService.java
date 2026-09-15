@@ -52,6 +52,40 @@ public class PolicyProgressService {
 
         List<Map<String, Object>> result = new ArrayList<>();
         
+        // --- Batch fetch logs and calls to avoid N+1 query problem ---
+        List<Long> policyIds = new ArrayList<>();
+        for (Policy p : filtered) {
+            policyIds.add(p.getId());
+        }
+        
+        Map<Long, List<CallHistory>> callsMap = new HashMap<>();
+        Map<Long, List<AuditLog>> logsMap = new HashMap<>();
+        
+        if (!policyIds.isEmpty()) {
+            // Chunking by 1000 to avoid SQL IN clause limits
+            for (int i = 0; i < policyIds.size(); i += 1000) {
+                List<Long> chunk = policyIds.subList(i, Math.min(policyIds.size(), i + 1000));
+                
+                List<CallHistory> chunkCalls = callHistoryRepository.findByPolicyIdIn(chunk);
+                for (CallHistory c : chunkCalls) {
+                    callsMap.computeIfAbsent(c.getPolicy().getId(), k -> new ArrayList<>()).add(c);
+                }
+                
+                List<AuditLog> chunkLogs = auditLogRepository.findByPolicyIdIn(chunk);
+                for (AuditLog l : chunkLogs) {
+                    logsMap.computeIfAbsent(l.getPolicyId(), k -> new ArrayList<>()).add(l);
+                }
+            }
+            // Sort them desc in memory
+            for (List<CallHistory> list : callsMap.values()) {
+                list.sort((a, b) -> b.getCallDate().compareTo(a.getCallDate()));
+            }
+            for (List<AuditLog> list : logsMap.values()) {
+                list.sort((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()));
+            }
+        }
+        // -------------------------------------------------------------
+        
         for (Policy p : filtered) {
             Map<String, Object> policyMap = new HashMap<>();
             policyMap.put("id", p.getId());
@@ -78,7 +112,7 @@ public class PolicyProgressService {
             LocalDate expiryDate = p.getExpiryDate();
             if (expiryDate != null) {
                 // Process Call History
-                List<CallHistory> calls = callHistoryRepository.findByPolicyIdOrderByCallDateDesc(p.getId());
+                List<CallHistory> calls = callsMap.getOrDefault(p.getId(), Collections.emptyList());
                 for (CallHistory call : calls) {
                     int bucket = getClosestMilestone(call.getCallDate().toLocalDate(), expiryDate);
                     Map<String, Object> checks = milestones.get(bucket);
@@ -104,7 +138,7 @@ public class PolicyProgressService {
                 }
                 
                 // Process Audit Logs
-                List<AuditLog> logs = auditLogRepository.findByPolicyIdOrderByUpdatedAtDesc(p.getId());
+                List<AuditLog> logs = logsMap.getOrDefault(p.getId(), Collections.emptyList());
                 for (AuditLog log : logs) {
                     if ("Action".equals(log.getFieldName())) {
                         int bucket = getClosestMilestone(log.getUpdatedAt().toLocalDate(), expiryDate);

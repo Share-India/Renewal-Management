@@ -1,8 +1,20 @@
 .progress-container {
-  padding: 24px;
+  padding: 20px;
   background-color: #f8f9fa;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
+}
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 15px 0;
+  margin-top: 10px;
+  background: white;
+  border-top: 1px solid #ddd;
+}
+.pagination-controls .btn {
+  min-width: 80px;
 }
 .header {
   margin-bottom: 24px;

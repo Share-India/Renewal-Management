@@ -7,6 +7,8 @@ import java.util.List;
 
 @Repository
 public interface CallHistoryRepository extends JpaRepository<CallHistory, Long> {
+    List<CallHistory> findByPolicyIdIn(List<Long> policyIds);
+    
     List<CallHistory> findByPolicyIdOrderByCallDateDesc(Long policyId);
 
     List<CallHistory> findByPolicyCustomerIdOrderByCallDateDesc(Long customerId);

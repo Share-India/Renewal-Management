@@ -26,7 +26,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let p of progressData">
+        <tr *ngFor="let p of paginatedData">
           <td class="sticky-col font-mono">{{p.policyNumber}}<br><small class="text-gray">{{p.type}}</small></td>
           <td class="sticky-col-2">{{p.customerName}}</td>
           <td class="sticky-col-3">{{p.rmName || '-'}}</td>
@@ -74,6 +74,12 @@
         </tr>
       </tbody>
     </table>
+    
+    <div class="pagination-controls" *ngIf="progressData.length > 0">
+      <button class="btn btn-sm btn-outline-secondary" (click)="prevPage()" [disabled]="currentPage === 1">Previous</button>
+      <span class="mx-3">Page {{currentPage}} of {{totalPages}}</span>
+      <button class="btn btn-sm btn-outline-secondary" (click)="nextPage()" [disabled]="currentPage === totalPages">Next</button>
+    </div>
   </div>
   
   <div *ngIf="loading" class="text-center p-5">

@@ -16,6 +16,9 @@ export class PolicyProgress implements OnInit {
   progressData: any[] = [];
   loading: boolean = false;
   milestones = [75, 60, 45, 30, 15, 7, 3, 2, 1];
+  
+  currentPage: number = 1;
+  pageSize: number = 50;
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
@@ -25,6 +28,7 @@ export class PolicyProgress implements OnInit {
 
   setTab(tab: 'RETAIL' | 'COMMERCIAL') {
     this.activeTab = tab;
+    this.currentPage = 1;
     this.fetchData();
   }
 
@@ -33,7 +37,7 @@ export class PolicyProgress implements OnInit {
     this.http.get<any[]>(environment.apiUrl + '/progress/tracking?tab=' + this.activeTab, { headers: this.authService.getAuthHeaders() })
       .subscribe({
         next: (data) => {
-          this.progressData = data;
+          this.progressData = data || [];
           this.loading = false;
         },
         error: (err) => {
@@ -41,6 +45,23 @@ export class PolicyProgress implements OnInit {
           this.loading = false;
         }
       });
+  }
+  
+  get paginatedData() {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.progressData.slice(startIndex, startIndex + this.pageSize);
+  }
+  
+  get totalPages() {
+    return Math.ceil(this.progressData.length / this.pageSize);
+  }
+
+  nextPage() {
+    if (this.currentPage < this.totalPages) this.currentPage++;
+  }
+
+  prevPage() {
+    if (this.currentPage > 1) this.currentPage--;
   }
 
   hasCheck(checks: any, key: string): boolean {
