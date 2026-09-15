@@ -37,6 +37,10 @@ export class PolicyProgress implements OnInit {
   statusFilter: string = 'All';
   rmFilter: string = 'All Agents';
 
+  uniqueBranches: string[] = [];
+  uniqueStatuses: string[] = [];
+  uniqueRMs: string[] = [];
+
   constructor(private http: HttpClient, private authService: AuthService) {}
 
   ngOnInit() {
@@ -55,6 +59,7 @@ export class PolicyProgress implements OnInit {
       .subscribe({
         next: (data) => {
           this.progressData = data || [];
+          this.extractDropdowns();
           this.loading = false;
         },
         error: (err) => {
@@ -62,6 +67,22 @@ export class PolicyProgress implements OnInit {
           this.loading = false;
         }
       });
+  }
+  
+  extractDropdowns() {
+    const branches = new Set<string>();
+    const statuses = new Set<string>();
+    const rms = new Set<string>();
+    
+    this.progressData.forEach(p => {
+      if (p.branch) branches.add(p.branch);
+      if (p.status) statuses.add(p.status);
+      if (p.rmName) rms.add(p.rmName);
+    });
+    
+    this.uniqueBranches = Array.from(branches).sort();
+    this.uniqueStatuses = Array.from(statuses).sort();
+    this.uniqueRMs = Array.from(rms).sort();
   }
   
   get filteredData() {
@@ -73,6 +94,15 @@ export class PolicyProgress implements OnInit {
         const matchRm = p.rmName?.toLowerCase().includes(term);
         if (!matchPol && !matchCust && !matchRm) return false;
       }
+      
+      if (this.branchFilter !== 'All Branches (Global)' && p.branch !== this.branchFilter) return false;
+      
+      const stFilter = this.statusFilter.replace('Renewal Status: ', '');
+      if (stFilter !== 'All' && p.status !== stFilter) return false;
+      
+      const rmFilt = this.rmFilter.replace('Assigned RM: ', '');
+      if (rmFilt !== 'All Agents' && p.rmName !== rmFilt) return false;
+      
       return true;
     });
   }

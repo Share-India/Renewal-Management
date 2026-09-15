@@ -92,6 +92,8 @@ public class PolicyProgressService {
             policyMap.put("policyNumber", p.getPolicyNumber());
             policyMap.put("customerName", p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + p.getCustomer().getLastName() : "Unknown");
             policyMap.put("rmName", p.getRmName());
+            policyMap.put("branch", p.getBranch());
+            policyMap.put("status", p.getStatus());
             policyMap.put("type", p.getType());
             
             // Initialize milestones

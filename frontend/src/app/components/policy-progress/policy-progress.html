@@ -24,16 +24,19 @@
       <input type="text" class="form-control border-start-0" placeholder="Search Policy #, Insured, or RM..." [(ngModel)]="searchTerm" (input)="currentPage = 1">
     </div>
     
-    <select class="form-select form-select-sm" style="max-width: 180px;" [(ngModel)]="branchFilter">
-      <option>All Branches (Global)</option>
+    <select class="form-select form-select-sm" style="max-width: 180px;" [(ngModel)]="branchFilter" (change)="currentPage = 1">
+      <option value="All Branches (Global)">All Branches (Global)</option>
+      <option *ngFor="let b of uniqueBranches" [value]="b">{{b}}</option>
     </select>
     
-    <select class="form-select form-select-sm" style="max-width: 150px;" [(ngModel)]="statusFilter">
-      <option>Renewal Status: All</option>
+    <select class="form-select form-select-sm" style="max-width: 150px;" [(ngModel)]="statusFilter" (change)="currentPage = 1">
+      <option value="All">Renewal Status: All</option>
+      <option *ngFor="let s of uniqueStatuses" [value]="'Renewal Status: ' + s">Renewal Status: {{s}}</option>
     </select>
     
-    <select class="form-select form-select-sm" style="max-width: 180px;" [(ngModel)]="rmFilter">
-      <option>Assigned RM: All Agents</option>
+    <select class="form-select form-select-sm" style="max-width: 180px;" [(ngModel)]="rmFilter" (change)="currentPage = 1">
+      <option value="All Agents">Assigned RM: All Agents</option>
+      <option *ngFor="let r of uniqueRMs" [value]="'Assigned RM: ' + r">Assigned RM: {{r}}</option>
     </select>
     
     <div class="input-group input-group-sm" style="max-width: 150px;">
