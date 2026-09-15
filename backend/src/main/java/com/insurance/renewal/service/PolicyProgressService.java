@@ -30,11 +30,11 @@ public class PolicyProgressService {
     public List<Map<String, Object>> getProgressData(String tab, String branch) {
         List<Policy> allActivePolicies;
         if (branch != null && !branch.trim().isEmpty()) {
-            allActivePolicies = policyRepository.findByStatus("ACTIVE", branch);
+            allActivePolicies = new ArrayList<>(policyRepository.findByStatus("ACTIVE", branch));
             List<Policy> pending = policyRepository.findByStatus("PENDING_ISSUANCE", branch);
             if(pending != null) allActivePolicies.addAll(pending);
         } else {
-            allActivePolicies = policyRepository.findAll();
+            allActivePolicies = new ArrayList<>(policyRepository.findAll());
             allActivePolicies.removeIf(p -> "RENEWED".equalsIgnoreCase(p.getStatus()));
         }
 

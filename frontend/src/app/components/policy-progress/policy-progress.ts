@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-policy-progress',
@@ -16,7 +17,7 @@ export class PolicyProgress implements OnInit {
   loading: boolean = false;
   milestones = [75, 60, 45, 30, 15, 7, 3, 2, 1];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private authService: AuthService) {}
 
   ngOnInit() {
     this.fetchData();
@@ -29,7 +30,7 @@ export class PolicyProgress implements OnInit {
 
   fetchData() {
     this.loading = true;
-    this.http.get<any[]>(environment.apiUrl + '/progress/tracking?tab=' + this.activeTab)
+    this.http.get<any[]>(environment.apiUrl + '/progress/tracking?tab=' + this.activeTab, { headers: this.authService.getAuthHeaders() })
       .subscribe({
         next: (data) => {
           this.progressData = data;

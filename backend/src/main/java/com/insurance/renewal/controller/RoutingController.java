@@ -52,7 +52,8 @@ public class RoutingController {
     @PostMapping("/{policyId}/route")
     public ResponseEntity<?> routePolicy(@PathVariable Long policyId, @RequestBody Map<String, String> payload) {
         Optional<Policy> policyOpt = policyRepository.findById(policyId);
-        if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
 
         Policy policy = policyOpt.get();
         String actionLog = "Policy updated";
@@ -74,7 +75,7 @@ public class RoutingController {
                 actionLog = "Assigned to " + user;
             }
         }
-        
+
         policyRepository.save(policy);
         logHistory(policy, actionLog, null);
         return ResponseEntity.ok().build();
@@ -86,21 +87,25 @@ public class RoutingController {
             @RequestParam(value = "excelFiles", required = false) MultipartFile excelFiles,
             @RequestParam(value = "pdfFiles", required = false) MultipartFile pdfFiles,
             @RequestParam(value = "note", required = false) String note) {
-        
+
         Optional<Policy> policyOpt = policyRepository.findById(policyId);
-        if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
 
         Policy policy = policyOpt.get();
         if (excelFiles != null) {
             String path = saveFile(excelFiles);
-            if (path != null) policy.setClaimsExcelPath(path);
+            if (path != null)
+                policy.setClaimsExcelPath(path);
         }
         if (pdfFiles != null) {
             String path = saveFile(pdfFiles);
-            if (path != null) policy.setClaimsPdfPath(path);
+            if (path != null)
+                policy.setClaimsPdfPath(path);
         }
-        if (note != null) policy.setClaimsNote(note);
-        
+        if (note != null)
+            policy.setClaimsNote(note);
+
         policyRepository.save(policy);
         logHistory(policy, "Claims Documents Uploaded", note);
         return ResponseEntity.ok().build();
@@ -110,9 +115,10 @@ public class RoutingController {
     public ResponseEntity<?> addSalesNote(
             @PathVariable Long policyId,
             @RequestBody Map<String, String> payload) {
-        
+
         Optional<Policy> policyOpt = policyRepository.findById(policyId);
-        if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
 
         Policy policy = policyOpt.get();
         if (payload.containsKey("note")) {
@@ -120,7 +126,7 @@ public class RoutingController {
             policy.setSalesNote(salesNote);
             logHistory(policy, "Sales Note Added", salesNote);
         }
-        
+
         policyRepository.save(policy);
         return ResponseEntity.ok().build();
     }
@@ -130,17 +136,20 @@ public class RoutingController {
             @PathVariable Long policyId,
             @RequestParam(value = "docFile", required = false) MultipartFile docFile,
             @RequestParam(value = "note", required = false) String note) {
-        
+
         Optional<Policy> policyOpt = policyRepository.findById(policyId);
-        if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
 
         Policy policy = policyOpt.get();
         if (docFile != null) {
             String path = saveFile(docFile);
-            if (path != null) policy.setUnderwritingDocPath(path);
+            if (path != null)
+                policy.setUnderwritingDocPath(path);
         }
-        if (note != null) policy.setUnderwritingNote(note);
-        
+        if (note != null)
+            policy.setUnderwritingNote(note);
+
         policyRepository.save(policy);
         logHistory(policy, "Underwriting Documents Uploaded", note);
         return ResponseEntity.ok().build();
@@ -149,13 +158,17 @@ public class RoutingController {
     @DeleteMapping("/{policyId}/document/{docType}")
     public ResponseEntity<?> deleteDocument(@PathVariable Long policyId, @PathVariable String docType) {
         Optional<Policy> policyOpt = policyRepository.findById(policyId);
-        if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
 
         Policy policy = policyOpt.get();
-        if ("claimsExcel".equals(docType)) policy.setClaimsExcelPath(null);
-        else if ("claimsPdf".equals(docType)) policy.setClaimsPdfPath(null);
-        else if ("underwritingDoc".equals(docType)) policy.setUnderwritingDocPath(null);
-        
+        if ("claimsExcel".equals(docType))
+            policy.setClaimsExcelPath(null);
+        else if ("claimsPdf".equals(docType))
+            policy.setClaimsPdfPath(null);
+        else if ("underwritingDoc".equals(docType))
+            policy.setUnderwritingDocPath(null);
+
         policyRepository.save(policy);
         return ResponseEntity.ok().build();
     }
@@ -191,25 +204,33 @@ public class RoutingController {
         return getDocument(id, policy -> policy.getUnderwritingDocPath());
     }
 
-    private ResponseEntity<org.springframework.core.io.Resource> getDocument(Long id, java.util.function.Function<Policy, String> pathExtractor) {
+    private ResponseEntity<org.springframework.core.io.Resource> getDocument(Long id,
+            java.util.function.Function<Policy, String> pathExtractor) {
         Optional<Policy> policyOpt = policyRepository.findById(id);
-        if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
-        
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
+
         String path = pathExtractor.apply(policyOpt.get());
-        if (path == null) return ResponseEntity.notFound().build();
+        if (path == null)
+            return ResponseEntity.notFound().build();
 
         java.io.File file = new java.io.File(path);
-        if (!file.exists()) return ResponseEntity.notFound().build();
+        if (!file.exists())
+            return ResponseEntity.notFound().build();
 
         org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-        
+
         String contentType = "application/octet-stream";
-        if (path.endsWith(".pdf")) contentType = "application/pdf";
-        else if (path.endsWith(".xlsx")) contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        else if (path.endsWith(".csv")) contentType = "text/csv";
+        if (path.endsWith(".pdf"))
+            contentType = "application/pdf";
+        else if (path.endsWith(".xlsx"))
+            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        else if (path.endsWith(".csv"))
+            contentType = "text/csv";
 
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getName() + "\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + file.getName() + "\"")
                 .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
                 .body(resource);
     }
@@ -220,10 +241,14 @@ public class RoutingController {
         String currentRole = auth.getAuthorities().iterator().next().getAuthority().replace("ROLE_", "");
 
         String targetRole = "";
-        if (currentRole.equals("CLAIMS_MANAGER")) targetRole = "CLAIMS";
-        else if (currentRole.equals("SALES_MANAGER")) targetRole = "SALES";
-        else if (currentRole.equals("UNDERWRITING_MANAGER")) targetRole = "UNDERWRITING";
-        else return ResponseEntity.status(403).body(Map.of("message", "Only managers can create team users."));
+        if (currentRole.equals("CLAIMS_MANAGER"))
+            targetRole = "CLAIMS";
+        else if (currentRole.equals("SALES_MANAGER"))
+            targetRole = "SALES";
+        else if (currentRole.equals("UNDERWRITING_MANAGER"))
+            targetRole = "UNDERWRITING";
+        else
+            return ResponseEntity.status(403).body(Map.of("message", "Only managers can create team users."));
 
         String username = payload.get("username");
         String password = payload.get("password");
@@ -241,6 +266,7 @@ public class RoutingController {
 
         return ResponseEntity.ok(Map.of("message", "User created successfully", "username", username));
     }
+
     @PostMapping("/{policyId}/upload-team-documents")
     public ResponseEntity<?> uploadTeamDocuments(
             @PathVariable Long policyId,
@@ -249,7 +275,8 @@ public class RoutingController {
             @RequestParam(value = "note", required = false) String note) {
         try {
             Optional<Policy> policyOpt = policyRepository.findById(policyId);
-            if (policyOpt.isEmpty()) return ResponseEntity.notFound().build();
+            if (policyOpt.isEmpty())
+                return ResponseEntity.notFound().build();
 
             Policy policy = policyOpt.get();
             if (files != null) {
@@ -268,19 +295,24 @@ public class RoutingController {
                     }
                 }
             }
-            
+
             if (note != null) {
-                if ("CLAIMS".equals(team)) policy.setClaimsNote(note);
-                else if ("UNDERWRITING".equals(team)) policy.setUnderwritingNote(note);
-                else if ("SALES".equals(team)) policy.setSalesNote(note);
+                if ("CLAIMS".equals(team))
+                    policy.setClaimsNote(note);
+                else if ("UNDERWRITING".equals(team))
+                    policy.setUnderwritingNote(note);
+                else if ("SALES".equals(team))
+                    policy.setSalesNote(note);
             }
             policyRepository.save(policy);
-            
+
             logHistory(policy, team + " Documents Uploaded", note);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(500).body(Map.of("message", e.getMessage() != null ? e.getMessage() : e.toString(), "trace", java.util.Arrays.toString(e.getStackTrace())));
+            return ResponseEntity.status(500)
+                    .body(Map.of("message", e.getMessage() != null ? e.getMessage() : e.toString(), "trace",
+                            java.util.Arrays.toString(e.getStackTrace())));
         }
     }
 
@@ -291,8 +323,10 @@ public class RoutingController {
             com.insurance.renewal.entity.PolicyDocument doc = docOpt.get();
             try {
                 java.io.File file = new java.io.File(doc.getFilePath());
-                if (file.exists()) file.delete();
-            } catch (Exception e) {}
+                if (file.exists())
+                    file.delete();
+            } catch (Exception e) {
+            }
             policyDocumentRepository.delete(doc);
             return ResponseEntity.ok().build();
         }
@@ -302,30 +336,39 @@ public class RoutingController {
     @GetMapping("/document/{documentId}/download")
     public ResponseEntity<org.springframework.core.io.Resource> downloadTeamDocument(@PathVariable Long documentId) {
         Optional<com.insurance.renewal.entity.PolicyDocument> docOpt = policyDocumentRepository.findById(documentId);
-        if (docOpt.isEmpty()) return ResponseEntity.notFound().build();
-        
+        if (docOpt.isEmpty())
+            return ResponseEntity.notFound().build();
+
         com.insurance.renewal.entity.PolicyDocument doc = docOpt.get();
         java.io.File file = new java.io.File(doc.getFilePath());
-        if (!file.exists()) return ResponseEntity.notFound().build();
+        if (!file.exists())
+            return ResponseEntity.notFound().build();
 
         org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-        
+
         String contentType = "application/octet-stream";
         String path = doc.getFilePath().toLowerCase();
-        if (path.endsWith(".pdf")) contentType = "application/pdf";
-        else if (path.endsWith(".xlsx")) contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        else if (path.endsWith(".csv")) contentType = "text/csv";
-        else if (path.endsWith(".png")) contentType = "image/png";
-        else if (path.endsWith(".jpg") || path.endsWith(".jpeg")) contentType = "image/jpeg";
+        if (path.endsWith(".pdf"))
+            contentType = "application/pdf";
+        else if (path.endsWith(".xlsx"))
+            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        else if (path.endsWith(".csv"))
+            contentType = "text/csv";
+        else if (path.endsWith(".png"))
+            contentType = "image/png";
+        else if (path.endsWith(".jpg") || path.endsWith(".jpeg"))
+            contentType = "image/jpeg";
 
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + doc.getFileName() + "\"")
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + doc.getFileName() + "\"")
                 .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
                 .body(resource);
     }
 
     private String saveFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) return null;
+        if (file == null || file.isEmpty())
+            return null;
         try {
             String uploadDir = "backend/src/main/resources/uploads/";
             java.io.File directory = new java.io.File(uploadDir);
