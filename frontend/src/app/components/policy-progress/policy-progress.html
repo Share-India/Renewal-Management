@@ -107,8 +107,16 @@
               <ng-container *ngIf="activeTab === 'RETAIL' || (activeTab === 'COMMERCIAL' && m.day < 30)">
                 <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Contacted')" [class.text-muted]="!hasCheck(p.milestones[m.day], 'Contacted')">
                   <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Contacted') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Contacted</span>
-                  <span class="text-muted small fw-normal" *ngIf="hasCheck(p.milestones[m.day], 'Contacted')">
-                    {{getContactData(p.milestones[m.day]).status}}
+                  <span class="text-muted small fw-normal ms-1 text-end" *ngIf="hasCheck(p.milestones[m.day], 'Contacted')">
+                    <ng-container *ngIf="getContactData(p.milestones[m.day]).followUp; else statusOnly">
+                      {{ getContactData(p.milestones[m.day]).followUp | date:'MMM dd' }}
+                    </ng-container>
+                    <ng-template #statusOnly>
+                      <ng-container *ngIf="getContactData(p.milestones[m.day]).callDate; else defaultDone">
+                        {{ getContactData(p.milestones[m.day]).callDate | date:'MMM dd' }}
+                      </ng-container>
+                      <ng-template #defaultDone>Done</ng-template>
+                    </ng-template>
                   </span>
                 </div>
               </ng-container>

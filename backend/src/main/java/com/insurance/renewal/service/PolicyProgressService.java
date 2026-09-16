@@ -76,12 +76,12 @@ public class PolicyProgressService {
                     logsMap.computeIfAbsent(l.getPolicyId(), k -> new ArrayList<>()).add(l);
                 }
             }
-            // Sort them desc in memory
+            // Sort them asc in memory so that the most recent overrides in the loop
             for (List<CallHistory> list : callsMap.values()) {
-                list.sort((a, b) -> b.getCallDate().compareTo(a.getCallDate()));
+                list.sort((a, b) -> a.getCallDate().compareTo(b.getCallDate()));
             }
             for (List<AuditLog> list : logsMap.values()) {
-                list.sort((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()));
+                list.sort((a, b) -> a.getUpdatedAt().compareTo(b.getUpdatedAt()));
             }
         }
         // -------------------------------------------------------------
@@ -136,6 +136,7 @@ public class PolicyProgressService {
                             Map<String, Object> contactData = new HashMap<>();
                             contactData.put("status", outcome);
                             contactData.put("followUp", call.getFollowUpDate());
+                            contactData.put("callDate", call.getCallDate());
                             contactData.put("note", call.getNotes());
                             checks.put("Contacted", contactData);
                         }
