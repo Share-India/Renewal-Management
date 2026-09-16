@@ -105,7 +105,7 @@
 
               <!-- Standard Retail OR Commercial Late Stage (15d - 1d) -->
               <ng-container *ngIf="activeTab === 'RETAIL' || (activeTab === 'COMMERCIAL' && m.day < 30)">
-                <div class="check-item d-flex justify-content-between" [class.text-success]="hasCheck(p.milestones[m.day], 'Contacted')" [class.text-muted]="!hasCheck(p.milestones[m.day], 'Contacted')">
+                <div class="check-item d-flex justify-content-between mb-0" [class.text-success]="hasCheck(p.milestones[m.day], 'Contacted')" [class.text-muted]="!hasCheck(p.milestones[m.day], 'Contacted')">
                   <span><i class="bi" [ngClass]="hasCheck(p.milestones[m.day], 'Contacted') ? 'bi-check-circle text-success' : 'bi-circle text-muted'"></i> Contacted</span>
                   <span class="text-muted small fw-normal ms-1 text-end" *ngIf="hasCheck(p.milestones[m.day], 'Contacted')">
                     <ng-container *ngIf="getContactData(p.milestones[m.day]).followUp; else statusOnly">
@@ -118,6 +118,9 @@
                       <ng-template #defaultDone>Done</ng-template>
                     </ng-template>
                   </span>
+                </div>
+                <div *ngIf="hasCheck(p.milestones[m.day], 'Contacted') && getContactData(p.milestones[m.day]).status" class="text-muted fw-normal mb-1" style="padding-left: 20px; font-size: 0.75rem; line-height: 1.1;">
+                  {{getContactData(p.milestones[m.day]).status}}
                 </div>
               </ng-container>
 
