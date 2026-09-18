@@ -361,21 +361,20 @@ public class RenewalService {
         }
             
         boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
+        boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
 
         if (isTeam) {
             List<Policy> teamPolicies = policyRepository.findPoliciesByRoutedAt(targetDate);
             return applyRenewerFilters(teamPolicies);
         }
 
-        // Use the new method that excludes policies with future follow-ups
-        List<Policy> policies = policyRepository.findPoliciesForTimeline(targetDate);
-        
-        if (branch != null && !branch.trim().isEmpty() && !branch.equals("null")) {
-            policies = policies.stream().filter(p -> branch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
-        }
-        
-        if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
+        List<Policy> policies;
+        if (isReturnsView) {
+            policies = policyRepository.findAdminPoliciesByRoutedAtForTimeline(targetDate, branch);
             policies = policies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+        } else {
+            // Use the new method that excludes policies with future follow-ups
+            policies = policyRepository.findAdminPoliciesForTimeline(targetDate, branch);
         }
         
         return applyRenewerFilters(policies);
@@ -490,7 +489,7 @@ public class RenewalService {
 
         // Today's Work Count needs to match the exact same logic as the Action Required
         // Progress Bar
-        Map<String, Integer> progress = getTodaysWorkProgress(branch);
+        Map<String, Integer> progress = getTodaysWorkProgress(branch, null);
         long startCount = progress.get("total") - progress.get("completed");
 
         stats.put("totalPolicies", totalPolicies);
@@ -516,11 +515,13 @@ public class RenewalService {
             
         boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
 
-        List<Integer> specificDays = isTeam ? 
+        boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
+
+        List<Integer> specificDays = (isTeam || isReturnsView) ? 
             Arrays.asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15) :
             Arrays.asList(75, 60, 45, 30, 15, 7, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -30, -45, -60, -75);
 
-        if (isTeam) {
+        if (isTeam || isReturnsView) {
             // Map the specific days to LocalDates
             List<LocalDate> targetDates = specificDays.stream()
                     .map(offset -> today.plusDays(offset))
@@ -529,6 +530,10 @@ public class RenewalService {
             // Fetch ONLY the policies routed on these specific days
             List<Policy> allRoutedPolicies = policyRepository.findPoliciesByRoutedAtIn(targetDates);
             List<Policy> filteredTeamPolicies = applyRenewerFilters(allRoutedPolicies);
+
+            if (isReturnsView) {
+                filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            }
 
             for (Integer offset : specificDays) {
                 LocalDate targetDate = today.plusDays(offset);
@@ -543,15 +548,14 @@ public class RenewalService {
                 List<Policy> expiringPolicies = applyRenewerFilters(
                         policyRepository.findAdminPoliciesForTimeline(targetDate, branch));
                 
-                if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
-                    expiringPolicies = expiringPolicies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
-                }
-                
                 long expiringCount = expiringPolicies.size();
 
                 List<Reminder> scheduledReminders = applyRenewerFiltersToReminders(
-                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(),
-                                targetDate.atTime(23, 59, 59), branch));
+                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(
+                                targetDate.atStartOfDay(),
+                                targetDate.atTime(23, 59, 59),
+                                branch));
+                
                 long followUpCount = scheduledReminders.size();
 
                 counts.put(offset, expiringCount + followUpCount);
@@ -1361,16 +1365,16 @@ public class RenewalService {
         auditLogRepository.save(log);
     }
 
-    public List<Policy> getTodaysWork(String branch) {
-        return getTodaysWork(LocalDate.now(), true, branch);
+    public List<Policy> getTodaysWork(String branch, String sourceTeam) {
+        return getTodaysWork(LocalDate.now(), true, branch, sourceTeam);
     }
 
-    public Map<String, List<Policy>> getTodaysReport(String branch) {
+    public Map<String, List<Policy>> getTodaysReport(String branch, String sourceTeam) {
         Map<String, List<Policy>> result = new HashMap<>();
         LocalDate today = LocalDate.now();
         
         // 1. Get policies assigned for today (Expiring + Pending follow-ups up to today)
-        List<Policy> allTodaysWork = getTodaysWork(today, false, branch);
+        List<Policy> allTodaysWork = getTodaysWork(today, false, branch, sourceTeam);
         
         // 2. Get policies that were UPDATED today (in case they were scheduled for future but touched today)
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
@@ -1419,23 +1423,48 @@ public class RenewalService {
         return result;
     }
 
-    private List<Policy> getTodaysWork(LocalDate today, boolean filterCompleted, String branch) {
-        List<Integer> buckets = java.util.Arrays.asList(
+    private List<Policy> getTodaysWork(LocalDate today, boolean filterCompleted, String branch, String sourceTeam) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String role = null;
+        if (auth != null && auth.isAuthenticated()) {
+            com.insurance.renewal.entity.User user = userRepository.findByUsername(auth.getName()).orElse(null);
+            com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+            role = effectiveUser != null ? effectiveUser.getRole() : null;
+        }
+            
+        boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
+        boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
+
+        List<Integer> buckets = (isTeam || isReturnsView) ? 
+            Arrays.asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15) :
+            Arrays.asList(
                 75, 60, 45, 30, 15, 7, 3, 2, 1, 0, // Pre-expiry & Today
                 -1, -2, -3, -7, -15, -30, -45, -60, -75 // Post-expiry
-        );
+            );
 
         List<LocalDate> targetDates = buckets.stream()
                 .map(days -> today.plusDays((long) days))
                 .collect(java.util.stream.Collectors.toList());
 
         // Fetch policies
-        List<Policy> expiring = policyRepository.findPoliciesForTodaysWork(targetDates, branch);
+        List<Policy> expiring;
+        if (isTeam || isReturnsView) {
+            expiring = policyRepository.findPoliciesByRoutedAtForTodaysWork(targetDates, branch);
+            if (isReturnsView) {
+                expiring = expiring.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            }
+        } else {
+            expiring = policyRepository.findPoliciesForTodaysWork(targetDates, branch);
+        }
 
         // Fetch reminders
         java.time.LocalDateTime endOfToday = today.plusDays(1).atStartOfDay();
         List<Reminder> reminders = reminderRepository.findPendingFollowUpsUpTo(endOfToday, branch);
-        System.out.println("DEBUG TODAY'S WORK: Found " + reminders.size() + " pending followUps up to: " + endOfToday);
+        
+        if (isReturnsView) {
+            reminders = reminders.stream().filter(r -> r.getPolicy() != null && sourceTeam.equals(r.getPolicy().getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+        }
 
         java.util.Set<Long> processedPolicyIds = new java.util.HashSet<>();
         List<Policy> todaysWork = new java.util.ArrayList<>();
@@ -1508,12 +1537,11 @@ public class RenewalService {
     }
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public Map<String, Integer> getTodaysWorkProgress(String branch) {
+    public Map<String, Integer> getTodaysWorkProgress(String branch, String sourceTeam) {
         LocalDate today = LocalDate.now();
 
-        // 1. Get the remaining tasks for today (excludes anything already completed
-        // today)
-        List<Policy> remainingTodaysWork = getTodaysWork(today, true, branch);
+        // 1. Get the remaining tasks for today (excludes anything already completed today)
+        List<Policy> remainingTodaysWork = getTodaysWork(today, true, branch, sourceTeam);
 
         // 2. Count everything that was completed today
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
@@ -1522,6 +1550,10 @@ public class RenewalService {
         List<Reminder> completedRemindersToday = reminderRepository
                 .findByLastReminderSentAtBetweenWithValidPolicy(startOfDay, endOfDay, branch);
         completedRemindersToday = applyRenewerFiltersToReminders(completedRemindersToday);
+
+        if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
+            completedRemindersToday = completedRemindersToday.stream().filter(r -> r.getPolicy() != null && sourceTeam.equals(r.getPolicy().getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+        }
 
         List<Integer> buckets = java.util.Arrays.asList(
                 75, 60, 45, 30, 15, 7, 3, 2, 1, 0,

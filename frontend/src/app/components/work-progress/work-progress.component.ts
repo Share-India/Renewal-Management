@@ -12,6 +12,7 @@ import { Subscription, interval } from 'rxjs';
 })
 export class WorkProgressComponent implements OnInit, OnDestroy, OnChanges {
   @Input() branch: string = '';
+  @Input() sourceTeam: string = '';
 
   totalWork = 0;
   completedWork = 0;
@@ -38,7 +39,8 @@ export class WorkProgressComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['branch'] && !changes['branch'].isFirstChange()) {
+    if ((changes['branch'] && !changes['branch'].isFirstChange()) || 
+        (changes['sourceTeam'] && !changes['sourceTeam'].isFirstChange())) {
       this.refreshProgress();
     }
   }
@@ -49,7 +51,7 @@ export class WorkProgressComponent implements OnInit, OnDestroy, OnChanges {
   }
 
   public refreshProgress() {
-    this.dataSub = this.apiService.getTodaysWorkProgress(this.branch).subscribe({
+    this.dataSub = this.apiService.getTodaysWorkProgress(this.branch, this.sourceTeam).subscribe({
       next: (data) => {
         this.totalWork = data.total;
         this.completedWork = data.completed;

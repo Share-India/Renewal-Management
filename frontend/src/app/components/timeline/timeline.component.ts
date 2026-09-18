@@ -13,6 +13,7 @@ export class TimelineComponent implements OnChanges {
     @Input() counts: { [key: number]: number } = {};
     @Input() adminMode: boolean = false;
     @Input() userRole: string = '';
+    @Input() selectedSourceTeam: string = '';
 
     days: number[] = [75, 60, 45, 30, 15, 7, 3, 2, 1];
     postExpiryDays: number[] = [-1, -2, -3, -7, -15, -30, -45, -60, -75];
@@ -20,7 +21,8 @@ export class TimelineComponent implements OnChanges {
     isTeamTimeline: boolean = false;
 
     ngOnChanges() {
-        if (this.userRole && (this.userRole.includes('CLAIMS') || this.userRole.includes('SALES') || this.userRole.includes('UNDERWRITING'))) {
+        if ((this.userRole && (this.userRole.includes('CLAIMS') || this.userRole.includes('SALES') || this.userRole.includes('UNDERWRITING'))) || 
+            (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== '')) {
             this.isTeamTimeline = true;
             this.days = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15];
             this.postExpiryDays = [];

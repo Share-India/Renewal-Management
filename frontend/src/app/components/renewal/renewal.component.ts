@@ -113,9 +113,9 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
 
-      <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()"></app-timeline>
+      <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam"></app-timeline>
       
-      <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedBranch"></app-work-progress>
+      <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedBranch" [sourceTeam]="selectedSourceTeam"></app-work-progress>
 
       <div class="row" *ngIf="selectedDay !== null">
         <!-- Main List: Renewals OR Post-Expiry -->
@@ -963,7 +963,7 @@ export class RenewalComponent implements OnInit {
     this.searchBy = 'customer';
       this.selectedDay = 'todays-work';
       this.loading = true;
-      this.apiService.getTodaysWork(this.selectedBranch).subscribe({
+      this.apiService.getTodaysWork(this.selectedBranch, this.selectedSourceTeam).subscribe({
         next: (policies) => {
         const todayStr = new Date().toISOString().split('T')[0];
 

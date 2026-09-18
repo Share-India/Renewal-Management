@@ -58,10 +58,13 @@ export class ApiService {
         return this.http.get<{ [key: number]: number }>(`${this.baseUrl}/renewals/timeline-counts`, { headers: this.getHeaders(), params });
     }
 
-    getTodaysWork(branch?: string): Observable<any[]> {
+    getTodaysWork(branch?: string, sourceTeam?: string): Observable<any[]> {
         let params = new HttpParams();
         if (branch && branch.trim() !== '') {
             params = params.set('branch', branch.trim());
+        }
+        if (sourceTeam && sourceTeam.trim() !== '') {
+            params = params.set('sourceTeam', sourceTeam.trim());
         }
         return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders(), params });
     }
@@ -100,10 +103,13 @@ export class ApiService {
     }
 
 
-    getTodaysWorkProgress(branch?: string): Observable<{total: number, completed: number}> {
+    getTodaysWorkProgress(branch?: string, sourceTeam?: string): Observable<{total: number, completed: number}> {
         let params = new HttpParams();
         if (branch && branch.trim() !== '') {
             params = params.set('branch', branch.trim());
+        }
+        if (sourceTeam && sourceTeam.trim() !== '') {
+            params = params.set('sourceTeam', sourceTeam.trim());
         }
         return this.http.get<{total: number, completed: number}>(`${this.baseUrl}/renewals/todays-work-progress`, { headers: this.getHeaders(), params });
     }

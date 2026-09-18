@@ -83,13 +83,17 @@ public class RenewalController {
     }
 
     @GetMapping("/todays-work")
-    public ResponseEntity<List<Policy>> getTodaysWork(@RequestParam(value = "branch", required = false) String branch) {
-        return ResponseEntity.ok(renewalService.getTodaysWork(branch));
+    public ResponseEntity<List<Policy>> getTodaysWork(
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "sourceTeam", required = false) String sourceTeam) {
+        return ResponseEntity.ok(renewalService.getTodaysWork(branch, sourceTeam));
     }
 
     @GetMapping("/todays-report")
-    public ResponseEntity<Map<String, List<Policy>>> getTodaysReport(@RequestParam(value = "branch", required = false) String branch) {
-        return ResponseEntity.ok(renewalService.getTodaysReport(branch));
+    public ResponseEntity<Map<String, List<Policy>>> getTodaysReport(
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "sourceTeam", required = false) String sourceTeam) {
+        return ResponseEntity.ok(renewalService.getTodaysReport(branch, sourceTeam));
     }
 
     @GetMapping("/high-value-deals")
@@ -438,8 +442,10 @@ public class RenewalController {
     }
 
     @GetMapping("/todays-work-progress")
-    public ResponseEntity<Map<String, Integer>> getTodaysWorkProgress(@RequestParam(value = "branch", required = false) String branch) {
-        return ResponseEntity.ok(renewalService.getTodaysWorkProgress(branch));
+    public ResponseEntity<Map<String, Integer>> getTodaysWorkProgress(
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "sourceTeam", required = false) String sourceTeam) {
+        return ResponseEntity.ok(renewalService.getTodaysWorkProgress(branch, sourceTeam));
     }
 
     @GetMapping("/{id}/audit-logs")
