@@ -23,20 +23,23 @@ public class PolicyProgressService {
     private CallHistoryRepository callHistoryRepository;
     @Autowired
     private AuditLogRepository auditLogRepository;
+    @Autowired
+    private RenewalService renewalService;
 
     private static final int[] MILESTONES = {75, 60, 45, 30, 15, 7, 3, 2, 1};
     private static final List<String> RETAIL_TYPES = Arrays.asList("health", "life", "motor", "general", "health insurance", "life insurance", "motor insurance", "general insurance");
 
     public List<Map<String, Object>> getProgressData(String tab, String branch) {
         List<Policy> allActivePolicies;
+        List<String> statuses = Arrays.asList("ACTIVE", "PENDING_ISSUANCE");
         if (branch != null && !branch.trim().isEmpty()) {
-            allActivePolicies = new ArrayList<>(policyRepository.findByStatus("ACTIVE", branch));
-            List<Policy> pending = policyRepository.findByStatus("PENDING_ISSUANCE", branch);
-            if(pending != null) allActivePolicies.addAll(pending);
+            allActivePolicies = policyRepository.findByStatusInAndBranch(statuses, branch);
         } else {
-            allActivePolicies = new ArrayList<>(policyRepository.findAll());
-            allActivePolicies.removeIf(p -> "RENEWED".equalsIgnoreCase(p.getStatus()));
+            allActivePolicies = policyRepository.findByStatusIn(statuses);
         }
+        
+        // Apply RBAC filters so Branch Managers / RMs only see their own policies
+        allActivePolicies = renewalService.applyRenewerFilters(allActivePolicies);
 
         boolean isRetailTab = "RETAIL".equalsIgnoreCase(tab);
         

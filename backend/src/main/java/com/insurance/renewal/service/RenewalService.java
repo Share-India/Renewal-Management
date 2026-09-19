@@ -70,7 +70,7 @@ public class RenewalService {
         return user;
     }
 
-    private List<Policy> applyRenewerFilters(List<Policy> policies) {
+    public List<Policy> applyRenewerFilters(List<Policy> policies) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated())
