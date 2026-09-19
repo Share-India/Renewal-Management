@@ -29,43 +29,25 @@ public class PolicyProgressService {
     private static final int[] MILESTONES = {75, 60, 45, 30, 15, 7, 3, 2, 1};
     private static final List<String> RETAIL_TYPES = Arrays.asList("health", "life", "motor", "general", "health insurance", "life insurance", "motor insurance", "general insurance");
 
-    public List<Map<String, Object>> getProgressData(String tab, String branch) {
-        List<Policy> allActivePolicies;
+    // Cache of policyId -> milestones map
+    private Map<Long, Map<Integer, Map<String, Object>>> milestoneCache = new HashMap<>();
+
+    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 300000) // 5 minutes
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    public void refreshMilestoneCache() {
+        System.out.println("DEBUG: Starting milestone cache refresh...");
         List<String> statuses = Arrays.asList("ACTIVE", "PENDING_ISSUANCE");
-        if (branch != null && !branch.trim().isEmpty()) {
-            allActivePolicies = policyRepository.findByStatusInAndBranch(statuses, branch);
-        } else {
-            allActivePolicies = policyRepository.findByStatusIn(statuses);
-        }
+        List<Policy> allPolicies = policyRepository.findByStatusIn(statuses);
         
-        // Apply RBAC filters so Branch Managers / RMs only see their own policies
-        allActivePolicies = renewalService.applyRenewerFilters(allActivePolicies);
-
-        boolean isRetailTab = "RETAIL".equalsIgnoreCase(tab);
-        
-        List<Policy> filtered = new ArrayList<>();
-        for (Policy p : allActivePolicies) {
-            boolean isRetailType = p.getType() != null && RETAIL_TYPES.contains(p.getType().toLowerCase());
-            if (isRetailTab && isRetailType) {
-                filtered.add(p);
-            } else if (!isRetailTab && !isRetailType) {
-                filtered.add(p);
-            }
-        }
-
-        List<Map<String, Object>> result = new ArrayList<>();
-        
-        // --- Batch fetch logs and calls to avoid N+1 query problem ---
         List<Long> policyIds = new ArrayList<>();
-        for (Policy p : filtered) {
+        for (Policy p : allPolicies) {
             policyIds.add(p.getId());
         }
-        
+
         Map<Long, List<CallHistory>> callsMap = new HashMap<>();
         Map<Long, List<AuditLog>> logsMap = new HashMap<>();
-        
+
         if (!policyIds.isEmpty()) {
-            // Chunking by 1000 to avoid SQL IN clause limits
             for (int i = 0; i < policyIds.size(); i += 1000) {
                 List<Long> chunk = policyIds.subList(i, Math.min(policyIds.size(), i + 1000));
                 
@@ -79,7 +61,6 @@ public class PolicyProgressService {
                     logsMap.computeIfAbsent(l.getPolicyId(), k -> new ArrayList<>()).add(l);
                 }
             }
-            // Sort them asc in memory so that the most recent overrides in the loop
             for (List<CallHistory> list : callsMap.values()) {
                 list.sort((a, b) -> a.getCallDate().compareTo(b.getCallDate()));
             }
@@ -87,39 +68,28 @@ public class PolicyProgressService {
                 list.sort((a, b) -> a.getUpdatedAt().compareTo(b.getUpdatedAt()));
             }
         }
-        // -------------------------------------------------------------
-        
-        for (Policy p : filtered) {
-            Map<String, Object> policyMap = new HashMap<>();
-            policyMap.put("id", p.getId());
-            policyMap.put("policyNumber", p.getPolicyNumber());
-            policyMap.put("customerName", p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + p.getCustomer().getLastName() : "Unknown");
-            policyMap.put("rmName", p.getRmName());
-            policyMap.put("branch", p.getBranch());
-            policyMap.put("status", p.getStatus());
-            policyMap.put("type", p.getType());
-            if (p.getExpiryDate() != null) {
-                policyMap.put("expiryDate", p.getExpiryDate().toString());
-            }
-            
-            // Initialize milestones
+
+        Map<Long, Map<Integer, Map<String, Object>>> newCache = new HashMap<>();
+
+        for (Policy p : allPolicies) {
             Map<Integer, Map<String, Object>> milestones = new HashMap<>();
+            boolean isRetailType = p.getType() != null && RETAIL_TYPES.contains(p.getType().toLowerCase());
+
             for (int m : MILESTONES) {
                 Map<String, Object> checks = new HashMap<>();
                 checks.put("Contacted", null);
                 checks.put("Customer Mailed", false);
                 checks.put("RM Mailed", false);
-                if (!isRetailTab && m >= 30) {
+                if (!isRetailType && m >= 30) {
                     checks.put("Claims", false);
                     checks.put("Sales", false);
                     checks.put("Underwriting", false);
                 }
                 milestones.put(m, checks);
             }
-            
+
             LocalDate expiryDate = p.getExpiryDate();
             if (expiryDate != null) {
-                // Process Call History
                 List<CallHistory> calls = callsMap.getOrDefault(p.getId(), Collections.emptyList());
                 for (CallHistory call : calls) {
                     int bucket = getClosestMilestone(call.getCallDate().toLocalDate(), expiryDate);
@@ -135,7 +105,6 @@ public class PolicyProgressService {
                         } else if (outLower.contains("routed to underwriting")) {
                             if (checks.containsKey("Underwriting")) checks.put("Underwriting", true);
                         } else {
-                            // Regular contact
                             Map<String, Object> contactData = new HashMap<>();
                             contactData.put("status", outcome);
                             contactData.put("followUp", call.getFollowUpDate());
@@ -146,7 +115,6 @@ public class PolicyProgressService {
                     }
                 }
                 
-                // Process Audit Logs
                 List<AuditLog> logs = logsMap.getOrDefault(p.getId(), Collections.emptyList());
                 for (AuditLog log : logs) {
                     if ("Action".equals(log.getFieldName())) {
@@ -160,9 +128,64 @@ public class PolicyProgressService {
                     }
                 }
             }
-            
-            policyMap.put("milestones", milestones);
-            result.add(policyMap);
+            newCache.put(p.getId(), milestones);
+        }
+
+        this.milestoneCache = newCache;
+        System.out.println("DEBUG: Milestone cache refreshed successfully. Cached " + newCache.size() + " policies.");
+    }
+
+    public List<Map<String, Object>> getProgressData(String tab, String branch) {
+        List<Policy> allActivePolicies;
+        List<String> statuses = Arrays.asList("ACTIVE", "PENDING_ISSUANCE");
+        if (branch != null && !branch.trim().isEmpty()) {
+            allActivePolicies = policyRepository.findByStatusInAndBranch(statuses, branch);
+        } else {
+            allActivePolicies = policyRepository.findByStatusIn(statuses);
+        }
+        
+        allActivePolicies = renewalService.applyRenewerFilters(allActivePolicies);
+
+        boolean isRetailTab = "RETAIL".equalsIgnoreCase(tab);
+        
+        List<Map<String, Object>> result = new ArrayList<>();
+        
+        for (Policy p : allActivePolicies) {
+            boolean isRetailType = p.getType() != null && RETAIL_TYPES.contains(p.getType().toLowerCase());
+            if ((isRetailTab && isRetailType) || (!isRetailTab && !isRetailType)) {
+                Map<String, Object> policyMap = new HashMap<>();
+                policyMap.put("id", p.getId());
+                policyMap.put("policyNumber", p.getPolicyNumber());
+                policyMap.put("customerName", p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + p.getCustomer().getLastName() : "Unknown");
+                policyMap.put("rmName", p.getRmName());
+                policyMap.put("branch", p.getBranch());
+                policyMap.put("status", p.getStatus());
+                policyMap.put("type", p.getType());
+                if (p.getExpiryDate() != null) {
+                    policyMap.put("expiryDate", p.getExpiryDate().toString());
+                }
+                
+                Map<Integer, Map<String, Object>> milestones = milestoneCache.get(p.getId());
+                if (milestones == null) {
+                    // Fallback for new policies created between cache refreshes
+                    milestones = new HashMap<>();
+                    for (int m : MILESTONES) {
+                        Map<String, Object> checks = new HashMap<>();
+                        checks.put("Contacted", null);
+                        checks.put("Customer Mailed", false);
+                        checks.put("RM Mailed", false);
+                        if (!isRetailType && m >= 30) {
+                            checks.put("Claims", false);
+                            checks.put("Sales", false);
+                            checks.put("Underwriting", false);
+                        }
+                        milestones.put(m, checks);
+                    }
+                }
+                
+                policyMap.put("milestones", milestones);
+                result.add(policyMap);
+            }
         }
         
         return result;
