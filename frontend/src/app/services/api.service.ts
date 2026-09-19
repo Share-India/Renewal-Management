@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable, BehaviorSubject, of } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
@@ -345,6 +346,24 @@ export class ApiService {
 
   createTeamUser(username: string, password: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/routing/team/create-user`, { username, password }, { headers: this.getHeaders() });
+  }
+
+  private progressTrackerCache: { [key: string]: { data: any[], timestamp: number } } = {};
+
+  getPolicyProgressTracking(tab: string): Observable<any[]> {
+    const cacheKey = tab;
+    const now = Date.now();
+    const cacheTTL = 5 * 60 * 1000; // 5 minutes cache
+
+    if (this.progressTrackerCache[cacheKey] && (now - this.progressTrackerCache[cacheKey].timestamp) < cacheTTL) {
+      return of(this.progressTrackerCache[cacheKey].data);
+    }
+
+    return this.http.get<any[]>(`${this.baseUrl}/progress/tracking?tab=${tab}`, { headers: this.getHeaders() }).pipe(
+      tap(data => {
+        this.progressTrackerCache[cacheKey] = { data, timestamp: now };
+      })
+    );
   }
 }
 

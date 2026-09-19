@@ -1,9 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
-import { environment } from '../../../environments/environment';
-import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
   selector: 'app-policy-progress',
@@ -43,7 +41,7 @@ export class PolicyProgress implements OnInit {
   uniqueRMs: string[] = [];
   uniqueExpiries: string[] = [];
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
+  constructor(private apiService: ApiService) {}
 
   ngOnInit() {
     this.fetchData();
@@ -57,18 +55,17 @@ export class PolicyProgress implements OnInit {
 
   fetchData() {
     this.loading = true;
-    this.http.get<any[]>(environment.apiUrl + '/progress/tracking?tab=' + this.activeTab, { headers: this.authService.getAuthHeaders() })
-      .subscribe({
-        next: (data) => {
-          this.progressData = data || [];
-          this.extractDropdowns();
-          this.loading = false;
-        },
-        error: (err) => {
-          console.error(err);
-          this.loading = false;
-        }
-      });
+    this.apiService.getPolicyProgressTracking(this.activeTab).subscribe({
+      next: (data) => {
+        this.progressData = data || [];
+        this.extractDropdowns();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+      }
+    });
   }
   
   extractDropdowns() {
