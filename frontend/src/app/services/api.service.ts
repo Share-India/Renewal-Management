@@ -350,16 +350,21 @@ export class ApiService {
 
   private progressTrackerCache: { [key: string]: { data: any[], timestamp: number } } = {};
 
-  getPolicyProgressTracking(tab: string): Observable<any[]> {
+  getPolicyProgressTracking(tab: string, forceReload: boolean = false): Observable<any[]> {
     const cacheKey = tab;
     const now = Date.now();
     const cacheTTL = 5 * 60 * 1000; // 5 minutes cache
 
-    if (this.progressTrackerCache[cacheKey] && (now - this.progressTrackerCache[cacheKey].timestamp) < cacheTTL) {
+    if (!forceReload && this.progressTrackerCache[cacheKey] && (now - this.progressTrackerCache[cacheKey].timestamp) < cacheTTL) {
       return of(this.progressTrackerCache[cacheKey].data);
     }
 
-    return this.http.get<any[]>(`${this.baseUrl}/progress/tracking?tab=${tab}`, { headers: this.getHeaders() }).pipe(
+    let url = `${this.baseUrl}/progress/tracking?tab=${tab}`;
+    if (forceReload) {
+        url += '&forceReload=true';
+    }
+
+    return this.http.get<any[]>(url, { headers: this.getHeaders() }).pipe(
       tap(data => {
         this.progressTrackerCache[cacheKey] = { data, timestamp: now };
       })

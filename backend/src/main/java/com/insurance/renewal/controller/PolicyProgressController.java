@@ -19,7 +19,12 @@ public class PolicyProgressController {
     @GetMapping("/tracking")
     public ResponseEntity<List<Map<String, Object>>> getProgressTracking(
             @RequestParam(value = "tab", defaultValue = "RETAIL") String tab,
-            @RequestParam(value = "branch", required = false) String branch) {
+            @RequestParam(value = "branch", required = false) String branch,
+            @RequestParam(value = "forceReload", defaultValue = "false") boolean forceReload) {
+        
+        if (forceReload) {
+            policyProgressService.refreshMilestoneCache();
+        }
         
         List<Map<String, Object>> progressData = policyProgressService.getProgressData(tab, branch);
         return ResponseEntity.ok(progressData);

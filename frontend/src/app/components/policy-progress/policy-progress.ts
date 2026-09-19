@@ -53,9 +53,9 @@ export class PolicyProgress implements OnInit {
     this.fetchData();
   }
 
-  fetchData() {
+  fetchData(forceReload: boolean = false) {
     this.loading = true;
-    this.apiService.getPolicyProgressTracking(this.activeTab).subscribe({
+    this.apiService.getPolicyProgressTracking(this.activeTab, forceReload).subscribe({
       next: (data) => {
         this.progressData = data || [];
         this.extractDropdowns();
