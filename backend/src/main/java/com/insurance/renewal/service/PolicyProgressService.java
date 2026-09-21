@@ -32,8 +32,6 @@ public class PolicyProgressService {
     // Cache of policyId -> milestones map
     private Map<Long, Map<Integer, Map<String, Object>>> milestoneCache = new HashMap<>();
 
-    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 300000) // 5 minutes
-    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     public void refreshMilestoneCache() {
         System.out.println("DEBUG: Starting milestone cache refresh...");
         List<String> statuses = Arrays.asList("ACTIVE", "PENDING_ISSUANCE");
