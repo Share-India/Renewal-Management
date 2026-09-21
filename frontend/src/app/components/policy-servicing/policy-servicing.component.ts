@@ -16,11 +16,18 @@ import { ApiService } from '../../services/api.service';
           <p class="text-muted">Verify payment details and issue policies</p>
         </div>
         <div class="d-flex gap-2 align-items-center">
+            <div class="input-group input-group-sm" style="width: 250px;">
+                <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control border-start-0" placeholder="Search Policy # or Customer..." [(ngModel)]="globalSearchQuery">
+                <button class="btn btn-outline-secondary border-start-0 border-top border-bottom bg-white text-muted" *ngIf="globalSearchQuery" (click)="globalSearchQuery = ''" style="border-color: #dee2e6;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
             <select [(ngModel)]="selectedBranch" (change)="onBranchChange()" class="form-select form-select-sm" style="width: auto;">
                 <option value="">All Branches Globally</option>
                 <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
             </select>
-            <button class="btn btn-outline-primary" (click)="loadPendingPolicies()">
+            <button class="btn btn-outline-primary" (click)="onBranchChange()">
             <i class="bi bi-arrow-clockwise"></i> Refresh
             </button>
         </div>
@@ -121,16 +128,6 @@ import { ApiService } from '../../services/api.service';
 
       <!-- History View -->
       <ng-container *ngIf="viewMode === 'history' && !loading">
-        <!-- Search Bar -->
-        <div class="mb-3" *ngIf="servicedPolicies.length > 0">
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control" placeholder="Search by Policy #, Customer, Insurer..." [(ngModel)]="historySearchQuery">
-                <button class="btn btn-outline-secondary" *ngIf="historySearchQuery" (click)="historySearchQuery = ''">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-        </div>
 
          <div *ngIf="servicedPolicies.length === 0" class="text-center py-5 bg-white rounded shadow-sm">
             <i class="bi bi-check-circle text-muted" style="font-size: 3rem;"></i>
@@ -633,26 +630,41 @@ export class PolicyServicingComponent implements OnInit {
   }
 
   getPoliciesForTab(tab: string) {
+    let filtered = this.pendingPolicies;
+    
     if (tab === 'Commercial Insurance') {
       // Catch all other types
       const otherTypes = this.tabs.filter(t => t !== 'Commercial Insurance');
-      return this.pendingPolicies.filter(p => !otherTypes.includes(p.type));
+      filtered = filtered.filter(p => !otherTypes.includes(p.type));
+    } else {
+      filtered = filtered.filter(p => p.type === tab);
     }
-    return this.pendingPolicies.filter(p => p.type === tab);
+
+    if (this.globalSearchQuery) {
+      const query = this.globalSearchQuery.toLowerCase().trim();
+      filtered = filtered.filter(policy =>
+        (policy.policyNumber && policy.policyNumber.toLowerCase().includes(query)) ||
+        (policy.customer && policy.customer.firstName && policy.customer.firstName.toLowerCase().includes(query)) ||
+        (policy.customer && policy.customer.lastName && policy.customer.lastName.toLowerCase().includes(query)) ||
+        (policy.customer && (policy.customer.firstName + ' ' + policy.customer.lastName).toLowerCase().includes(query))
+      );
+    }
+    return filtered;
   }
 
   // History View
   viewMode: 'pending' | 'history' = 'pending';
   servicedPolicies: any[] = [];
-  historySearchQuery: string = '';
+  globalSearchQuery: string = '';
 
   get filteredServicedPolicies() {
-    if (!this.historySearchQuery) return this.servicedPolicies;
-    const query = this.historySearchQuery.toLowerCase().trim();
+    if (!this.globalSearchQuery) return this.servicedPolicies;
+    const query = this.globalSearchQuery.toLowerCase().trim();
     return this.servicedPolicies.filter(policy =>
       (policy.policyNumber && policy.policyNumber.toLowerCase().includes(query)) ||
       (policy.customer && policy.customer.firstName && policy.customer.firstName.toLowerCase().includes(query)) ||
       (policy.customer && policy.customer.lastName && policy.customer.lastName.toLowerCase().includes(query)) ||
+      (policy.customer && (policy.customer.firstName + ' ' + policy.customer.lastName).toLowerCase().includes(query)) ||
       (policy.insuranceName && policy.insuranceName.toLowerCase().includes(query)) ||
       (policy.productName && policy.productName.toLowerCase().includes(query))
     );
