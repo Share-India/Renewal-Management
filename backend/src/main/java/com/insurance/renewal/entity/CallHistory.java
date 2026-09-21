@@ -6,7 +6,11 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "call_history")
+@Table(name = "call_history", indexes = {
+    @Index(name = "idx_call_history_policy", columnList = "policy_id"),
+    @Index(name = "idx_call_history_policy_date", columnList = "policy_id, call_date"),
+    @Index(name = "idx_call_history_date", columnList = "call_date")
+})
 public class CallHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

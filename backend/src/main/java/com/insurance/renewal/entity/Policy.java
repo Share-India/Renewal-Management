@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 @Table(name = "policies", indexes = {
     @Index(name = "idx_policy_expiry", columnList = "expiry_date"),
     @Index(name = "idx_policy_status", columnList = "status"),
-    @Index(name = "idx_policy_branch", columnList = "branch")
+    @Index(name = "idx_policy_branch", columnList = "branch"),
+    @Index(name = "idx_policy_routed_at", columnList = "routed_at")
 })
 public class Policy {
     @Id
