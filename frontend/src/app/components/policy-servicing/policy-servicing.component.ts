@@ -797,7 +797,7 @@ export class PolicyServicingComponent implements OnInit {
       sumInsured: this.issueForm.sumInsured
     };
 
-    formData.append('policy', JSON.stringify(policyDetails));
+    formData.append('policy', new Blob([JSON.stringify(policyDetails)], { type: 'application/json' }));
     if (this.selectedFile) {
       formData.append('file', this.selectedFile);
     }
