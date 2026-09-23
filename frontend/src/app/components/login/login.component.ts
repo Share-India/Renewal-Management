@@ -64,13 +64,7 @@ import { AuthService } from '../../services/auth.service';
             </div>
           </button>
           
-          <button class="glass-card" (click)="selectRole('SALES')">
-            <div class="icon-wrapper"><i class="bi bi-briefcase"></i></div>
-            <div>
-              <h3 class="role-title">Sales Team</h3>
-              <p class="role-desc">New business</p>
-            </div>
-          </button>
+
           
           <button class="glass-card" (click)="selectRole('UNDERWRITING')">
             <div class="icon-wrapper"><i class="bi bi-clipboard-check"></i></div>
@@ -560,7 +554,7 @@ export class LoginComponent {
   password = '';
   loading = false;
   error = '';
-  selectedRole: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'CLAIMS' | 'SALES' | 'UNDERWRITING' | null = null;
+  selectedRole: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'CLAIMS' | 'UNDERWRITING' | null = null;
 
   constructor(private authService: AuthService, private router: Router) { }
 
@@ -571,13 +565,12 @@ export class LoginComponent {
       case 'SERVICING': return 'Policy Servicing';
       case 'MIS': return 'MIS Dashboard';
       case 'CLAIMS': return 'Claims Team';
-      case 'SALES': return 'Sales Team';
       case 'UNDERWRITING': return 'Underwriting Team';
       default: return 'Renewer';
     }
   }
 
-  selectRole(role: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'CLAIMS' | 'SALES' | 'UNDERWRITING') {
+  selectRole(role: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'CLAIMS' | 'UNDERWRITING') {
     this.selectedRole = role;
     this.error = '';
     this.username = '';
@@ -626,12 +619,6 @@ export class LoginComponent {
           }
           if (this.selectedRole === 'CLAIMS' && user.role !== 'CLAIMS' && user.role !== 'CLAIMS_MANAGER' && user.role !== 'ADMIN') {
             this.error = 'Access Denied: You are not authorized for the Claims Team.';
-            this.authService.logout();
-            this.loading = false;
-            return;
-          }
-          if (this.selectedRole === 'SALES' && user.role !== 'SALES' && user.role !== 'SALES_MANAGER' && user.role !== 'ADMIN') {
-            this.error = 'Access Denied: You are not authorized for the Sales Team.';
             this.authService.logout();
             this.loading = false;
             return;

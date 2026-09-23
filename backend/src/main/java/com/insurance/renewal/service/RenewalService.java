@@ -46,12 +46,17 @@ public class RenewalService {
 
     private com.insurance.renewal.entity.User getEffectiveUser(com.insurance.renewal.entity.User user) {
         if (user == null || user.getRole() == null) return user;
-        if (user.getRole().contains("ADMIN")) {
+        boolean isAdmin = user.getRole().contains("ADMIN");
+        boolean isRm = user.getRole().contains("RM");
+        if (isAdmin || isRm) {
             org.springframework.web.context.request.ServletRequestAttributes sra = 
                 (org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
             if (sra != null) {
                 String viewAs = sra.getRequest().getHeader("X-Admin-View-As");
                 if (viewAs != null && !viewAs.isEmpty()) {
+                    if (isRm && !isAdmin && !viewAs.equals("sales")) {
+                        return user; // RM can only view as sales
+                    }
                     com.insurance.renewal.entity.User mockUser = new com.insurance.renewal.entity.User();
                     mockUser.setUsername(user.getUsername());
                     mockUser.setAssignedBranch(user.getAssignedBranch());

@@ -44,6 +44,11 @@
             <a class="nav-link" routerLink="/admin" routerLinkActive="active"
               [routerLinkActiveOptions]="{exact: true}">RM Dashboard</a>
           </li>
+          
+          <li class="nav-item" *ngIf="authService.hasRole('RM')">
+            <a class="nav-link" routerLink="/admin/dashboard/sales" routerLinkActive="active"
+              [routerLinkActiveOptions]="{exact: true}">Sales Work</a>
+          </li>
 
 
           <!-- User Management: Visible only to Admins -->

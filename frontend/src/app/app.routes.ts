@@ -41,13 +41,7 @@ export const routes: Routes = [
         path: 'admin/dashboard/:managerRole',
         component: RenewalComponent,
         canActivate: [AuthGuard],
-        data: { roles: ['ADMIN'] }
-    },
-    {
-        path: 'admin/dashboard/:managerRole',
-        component: RenewalComponent,
-        canActivate: [AuthGuard],
-        data: { roles: ['ADMIN'] }
+        data: { roles: ['ADMIN', 'RM'] }
     },
     {
         path: 'servicing',
