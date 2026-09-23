@@ -1198,14 +1198,18 @@ export class RenewalComponent implements OnInit {
     const role = this.getEffectiveRole();
     if (role === 'CLAIMS_MANAGER') return 'Claims Manager Dashboard';
     if (role === 'CLAIMS') return 'Claims Team Dashboard';
-    if (role === 'SALES_MANAGER') return 'Sales Manager Dashboard';
+    if (role === 'SALES_MANAGER') return 'Sales Work Dashboard';
     if (role === 'SALES') return 'Sales Team Dashboard';
     if (role === 'UNDERWRITING_MANAGER') return 'Underwriting Manager Dashboard';
     if (role === 'UNDERWRITING') return 'Underwriting Team Dashboard';
+    if (role === 'RM') return 'RM Dashboard';
     return 'Policy Renewals & Follow-ups';
   }
 
   getDashboardSubtitle(): string {
+    const role = this.getEffectiveRole();
+    if (role === 'RM') return 'Manage your relationship data and follow-ups.';
+    if (role === 'SALES_MANAGER') return 'Process your sales tasks and customer interactions.';
     if (this.isManager()) return 'Manage team assignments, monitor performance, and oversee policy routing.';
     if (this.isClaimsUser() || this.isUnderwritingUser() || this.isSalesUser()) return 'Process pending documents, contact customers, and complete assigned tasks.';
     return 'Manage expiring policies, track follow-ups, and process renewals efficiently.';

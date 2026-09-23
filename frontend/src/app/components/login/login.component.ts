@@ -51,8 +51,8 @@ import { AuthService } from '../../services/auth.service';
           <button class="glass-card" (click)="selectRole('RM')">
             <div class="icon-wrapper"><i class="bi bi-people"></i></div>
             <div>
-              <h3 class="role-title">Relationship Manager</h3>
-              <p class="role-desc">Client relations</p>
+              <h3 class="role-title">Relationship Manager & Sales</h3>
+              <p class="role-desc">Client relations & New business</p>
             </div>
           </button>
           
@@ -561,7 +561,7 @@ export class LoginComponent {
   getRoleName(): string {
     switch (this.selectedRole) {
       case 'ADMIN': return 'System Admin';
-      case 'RM': return 'Relationship Manager';
+      case 'RM': return 'Relationship Manager & Sales';
       case 'SERVICING': return 'Policy Servicing';
       case 'MIS': return 'MIS Dashboard';
       case 'CLAIMS': return 'Claims Team';
