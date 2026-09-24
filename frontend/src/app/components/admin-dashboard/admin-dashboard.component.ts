@@ -51,9 +51,9 @@ import * as XLSX from 'xlsx';
             <button class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
               <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
             </button>
-            <div class="d-flex align-items-center gap-1 ms-2">
-              <input type="month" class="form-control form-control-sm border-success text-success" [(ngModel)]="selectedMonthForReport" title="Select Month for Report" style="width: 140px;">
-              <button class="btn btn-outline-success btn-sm shadow-sm" (click)="exportMonthlyReport()" title="Export Monthly Activity">
+            <div class="input-group input-group-sm shadow-sm ms-2" style="width: 250px;">
+              <input type="month" class="form-control border-success text-success fw-bold" [(ngModel)]="selectedMonthForReport" title="Select Month for Report">
+              <button class="btn btn-success" (click)="exportMonthlyReport()" title="Export Monthly Activity">
                 <i class="bi bi-file-earmark-excel me-1"></i> Monthly Report
               </button>
             </div>
@@ -1228,7 +1228,7 @@ export class AdminDashboardComponent implements OnInit {
   selectedDay: number | string | null = null;
   timelineCounts: { [key: number]: number } = {};
   selectedAdminBranch: string = ''; // Supports "All Branches"
-  selectedMonthForReport: string = ''; // For YYYY-MM input
+  selectedMonthForReport: string = new Date().toISOString().slice(0, 7); // For YYYY-MM input
   availableBranches: string[] = [];
 
   // Top 10 High Value Policies
