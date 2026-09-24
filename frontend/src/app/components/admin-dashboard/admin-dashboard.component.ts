@@ -51,6 +51,12 @@ import * as XLSX from 'xlsx';
             <button class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
               <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
             </button>
+            <div class="d-flex align-items-center gap-1 ms-2">
+              <input type="month" class="form-control form-control-sm border-success text-success" [(ngModel)]="selectedMonthForReport" title="Select Month for Report" style="width: 140px;">
+              <button class="btn btn-outline-success btn-sm shadow-sm" (click)="exportMonthlyReport()" title="Export Monthly Activity">
+                <i class="bi bi-file-earmark-excel me-1"></i> Monthly Report
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1222,6 +1228,7 @@ export class AdminDashboardComponent implements OnInit {
   selectedDay: number | string | null = null;
   timelineCounts: { [key: number]: number } = {};
   selectedAdminBranch: string = ''; // Supports "All Branches"
+  selectedMonthForReport: string = ''; // For YYYY-MM input
   availableBranches: string[] = [];
 
   // Top 10 High Value Policies
@@ -2146,6 +2153,48 @@ export class AdminDashboardComponent implements OnInit {
       error: (err) => {
         console.error('Error updating policy:', err);
         this.notificationService.showErrorModal('Failed to update policy details.');
+      }
+    });
+  }
+
+  exportMonthlyReport(): void {
+    if (!this.selectedMonthForReport) {
+      this.notificationService.showErrorModal('Please select a month first (e.g. Jan 2026).');
+      return;
+    }
+    const [yearStr, monthStr] = this.selectedMonthForReport.split('-');
+    const year = parseInt(yearStr, 10);
+    const month = parseInt(monthStr, 10);
+    
+    this.apiService.getMonthlyActivityReport(year, month, this.selectedAdminBranch).subscribe({
+      next: (data) => {
+        if (!data || data.length === 0) {
+          this.notificationService.showErrorModal('No activity found for policies expiring in the selected month.');
+          return;
+        }
+
+        const exportData = data.map(r => ({
+          'Activity Date': r.activityDate ? new Date(r.activityDate).toLocaleString() : '',
+          'Activity Type': r.activityType,
+          'Policy Number': r.policyNo,
+          'Customer Name': r.customerName,
+          'Customer Phone': r.customerNumber,
+          'Expiry Date': r.expiryDate ? new Date(r.expiryDate).toLocaleDateString() : '',
+          'Premium': r.premium,
+          'Branch': r.branch,
+          'Agent': r.agent,
+          'Details': r.details
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Monthly Activity');
+
+        XLSX.writeFile(workbook, `Monthly_Activity_Report_${this.selectedMonthForReport}.xlsx`);
+      },
+      error: (err) => {
+        console.error('Error fetching monthly report:', err);
+        this.notificationService.showErrorModal('Failed to generate monthly report.');
       }
     });
   }

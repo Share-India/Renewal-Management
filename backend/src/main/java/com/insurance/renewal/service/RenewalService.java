@@ -1374,6 +1374,90 @@ public class RenewalService {
         return getTodaysWork(LocalDate.now(), true, branch, sourceTeam);
     }
 
+    public List<com.insurance.renewal.dto.MonthlyActivityDTO> getMonthlyActivityReport(int year, int month, String branch) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+
+        List<Policy> policies = policyRepository.findByExpiryDateBetween(startDate, endDate);
+        if (branch != null && !branch.isEmpty() && !"All Branches Globally".equalsIgnoreCase(branch)) {
+            policies = policies.stream().filter(p -> branch.equals(p.getBranch())).collect(java.util.stream.Collectors.toList());
+        }
+
+        List<Long> policyIds = policies.stream().map(Policy::getId).collect(java.util.stream.Collectors.toList());
+        if (policyIds.isEmpty()) return new java.util.ArrayList<>();
+
+        List<CallHistory> calls = callHistoryRepository.findByPolicyIdIn(policyIds);
+        List<AuditLog> audits = auditLogRepository.findByPolicyIdIn(policyIds);
+        
+        List<com.insurance.renewal.dto.MonthlyActivityDTO> reportRows = new java.util.ArrayList<>();
+        
+        // 1. Process Calls
+        for (CallHistory c : calls) {
+            com.insurance.renewal.dto.MonthlyActivityDTO dto = new com.insurance.renewal.dto.MonthlyActivityDTO();
+            Policy p = c.getPolicy();
+            dto.setPolicyNo(p.getPolicyNumber());
+            dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + (p.getCustomer().getLastName() != null ? p.getCustomer().getLastName() : "") : "");
+            dto.setCustomerNumber(p.getCustomer() != null ? p.getCustomer().getPhone() : "");
+            dto.setExpiryDate(p.getExpiryDate() != null ? p.getExpiryDate().toString() : "");
+            dto.setPremium(p.getAmount() != null ? p.getAmount().doubleValue() : null);
+            dto.setBranch(p.getBranch());
+            
+            dto.setActivityDate(c.getCallDate() != null ? c.getCallDate().toString() : "");
+            dto.setRawDate(c.getCallDate());
+            dto.setActivityType("Call Logged");
+            dto.setAgent(c.getAgentName());
+            
+            String outcome = c.getCallOutcome() != null ? c.getCallOutcome() : "";
+            String notes = c.getNotes() != null ? " - " + c.getNotes() : "";
+            String fup = c.getFollowUpDate() != null ? " (Follow up: " + c.getFollowUpDate().toLocalDate() + ")" : "";
+            dto.setDetails(outcome + notes + fup);
+            
+            reportRows.add(dto);
+        }
+
+        // 2. Process Audits
+        java.util.Map<Long, Policy> policyMap = policies.stream().collect(java.util.stream.Collectors.toMap(Policy::getId, p -> p));
+        for (AuditLog a : audits) {
+            if (!a.getFieldName().equals("targetTeam") && !a.getFieldName().equals("status") && !a.getFieldName().equals("renewalStatus") && !a.getFieldName().equals("currentAssignee")) {
+                continue;
+            }
+            Policy p = policyMap.get(a.getPolicyId());
+            if (p == null) continue;
+            
+            com.insurance.renewal.dto.MonthlyActivityDTO dto = new com.insurance.renewal.dto.MonthlyActivityDTO();
+            dto.setPolicyNo(p.getPolicyNumber());
+            dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + (p.getCustomer().getLastName() != null ? p.getCustomer().getLastName() : "") : "");
+            dto.setCustomerNumber(p.getCustomer() != null ? p.getCustomer().getPhone() : "");
+            dto.setExpiryDate(p.getExpiryDate() != null ? p.getExpiryDate().toString() : "");
+            dto.setPremium(p.getAmount() != null ? p.getAmount().doubleValue() : null);
+            dto.setBranch(p.getBranch());
+            
+            dto.setActivityDate(a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : "");
+            dto.setRawDate(a.getUpdatedAt());
+            
+            String oldVal = a.getOldValue() != null ? a.getOldValue() : "None";
+            String newVal = a.getNewValue() != null ? a.getNewValue() : "None";
+            
+            if (a.getFieldName().equals("targetTeam")) {
+                dto.setActivityType("Routed to Team");
+                dto.setDetails("Routed from " + oldVal + " to " + newVal);
+            } else if (a.getFieldName().equals("currentAssignee")) {
+                dto.setActivityType("Assigned");
+                dto.setDetails("Assigned to " + newVal);
+            } else {
+                dto.setActivityType("Status Update");
+                dto.setDetails("Changed " + a.getFieldName() + " from '" + oldVal + "' to '" + newVal + "'");
+            }
+            
+            dto.setAgent(a.getUpdatedBy());
+            reportRows.add(dto);
+        }
+        
+        // Sort by rawDate
+        reportRows.sort(java.util.Comparator.comparing(com.insurance.renewal.dto.MonthlyActivityDTO::getRawDate, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
+        return reportRows;
+    }
+
     public Map<String, List<Policy>> getTodaysReport(String branch, String sourceTeam) {
         Map<String, List<Policy>> result = new HashMap<>();
         LocalDate today = LocalDate.now();

@@ -70,6 +70,16 @@ export class ApiService {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/todays-work`, { headers: this.getHeaders(), params });
     }
 
+    getMonthlyActivityReport(year: number, month: number, branch?: string): Observable<any[]> {
+        let params = new HttpParams();
+        params = params.set('year', year.toString());
+        params = params.set('month', month.toString());
+        if (branch && branch.trim() !== '') {
+            params = params.set('branch', branch.trim());
+        }
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/monthly-activity-report`, { headers: this.getHeaders(), params });
+    }
+
     getTodaysReport(branch?: string): Observable<{expiringPolicies: any[], scheduledFollowUps: any[]}> {
         let params = new HttpParams();
         if (branch && branch.trim() !== '') {

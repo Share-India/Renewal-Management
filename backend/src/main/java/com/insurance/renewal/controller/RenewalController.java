@@ -89,6 +89,14 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getTodaysWork(branch, sourceTeam));
     }
 
+    @GetMapping("/monthly-activity-report")
+    public ResponseEntity<List<com.insurance.renewal.dto.MonthlyActivityDTO>> getMonthlyActivityReport(
+            @RequestParam("year") int year,
+            @RequestParam("month") int month,
+            @RequestParam(value = "branch", required = false) String branch) {
+        return ResponseEntity.ok(renewalService.getMonthlyActivityReport(year, month, branch));
+    }
+
     @GetMapping("/todays-report")
     public ResponseEntity<Map<String, List<Policy>>> getTodaysReport(
             @RequestParam(value = "branch", required = false) String branch,
