@@ -1398,6 +1398,10 @@ public class RenewalService {
             dto.setPolicyNo(p.getPolicyNumber());
             dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + (p.getCustomer().getLastName() != null ? p.getCustomer().getLastName() : "") : "");
             dto.setCustomerNumber(p.getCustomer() != null ? p.getCustomer().getPhone() : "");
+            dto.setCustomerEmail(p.getCustomer() != null ? p.getCustomer().getEmail() : "");
+            dto.setCustomerDob(p.getCustomer() != null && p.getCustomer().getDob() != null ? p.getCustomer().getDob().toString() : "");
+            dto.setCustomerAddress(p.getCustomer() != null ? p.getCustomer().getAddress() : "");
+            dto.setCustomerCity(p.getCustomer() != null ? p.getCustomer().getCity() : "");
             dto.setExpiryDate(p.getExpiryDate() != null ? p.getExpiryDate().toString() : "");
             dto.setPremium(p.getAmount() != null ? p.getAmount().doubleValue() : null);
             dto.setBranch(p.getBranch());
@@ -1428,6 +1432,10 @@ public class RenewalService {
             dto.setPolicyNo(p.getPolicyNumber());
             dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + (p.getCustomer().getLastName() != null ? p.getCustomer().getLastName() : "") : "");
             dto.setCustomerNumber(p.getCustomer() != null ? p.getCustomer().getPhone() : "");
+            dto.setCustomerEmail(p.getCustomer() != null ? p.getCustomer().getEmail() : "");
+            dto.setCustomerDob(p.getCustomer() != null && p.getCustomer().getDob() != null ? p.getCustomer().getDob().toString() : "");
+            dto.setCustomerAddress(p.getCustomer() != null ? p.getCustomer().getAddress() : "");
+            dto.setCustomerCity(p.getCustomer() != null ? p.getCustomer().getCity() : "");
             dto.setExpiryDate(p.getExpiryDate() != null ? p.getExpiryDate().toString() : "");
             dto.setPremium(p.getAmount() != null ? p.getAmount().doubleValue() : null);
             dto.setBranch(p.getBranch());

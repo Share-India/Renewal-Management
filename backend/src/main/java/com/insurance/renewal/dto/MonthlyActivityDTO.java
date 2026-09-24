@@ -8,6 +8,10 @@ public class MonthlyActivityDTO {
     private String policyNo;
     private String customerName;
     private String customerNumber;
+    private String customerEmail;
+    private String customerDob;
+    private String customerAddress;
+    private String customerCity;
     private String expiryDate;
     private Double premium;
     private String branch;
