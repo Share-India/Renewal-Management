@@ -1395,26 +1395,20 @@ public class RenewalService {
         for (CallHistory c : calls) {
             com.insurance.renewal.dto.MonthlyActivityDTO dto = new com.insurance.renewal.dto.MonthlyActivityDTO();
             Policy p = c.getPolicy();
-            dto.setPolicyNo(p.getPolicyNumber());
-            dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + (p.getCustomer().getLastName() != null ? p.getCustomer().getLastName() : "") : "");
-            dto.setCustomerNumber(p.getCustomer() != null ? p.getCustomer().getPhone() : "");
-            dto.setCustomerEmail(p.getCustomer() != null ? p.getCustomer().getEmail() : "");
-            dto.setCustomerDob(p.getCustomer() != null && p.getCustomer().getDob() != null ? p.getCustomer().getDob().toString() : "");
-            dto.setCustomerAddress(p.getCustomer() != null ? p.getCustomer().getAddress() : "");
-            dto.setCustomerCity(p.getCustomer() != null ? p.getCustomer().getCity() : "");
-            dto.setExpiryDate(p.getExpiryDate() != null ? p.getExpiryDate().toString() : "");
-            dto.setPremium(p.getAmount() != null ? p.getAmount().doubleValue() : null);
-            dto.setBranch(p.getBranch());
+            dto.setPolicy(p);
             
             dto.setActivityDate(c.getCallDate() != null ? c.getCallDate().toString() : "");
             dto.setRawDate(c.getCallDate());
             dto.setActivityType("Call Logged");
             dto.setAgent(c.getAgentName());
             
-            String outcome = c.getCallOutcome() != null ? c.getCallOutcome() : "";
-            String notes = c.getNotes() != null ? " - " + c.getNotes() : "";
+            dto.setOutcome(c.getCallOutcome() != null ? c.getCallOutcome() : "");
+            dto.setNotes(c.getNotes() != null ? c.getNotes() : "");
+            
+            String outcomeStr = c.getCallOutcome() != null ? c.getCallOutcome() : "";
+            String notesStr = c.getNotes() != null ? " - " + c.getNotes() : "";
             String fup = c.getFollowUpDate() != null ? " (Follow up: " + c.getFollowUpDate().toLocalDate() + ")" : "";
-            dto.setDetails(outcome + notes + fup);
+            dto.setDetails(outcomeStr + notesStr + fup);
             
             reportRows.add(dto);
         }
@@ -1429,16 +1423,7 @@ public class RenewalService {
             if (p == null) continue;
             
             com.insurance.renewal.dto.MonthlyActivityDTO dto = new com.insurance.renewal.dto.MonthlyActivityDTO();
-            dto.setPolicyNo(p.getPolicyNumber());
-            dto.setCustomerName(p.getCustomer() != null ? p.getCustomer().getFirstName() + " " + (p.getCustomer().getLastName() != null ? p.getCustomer().getLastName() : "") : "");
-            dto.setCustomerNumber(p.getCustomer() != null ? p.getCustomer().getPhone() : "");
-            dto.setCustomerEmail(p.getCustomer() != null ? p.getCustomer().getEmail() : "");
-            dto.setCustomerDob(p.getCustomer() != null && p.getCustomer().getDob() != null ? p.getCustomer().getDob().toString() : "");
-            dto.setCustomerAddress(p.getCustomer() != null ? p.getCustomer().getAddress() : "");
-            dto.setCustomerCity(p.getCustomer() != null ? p.getCustomer().getCity() : "");
-            dto.setExpiryDate(p.getExpiryDate() != null ? p.getExpiryDate().toString() : "");
-            dto.setPremium(p.getAmount() != null ? p.getAmount().doubleValue() : null);
-            dto.setBranch(p.getBranch());
+            dto.setPolicy(p);
             
             dto.setActivityDate(a.getUpdatedAt() != null ? a.getUpdatedAt().toString() : "");
             dto.setRawDate(a.getUpdatedAt());
@@ -1449,13 +1434,17 @@ public class RenewalService {
             if (a.getFieldName().equals("targetTeam")) {
                 dto.setActivityType("Routed to Team");
                 dto.setDetails("Routed from " + oldVal + " to " + newVal);
+                dto.setOutcome("Routed");
             } else if (a.getFieldName().equals("currentAssignee")) {
                 dto.setActivityType("Assigned");
                 dto.setDetails("Assigned to " + newVal);
+                dto.setOutcome("Assigned");
             } else {
                 dto.setActivityType("Status Update");
                 dto.setDetails("Changed " + a.getFieldName() + " from '" + oldVal + "' to '" + newVal + "'");
+                dto.setOutcome("Status Update");
             }
+            dto.setNotes(dto.getDetails());
             
             dto.setAgent(a.getUpdatedBy());
             reportRows.add(dto);

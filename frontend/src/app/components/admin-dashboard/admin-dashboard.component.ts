@@ -2173,22 +2173,46 @@ export class AdminDashboardComponent implements OnInit {
           return;
         }
 
-        const exportData = data.map(r => ({
-          'Activity Date': r.activityDate ? new Date(r.activityDate).toLocaleString() : '',
-          'Activity Type': r.activityType,
-          'Policy Number': r.policyNo,
-          'Customer Name': r.customerName,
-          'Customer Phone': r.customerNumber,
-          'Email ID': r.customerEmail,
-          'DOB': r.customerDob,
-          'Address': r.customerAddress,
-          'City': r.customerCity,
-          'Expiry Date': r.expiryDate ? new Date(r.expiryDate).toLocaleDateString() : '',
-          'Premium': r.premium,
-          'Branch': r.branch,
-          'Agent': r.agent,
-          'Details': r.details
-        }));
+        const exportData = data.map((r, index) => {
+          const p = r.policy || {};
+          const c = p.customer || {};
+          return {
+            'Sr. No.': index + 1,
+            'FY': p.policyEndDate ? new Date(p.policyEndDate).getFullYear() : new Date().getFullYear(),
+            'Customer Name': `${c.firstName || ''} ${c.lastName || ''}`.trim(),
+            'DOB': c.dob || '',
+            'Contact No': c.phone || '',
+            'Email ID': c.email || '',
+            'Policy No': p.policyNumber || '',
+            'Insurance Type': p.type || '',
+            'Insurer Name': p.insuranceName || '',
+            'Policy Start Date': p.policyStartDate ? new Date(p.policyStartDate).toLocaleDateString() : '',
+            'Policy End Date': p.policyEndDate ? new Date(p.policyEndDate).toLocaleDateString() : '',
+            'Renewal Due date': p.expiryDate ? new Date(p.expiryDate).toLocaleDateString() : '',
+            'Product Name': p.productName || '',
+            'Amount': p.amount || 0,
+            'Premium': p.duePremium || 0,
+            'RM Name': p.rmName || '',
+            'Associate name': p.associateName || '',
+            'Associate Code': p.associateCode || '',
+            'Address 1': c.address || '',
+            'City': c.city || '',
+            'State': c.state || '',
+            'Pin Code': c.pincode || '',
+            'Car/RegNo': p.vehicleRegNo || '',
+            'Model Name': p.vehicleModel || '',
+            'Mgf Year': '',
+            'Billing Frequency': c.billingFrequency || '',
+            'PPT': '',
+            'PT': '',
+            'Payment Date': p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : '',
+            'Branch': p.branch || '',
+            'Renewer Name': r.agent || '',
+            'Outcome': r.outcome || '',
+            'Renewer Note': r.notes || '',
+            'Update Time  Details': r.activityDate ? new Date(r.activityDate).toLocaleString() : ''
+          };
+        });
 
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         const workbook = XLSX.utils.book_new();

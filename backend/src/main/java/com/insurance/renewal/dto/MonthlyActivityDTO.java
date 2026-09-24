@@ -1,23 +1,17 @@
 package com.insurance.renewal.dto;
 
+import com.insurance.renewal.entity.Policy;
 import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
 public class MonthlyActivityDTO {
-    private String policyNo;
-    private String customerName;
-    private String customerNumber;
-    private String customerEmail;
-    private String customerDob;
-    private String customerAddress;
-    private String customerCity;
-    private String expiryDate;
-    private Double premium;
-    private String branch;
+    private Policy policy;
     private String activityDate;
     private String activityType;
     private String agent;
     private String details;
+    private String outcome;
+    private String notes;
     private LocalDateTime rawDate;
 }
