@@ -2228,30 +2228,20 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   exportTodaysReport(): void {
-    this.apiService.getTodaysReport(this.selectedAdminBranch).subscribe({
-      next: (data) => {
-        const expiringPolicies = data.expiringPolicies || [];
-        const followUps = data.scheduledFollowUps || [];
-        
-        if (expiringPolicies.length === 0 && followUps.length === 0) {
-          this.notificationService.showErrorModal('No records found for today.');
-          return;
+    const todayStr = new Date().toDateString();
+
+    const formatRecord = (r: any): any => {
+      const c = r.customer;
+      const rem = r.reminder;
+      const actPolicy = rem?.policy || r;
+
+      let updatedToday = false;
+      if (rem && rem.lastReminderSentAt) {
+        const updatedDate = new Date(rem.lastReminderSentAt).toDateString();
+        if (updatedDate === todayStr) {
+          updatedToday = true;
         }
-
-        const todayStr = new Date().toDateString();
-
-        const formatRecord = (r: any, isFollowUp: boolean): any => {
-          const c = r.customer;
-          const rem = r.reminder;
-          const actPolicy = rem?.policy || r;
-
-          let updatedToday = false;
-          if (rem && rem.lastReminderSentAt) {
-            const updatedDate = new Date(rem.lastReminderSentAt).toDateString();
-            if (updatedDate === todayStr) {
-              updatedToday = true;
-            }
-          }
+      }
 
       const policyEndDate = actPolicy.policyEndDate;
       const policyStartDate = actPolicy.policyStartDate;
@@ -2269,7 +2259,7 @@ export class AdminDashboardComponent implements OnInit {
       const branch = actPolicy.branch;
 
       return {
-        'Sr. No.': '', // will fill later
+        'Sr. No.': '',
         'FY': policyEndDate ? new Date(policyEndDate).getFullYear() : new Date().getFullYear(),
         'Customer Name': c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : '',
         'DOB': c?.dob || '',
@@ -2302,38 +2292,43 @@ export class AdminDashboardComponent implements OnInit {
         'Renewer Name': (updatedToday && rem?.lastUpdatedBy && rem?.lastUpdatedBy !== 'System') ? rem.lastUpdatedBy : '',
         'Outcome': updatedToday ? (rem?.lastCallOutcome || '') : '',
         'Renewer Note': updatedToday ? (rem?.notes || '') : '',
-        'Update Time': (updatedToday && rem?.lastReminderSentAt) ? new Date(rem.lastReminderSentAt).toLocaleTimeString() : ''
+        'Update Time  Details': (updatedToday && rem?.lastReminderSentAt) ? new Date(rem.lastReminderSentAt).toLocaleString() : ''
       };
     };
 
     const exportData: any[] = [];
-    
-    // 1. Expiring Policies
-    expiringPolicies.forEach((p, i) => {
-      const row = formatRecord(p, false);
-      row['Sr. No.'] = i + 1;
-      exportData.push(row);
-    });
-    
-    // 2. Separator for follow-ups
-    if (followUps.length > 0) {
-      exportData.push({
-        'Sr. No.': '==== FOLLOW-UPS ====',
-        'FY': '==== FOLLOW-UPS ====',
-        'Customer Name': '==== FOLLOW-UPS ====',
-        'DOB': '==== FOLLOW-UPS ====', 'Contact No': '==== FOLLOW-UPS ====', 'Email ID': '==== FOLLOW-UPS ====', 'Policy No': '==== FOLLOW-UPS ====', 
-        'Insurance Type': '==== FOLLOW-UPS ====', 'Insurer Name': '==== FOLLOW-UPS ====', 'Policy Start Date': '==== FOLLOW-UPS ====', 'Policy End Date': '==== FOLLOW-UPS ====',
-        'Renewal Due date': '==== FOLLOW-UPS ====', 'Product Name': '==== FOLLOW-UPS ====', 'Amount': '==== FOLLOW-UPS ====', 'Premium': '==== FOLLOW-UPS ====', 'RM Name': '==== FOLLOW-UPS ====',
-        'Associate name': '==== FOLLOW-UPS ====', 'Associate Code': '==== FOLLOW-UPS ====', 'Address 1': '==== FOLLOW-UPS ====', 'City': '==== FOLLOW-UPS ====', 'State': '==== FOLLOW-UPS ====',
-        'Pin Code': '==== FOLLOW-UPS ====', 'Car/RegNo': '==== FOLLOW-UPS ====', 'Model Name': '==== FOLLOW-UPS ====', 'Mgf Year': '==== FOLLOW-UPS ====', 'Billing Frequency': '==== FOLLOW-UPS ====',
-        'PPT': '==== FOLLOW-UPS ====', 'PT': '==== FOLLOW-UPS ====', 'Payment Date': '==== FOLLOW-UPS ====', 'Branch': '==== FOLLOW-UPS ====', 'Renewer Name': '==== FOLLOW-UPS ====', 'Outcome': '==== FOLLOW-UPS ====', 'Renewer Note': '==== FOLLOW-UPS ====', 'Update Time': '==== FOLLOW-UPS ===='
-      });
-      
-      followUps.forEach((p, i) => {
-        const row = formatRecord(p, true);
-        row['Sr. No.'] = i + 1;
+    let index = 1;
+
+    if (this.allTodaysExpiring && this.allTodaysExpiring.length > 0) {
+      exportData.push({ 'Sr. No.': '==== EXPIRING POLICIES ====' });
+      this.allTodaysExpiring.forEach((p: any) => {
+        const row = formatRecord(p);
+        row['Sr. No.'] = index++;
         exportData.push(row);
       });
+    }
+
+    if (this.allTodaysFollowUps && this.allTodaysFollowUps.length > 0) {
+      exportData.push({ 'Sr. No.': '==== TODAYS FOLLOW-UPS ====' });
+      this.allTodaysFollowUps.forEach((p: any) => {
+        const row = formatRecord(p);
+        row['Sr. No.'] = index++;
+        exportData.push(row);
+      });
+    }
+
+    if (this.allTodaysUpdated && this.allTodaysUpdated.length > 0) {
+      exportData.push({ 'Sr. No.': '==== UPDATED TODAY ====' });
+      this.allTodaysUpdated.forEach((p: any) => {
+        const row = formatRecord(p);
+        row['Sr. No.'] = index++;
+        exportData.push(row);
+      });
+    }
+
+    if (exportData.length === 0) {
+      this.notificationService.showErrorModal("No records loaded yet. Please click on 'Today\\'s Work Count' to load the data before downloading.");
+      return;
     }
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -2342,13 +2337,7 @@ export class AdminDashboardComponent implements OnInit {
 
     const formattedDate = new Date().toISOString().split('T')[0];
     XLSX.writeFile(workbook, `Daily_Renewer_Report_${formattedDate}.xlsx`);
-    
-      },
-      error: (err) => {
-        this.notificationService.showErrorModal('Failed to fetch today\'s report data.');
-        console.error(err);
-      }
-    });
   }
 }
+
 

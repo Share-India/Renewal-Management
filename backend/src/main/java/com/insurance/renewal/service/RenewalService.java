@@ -1558,11 +1558,16 @@ public class RenewalService {
         // Filter out policies that have ALREADY been worked on today
         java.time.LocalDateTime startOfDay = today.atStartOfDay();
 
+        LocalDate maxExpiryPast = (isTeam || isReturnsView) ? today.minusDays(15) : today.minusDays(75);
+
         // Add policies from reminders (Always include if it has an active follow-up for
         // today/overdue)
         for (Reminder r : reminders) {
             Policy p = r.getPolicy();
             if (p != null) {
+                if (p.getExpiryDate() != null && p.getExpiryDate().isBefore(maxExpiryPast)) {
+                    continue;
+                }
                 p.setReminder(r); // ensure reminder is attached
 
                 boolean workedOnToday = false;
