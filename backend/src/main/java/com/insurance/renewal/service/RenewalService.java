@@ -1684,7 +1684,7 @@ public class RenewalService {
 
         Map<String, Integer> progress = new HashMap<>();
         progress.put("total", total);
-        progress.put("completed", (int) displayedCompleted); progress.put("remaining", remainingTodaysWork.size());
+        progress.put("completed", (int) coreCompleted); progress.put("remaining", remainingTodaysWork.size());
         return progress;
     }
 }
