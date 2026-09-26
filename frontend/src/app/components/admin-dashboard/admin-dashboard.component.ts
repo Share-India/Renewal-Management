@@ -48,10 +48,10 @@ import * as XLSX from 'xlsx';
             <button class="btn btn-dark btn-sm shadow-sm px-3 fw-semibold d-flex align-items-center" *ngIf="!isRmRole()" (click)="openRenewerStatsModal()" title="View Renewer Activity">
               <i class="bi bi-bar-chart-fill me-2 fs-6 text-info"></i> Renewer Activity
             </button>
-            <button class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
+            <button *ngIf="isAdmin()" class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
               <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
             </button>
-            <div class="input-group input-group-sm shadow-sm ms-2" style="width: 250px;">
+            <div *ngIf="isAdmin()" class="input-group input-group-sm shadow-sm ms-2" style="width: 250px;">
               <input type="month" class="form-control border-success text-success fw-bold" [(ngModel)]="selectedMonthForReport" title="Select Month for Report">
               <button class="btn btn-success" (click)="exportMonthlyReport()" title="Export Monthly Activity">
                 <i class="bi bi-file-earmark-excel me-1"></i> Monthly Report
@@ -1276,6 +1276,8 @@ export class AdminDashboardComponent implements OnInit {
       this.loadRenewerStats();
     }
   }
+
+  isAdmin(): boolean { return this.authService.isAdmin(); }
 
   isRmRole(): boolean {
     return this.authService.hasRole('RM');
