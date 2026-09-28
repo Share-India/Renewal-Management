@@ -346,6 +346,10 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/routing/${policyId}/sales-note`, { note }, { headers: this.getHeaders() });
   }
 
+  addServicingNote(policyId: number, note: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/routing/${policyId}/servicing-note`, { note }, { headers: this.getHeaders() });
+  }
+
   deleteDocument(policyId: number, docType: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/routing/${policyId}/document/${docType}`, { headers: this.getHeaders() });
   }

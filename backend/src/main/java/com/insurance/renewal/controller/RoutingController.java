@@ -111,6 +111,27 @@ public class RoutingController {
         return ResponseEntity.ok().build();
     }
 
+
+    @PostMapping("/{policyId}/servicing-note")
+    public ResponseEntity<?> addServicingNote(
+            @PathVariable Long policyId,
+            @RequestBody Map<String, String> payload) {
+
+        Optional<Policy> policyOpt = policyRepository.findById(policyId);
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
+
+        Policy policy = policyOpt.get();
+        if (payload.containsKey("note")) {
+            String note = payload.get("note");
+            policy.setServicingNote(note);
+            logHistory(policy, "Servicing Note Added", note);
+        }
+
+        policyRepository.save(policy);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{policyId}/sales-note")
     public ResponseEntity<?> addSalesNote(
             @PathVariable Long policyId,

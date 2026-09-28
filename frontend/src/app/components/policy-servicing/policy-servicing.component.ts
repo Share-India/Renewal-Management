@@ -442,6 +442,29 @@ import { ApiService } from '../../services/api.service';
       </div>
     </div>
     
+      <!-- Note Modal -->
+      <div class="modal-overlay" *ngIf="showNoteModal" (click)="closeNoteModal()">
+        <div class="custom-modal-content" (click)="$event.stopPropagation()">
+          <div class="modal-header p-3">
+             <h3 class="mb-0">Servicing Note</h3>
+             <button class="btn-close" (click)="closeNoteModal()"></button>
+          </div>
+          <div class="modal-body">
+              <div class="form-group">
+                  <label class="form-label">Add or Edit Note</label>
+                  <textarea class="form-control" rows="5" [(ngModel)]="currentNote" placeholder="Enter any internal notes for this policy..."></textarea>
+              </div>
+          </div>
+          <div class="modal-footer">
+              <button class="btn btn-secondary" (click)="closeNoteModal()">Cancel</button>
+              <button class="btn btn-success" (click)="saveNote()" [disabled]="isSavingNote">
+                  <span *ngIf="isSavingNote" class="spinner-border spinner-border-sm me-1"></span>
+                  Save Note
+              </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Call History Modal -->
     <div class="modal-overlay" *ngIf="showHistoryModal" (click)="closeHistoryModal()">
         <div class="custom-modal-content history-modal" (click)="$event.stopPropagation()">
@@ -584,6 +607,11 @@ export class PolicyServicingComponent implements OnInit {
   issueForm: any = {};
   selectedFile: File | null = null;
   isSubmitting = false;
+
+  // Note Modal
+  showNoteModal = false;
+  currentNote = '';
+  isSavingNote = false;
 
   // History Modal
   showHistoryModal = false;
@@ -736,6 +764,34 @@ export class PolicyServicingComponent implements OnInit {
     });
   }
   closeHistoryModal() { this.showHistoryModal = false; }
+
+  openNoteModal(policy: any) {
+    this.selectedPolicy = policy;
+    this.currentNote = policy.servicingNote || '';
+    this.showNoteModal = true;
+  }
+
+  closeNoteModal() {
+    this.showNoteModal = false;
+    this.selectedPolicy = null;
+    this.currentNote = '';
+  }
+
+  saveNote() {
+    this.isSavingNote = true;
+    this.apiService.addServicingNote(this.selectedPolicy.id, this.currentNote).subscribe({
+      next: () => {
+        this.notificationService.showSuccessToast('Note saved successfully!');
+        this.selectedPolicy.servicingNote = this.currentNote;
+        this.isSavingNote = false;
+        this.closeNoteModal();
+      },
+      error: (err) => {
+        this.notificationService.showErrorModal('Failed to save note.');
+        this.isSavingNote = false;
+      }
+    });
+  }
 
   openIssueModal(policy: any) {
     this.selectedPolicy = policy;

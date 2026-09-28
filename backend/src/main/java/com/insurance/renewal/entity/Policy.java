@@ -171,6 +171,8 @@ public class Policy {
 
     @Column(name = "sales_note", columnDefinition = "TEXT")
     private String salesNote;
+    @Column(name = "servicing_note", columnDefinition = "TEXT")
+    private String servicingNote;
 
     @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private java.util.List<PolicyDocument> teamDocuments = new java.util.ArrayList<>();
