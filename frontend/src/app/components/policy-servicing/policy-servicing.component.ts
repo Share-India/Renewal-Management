@@ -112,6 +112,9 @@ import { ApiService } from '../../services/api.service';
                     <button class="btn btn-outline-info btn-sm" (click)="viewDetails(policy)" title="View Details">
                         <i class="bi bi-eye"></i>
                     </button>
+                    <button class="btn btn-outline-warning btn-sm" (click)="openNoteModal(policy)" title="Servicing Note">
+                        <i class="bi bi-journal-text"></i>
+                    </button>
                     <button class="btn btn-primary btn-sm" (click)="openIssueModal(policy)" title="Issue Policy">
                         <i class="bi bi-file-earmark-check"></i> Issue
                     </button>
@@ -170,6 +173,9 @@ import { ApiService } from '../../services/api.service';
                 <td>
                      <button class="btn btn-outline-info btn-sm" (click)="viewDetails(policy)" title="View Details">
                         <i class="bi bi-eye"></i> View
+                    </button>
+                    <button class='btn btn-outline-warning btn-sm ms-1' (click)='openNoteModal(policy)' title='Servicing Note'>
+                        <i class='bi bi-journal-text'></i> Note
                     </button>
                 </td>
                 </tr>
