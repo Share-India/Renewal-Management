@@ -129,6 +129,17 @@ public class RenewalService {
                 return true;
             }
 
+            // Role POSP Logic
+            if (user.getRole() != null && user.getRole().contains("POSP")) {
+                if (user.getAssignedPosp() != null && !user.getAssignedPosp().isEmpty() && !user.getAssignedPosp().equals("null")) {
+                    if (p.getAssociateName() == null)
+                        return false;
+                    if (!user.getAssignedPosp().equalsIgnoreCase(p.getAssociateName().trim()))
+                        return false;
+                }
+                return true;
+            }
+
             // Role RENEWER Logic
             if (p.getTargetTeam() != null && !p.getTargetTeam().equalsIgnoreCase("RENEWER")) {
                 return false;
@@ -450,9 +461,9 @@ public class RenewalService {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         String username = auth != null && auth.isAuthenticated() ? auth.getName() : null;
         com.insurance.renewal.entity.User user = username != null ? userRepository.findByUsername(username).orElse(null) : null;
-        boolean isRmOrRenewer = user != null && user.getRole() != null && (user.getRole().contains("RM") || user.getRole().contains("RENEWER"));
+        boolean isRmOrRenewerOrPosp = user != null && user.getRole() != null && (user.getRole().contains("RM") || user.getRole().contains("RENEWER") || user.getRole().contains("POSP"));
 
-        if (isRmOrRenewer) {
+        if (isRmOrRenewerOrPosp) {
             if (user.getRole().contains("RM")) {
                 List<String> assignedRms = null;
                 if (user.getAssignedRm() != null && !user.getAssignedRm().trim().isEmpty() && !user.getAssignedRm().equals("null")) {

@@ -94,13 +94,13 @@
                                 (click)="openDetailsModal(policy)" title="View Details">
                                 <i class="bi bi-eye" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button *ngIf="!isTeamRole" 
+                            <button *ngIf="!isTeamRole && !isPosp" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #e3f2fd; color: #1e88e5;" 
                                 (click)="openLogCall(policy)" title="Log Call">
                                 <i class="bi bi-telephone" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button *ngIf="!isTeamRole" 
+                            <button *ngIf="!isTeamRole && !isPosp" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #e8f5e9; color: #43a047;" 
                                 (click)="openRenewalModal(policy)" title="Renew Policy">
@@ -158,9 +158,7 @@
                                 (click)="onDeletePolicy(policy)" title="Delete Policy">
                                 <i class="bi bi-trash" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
-                                style="width: 36px; height: 36px; border-radius: 10px; background-color: #f1f3f5; color: #495057;" 
-                                (click)="openHistoryModal(policy)" title="Call History">
+                            <button *ngIf="!isPosp" class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; border-radius: 10px; background-color: #f1f3f5; color: #495057;" (click)="openHistoryModal(policy)" title="Call History">
                                 <i class="bi bi-clock-history" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
                         </div>
@@ -207,7 +205,7 @@
             <!-- Edit/View Toggle Button (Float right or in header? putting in footer is safer but let's put control top right of body) -->
             <!-- Edit/View Toggle Button (Float right or in header? putting in footer is safer but let's put control top right of body) -->
             <div class="d-flex justify-content-end mb-2" *ngIf="canEditPolicy">
-                <button class="btn btn-sm" [ngClass]="isEditing ? 'btn-outline-danger' : 'btn-outline-primary'"
+                <button *ngIf="!isPosp" class="btn btn-sm" [ngClass]="isEditing ? 'btn-outline-danger' : 'btn-outline-primary'"
                     (click)="toggleEditMode()">
                     <i class="bi" [ngClass]="isEditing ? 'bi-x-lg' : 'bi-pencil'"></i> {{ isEditing ? 'Cancel Edit' :
                     'Edit Details' }}

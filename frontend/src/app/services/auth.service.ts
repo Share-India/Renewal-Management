@@ -41,6 +41,11 @@ export class AuthService {
         return !!this.getCurrentUser();
     }
 
+    isPosp(): boolean {
+        const user = this.getCurrentUser();
+        return !!(user && user.role && user.role.toUpperCase() === 'POSP');
+    }
+
     isAdmin(): boolean {
         const user = this.getCurrentUser();
         return user && user.role && user.role.toUpperCase() === 'ADMIN';

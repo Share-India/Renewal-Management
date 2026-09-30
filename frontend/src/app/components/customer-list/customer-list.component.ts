@@ -246,6 +246,10 @@ export class CustomerListComponent {
         });
     }
 
+    get isPosp(): boolean {
+        return this.authService.hasRole('POSP');
+    }
+
     get isRm(): boolean {
         return this.authService.hasRole('RM');
     }

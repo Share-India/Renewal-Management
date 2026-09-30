@@ -129,6 +129,32 @@ import { ApiService } from '../../services/api.service';
               </div>
             </ng-container>
 
+            
+
+            <!-- POSP Assignment Filter -->
+            <ng-container *ngIf="newUser.role === 'POSP'">
+              <div class="form-group">
+                <label>Assigned POSP Name</label>
+                <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
+                  <div *ngIf="availablePospNames.length === 0" class="text-muted text-center p-2">
+                    Loading POSP names or none available...
+                  </div>
+                  <ng-container *ngIf="availablePospNames.length > 0">
+                    <div class="mb-2">
+                      <input type="text" class="form-control form-control-sm" placeholder="Search POSP names..." [(ngModel)]="pospSearchTerm" name="pospSearchTerm">
+                    </div>
+                    <div class="form-check" *ngFor="let posp of filteredPosps; let i = index">
+                      <input class="form-check-input" type="radio" name="pospSelection" [id]="'posp_' + i" 
+                             [value]="posp" [(ngModel)]="selectedPosp">
+                      <label class="form-check-label" [for]="'posp_' + i">
+                        {{ posp }}
+                      </label>
+                    </div>
+                  </ng-container>
+                </div>
+              </div>
+            </ng-container>
+
             <!-- Optional RENEWER Assignment Mode & Filters -->
             <ng-container *ngIf="newUser.role === 'RENEWER'">
               
@@ -492,7 +518,7 @@ export class UserManagementComponent implements OnInit {
     assignedProductType: '',
     assignedPremiumRange: '',
     assignedCustomers: '',
-    assignedRm: ''
+    assignedRm: '', assignedPosp: ''
   };
   confirmPassword = '';
   
@@ -681,12 +707,21 @@ export class UserManagementComponent implements OnInit {
 
   // User List
   availableRmNames: string[] = [];
+  availablePospNames: string[] = [];
+  selectedPosp: string = '';
+  pospSearchTerm: string = '';
   selectedRms: string[] = [];
   loadingRmNames = false;
   rmSearchTerm = '';
 
   get allRmsSelected(): boolean {
     return this.selectedRms.length > 0 && this.selectedRms.length === this.availableRmNames.length;
+  }
+
+  get filteredPosps(): string[] {
+    if (!this.pospSearchTerm) return this.availablePospNames;
+    const term = this.pospSearchTerm.toLowerCase();
+    return this.availablePospNames.filter(r => r.toLowerCase().includes(term));
   }
 
   get filteredRms(): string[] {
@@ -738,6 +773,7 @@ export class UserManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.extractBranches();
+    this.apiService.getPospNames().subscribe(names => this.availablePospNames = names);
     this.loadUsers();
   }
 
@@ -849,6 +885,12 @@ export class UserManagementComponent implements OnInit {
         this.newUser.assignedCustomers = this.selectedCustomers.join(',');
         this.newUser.assignedProductType = '';
       }
+    } else if (this.newUser.role === 'POSP') {
+      this.newUser.assignedPosp = this.selectedPosp;
+      this.newUser.assignedRm = '';
+      this.newUser.assignedProductType = '';
+      this.newUser.assignedPremiumRange = '';
+      this.newUser.assignedCustomers = '';
     } else if (this.newUser.role === 'RM') {
       this.newUser.assignedRm = this.selectedRms.join(',');
       this.newUser.assignedProductType = '';
@@ -866,7 +908,7 @@ export class UserManagementComponent implements OnInit {
         this.success = true;
         this.newUser = { 
           username: '', password: '', role: 'RENEWER',
-          assignedBranch: '', assignedProductType: '', assignedPremiumRange: '', assignedCustomers: '', assignedRm: ''
+          assignedBranch: '', assignedProductType: '', assignedPremiumRange: '', assignedCustomers: '', assignedRm: '', assignedPosp: ''
         };
         this.confirmPassword = '';
         this.selectedBranches = [];

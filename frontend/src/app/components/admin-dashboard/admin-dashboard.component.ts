@@ -18,13 +18,13 @@ import * as XLSX from 'xlsx';
     <div class="admin-container">
       <div class="header-section d-flex justify-content-between align-items-center">
         <div>
-          <h2>{{ isRmRole() ? 'RM Dashboard' : 'Administrative Dashboard' }}</h2>
-          <p class="text-muted">{{ isRmRole() ? 'Manage your relationship data and follow-ups' : 'Real-time insights into system performance and daily administrative tasks' }}</p>
+          <h2>{{ isPospRole() ? 'POSP Dashboard' : (isRmRole() ? 'RM Dashboard' : 'Administrative Dashboard') }}</h2>
+          <p class="text-muted">{{ isPospRole() ? 'View your mapped policies and follow-ups' : (isRmRole() ? 'Manage your relationship data and follow-ups' : 'Real-time insights into system performance and daily administrative tasks') }}</p>
         </div>
         
         <div class="d-flex flex-column align-items-end gap-2">
           <div class="d-flex gap-3 align-items-center">
-            <div *ngIf="!isRmRole()" class="branch-selector shadow-sm">
+            <div *ngIf="!isRmRole() && !isPospRole()" class="branch-selector shadow-sm">
               <div class="input-group">
                 <span class="input-group-text bg-transparent border-0 pe-1">
                   <div class="icon-circle bg-primary bg-opacity-10 text-primary">
@@ -37,7 +37,7 @@ import * as XLSX from 'xlsx';
                 </select>
               </div>
             </div>
-            <button *ngIf="!isRmRole()" class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
+            <button *ngIf="!isRmRole() && !isPospRole()" class="btn btn-outline-secondary btn-branch shadow-sm px-3" (click)="openBranchModal()">
               <i class="bi bi-diagram-3-fill me-2 text-primary"></i> Manage
             </button>
             <button class="btn btn-primary shadow-sm px-4" (click)="openRenewalModal()">
@@ -45,13 +45,13 @@ import * as XLSX from 'xlsx';
             </button>
           </div>
           <div class="d-flex gap-2 justify-content-end w-100 mt-2">
-            <button class="btn btn-dark btn-sm shadow-sm px-3 fw-semibold d-flex align-items-center" *ngIf="!isRmRole()" (click)="openRenewerStatsModal()" title="View Renewer Activity">
+            <button class="btn btn-dark btn-sm shadow-sm px-3 fw-semibold d-flex align-items-center" *ngIf="!isRmRole() && !isPospRole()" (click)="openRenewerStatsModal()" title="View Renewer Activity">
               <i class="bi bi-bar-chart-fill me-2 fs-6 text-info"></i> Renewer Activity
             </button>
-            <button *ngIf="!isRmRole()" class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
+            <button *ngIf="!isRmRole() && !isPospRole()" class="btn btn-success btn-sm shadow-sm" (click)="exportTodaysReport()" title="Export Today's Updates">
               <i class="bi bi-file-earmark-excel me-1"></i> Download Today's Report
             </button>
-            <div *ngIf="!isRmRole()" class="input-group input-group-sm shadow-sm ms-2" style="width: 250px;">
+            <div *ngIf="!isRmRole() && !isPospRole()" class="input-group input-group-sm shadow-sm ms-2" style="width: 250px;">
               <input type="month" class="form-control border-success text-success fw-bold" [(ngModel)]="selectedMonthForReport" title="Select Month for Report">
               <button class="btn btn-success" (click)="exportMonthlyReport()" title="Export Monthly Activity">
                 <i class="bi bi-file-earmark-excel me-1"></i> Monthly Report
@@ -89,7 +89,7 @@ import * as XLSX from 'xlsx';
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedAdminBranch"></app-work-progress>
 
       <div class="mt-4 mb-3">
-        <app-timeline [counts]="timelineCounts" [adminMode]="true" [userRole]="isRmRole() ? 'RM' : 'ADMIN'" (daySelected)="onDaySelected($event)"></app-timeline>
+        <app-timeline [counts]="timelineCounts" [adminMode]="true" [userRole]="isPospRole() ? 'POSP' : (isRmRole() ? 'RM' : 'ADMIN')" (daySelected)="onDaySelected($event)"></app-timeline>
       </div>
 
       <!-- Date Picker Section -->
@@ -1272,7 +1272,7 @@ export class AdminDashboardComponent implements OnInit {
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
     this.loadInitialData();
-    if (!this.isRmRole()) {
+    if (!this.isRmRole() && !this.isPospRole()) {
       this.loadRenewerStats();
     }
   }
@@ -1281,6 +1281,10 @@ export class AdminDashboardComponent implements OnInit {
 
   isRmRole(): boolean {
     return this.authService.hasRole('RM');
+  }
+
+  isPospRole(): boolean {
+    return this.authService.hasRole('POSP');
   }
 
   loadInitialData() {
@@ -1649,7 +1653,7 @@ export class AdminDashboardComponent implements OnInit {
             let expiring = data.expiringPolicies || [];
             let followups = data.scheduledFollowUps || [];
             
-            if (this.isRmRole()) {
+            if (this.isRmRole() || this.isPospRole()) {
                const normalizeDate = (val: any) => {
                  if (!val) return '';
                  if (Array.isArray(val)) return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;

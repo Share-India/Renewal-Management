@@ -17,7 +17,7 @@ export const routes: Routes = [
         path: 'admin',
         component: AdminDashboardComponent,
         canActivate: [AuthGuard],
-        data: { roles: ['ADMIN', 'RM'] }
+        data: { roles: ['ADMIN', 'RM', 'POSP'] }
     },
     {
         path: 'admin/users',
@@ -29,19 +29,19 @@ export const routes: Routes = [
         path: 'admin/business-insights',
         loadComponent: () => import('./components/business-insights/business-insights').then(m => m.BusinessInsights),
         canActivate: [AuthGuard],
-        data: { roles: ['ADMIN', 'RM'] }
+        data: { roles: ['ADMIN', 'RM', 'POSP'] }
     },
     {
         path: 'admin/policy-progress',
         loadComponent: () => import('./components/policy-progress/policy-progress').then(m => m.PolicyProgress),
         canActivate: [AuthGuard],
-        data: { roles: ['ADMIN', 'RM'] }
+        data: { roles: ['ADMIN', 'RM', 'POSP'] }
     },
     {
         path: 'admin/dashboard/:managerRole',
         component: RenewalComponent,
         canActivate: [AuthGuard],
-        data: { roles: ['ADMIN', 'RM'] }
+        data: { roles: ['ADMIN', 'RM', 'POSP'] }
     },
     {
         path: 'servicing',

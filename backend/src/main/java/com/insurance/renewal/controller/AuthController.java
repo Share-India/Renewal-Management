@@ -68,6 +68,8 @@ public class AuthController {
         } else if (role.contains("RM")) {
             user.setAssignedBranch(payload.get("assignedBranch"));
             user.setAssignedRm(payload.get("assignedRm"));
+        } else if (role.contains("POSP")) {
+            user.setAssignedPosp(payload.get("assignedPosp"));
         }
 
         return ResponseEntity.ok(userRepository.save(user));
@@ -97,6 +99,12 @@ public class AuthController {
             return ResponseEntity.ok(policyRepository.findDistinctRmNamesByBranches(branches));
         }
         return ResponseEntity.ok(policyRepository.findDistinctRmNamesByBranch(branch));
+    }
+
+    @GetMapping("/admin/posp-names")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
+    public ResponseEntity<java.util.List<String>> getPospNames() {
+        return ResponseEntity.ok(policyRepository.findDistinctAssociateNames());
     }
 
     @GetMapping("/admin/users")

@@ -37,4 +37,7 @@ public class User {
 
     @Column(name = "assigned_rm", columnDefinition = "TEXT")
     private String assignedRm;
+
+    @Column(name = "assigned_posp")
+    private String assignedPosp;
 }

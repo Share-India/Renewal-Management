@@ -285,6 +285,10 @@ export class ApiService {
         return this.http.get<string[]>(`${this.baseUrl}/admin/customers-by-branch?branch=${encodeURIComponent(branch)}`, { headers: this.getHeaders() });
     }
 
+    getPospNames(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.baseUrl}/admin/posp-names`, { headers: this.getHeaders() });
+    }
+
     getRmNames(branch?: string): Observable<string[]> {
         let url = `${this.baseUrl}/admin/rm-names`;
         if (branch) url += `?branch=${encodeURIComponent(branch)}`;
