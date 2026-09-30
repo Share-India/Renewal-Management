@@ -282,6 +282,15 @@ public class RenewalService {
                 return true;
             }
 
+            // Role POSP Logic
+            if (effectiveUser.getRole() != null && effectiveUser.getRole().contains("POSP")) {
+                if (effectiveUser.getAssignedPosp() != null && !effectiveUser.getAssignedPosp().isEmpty() && !effectiveUser.getAssignedPosp().equals("null")) {
+                    if (p.getAssociateName() == null) return false;
+                    if (!effectiveUser.getAssignedPosp().equalsIgnoreCase(p.getAssociateName().trim())) return false;
+                }
+                return true;
+            }
+
             // Role RENEWER Logic
             if (p.getTargetTeam() != null && !p.getTargetTeam().equalsIgnoreCase("RENEWER")) {
                 return false;

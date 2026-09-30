@@ -56,6 +56,14 @@ import { AuthService } from '../../services/auth.service';
             </div>
           </button>
           
+          <button class="glass-card" (click)="selectRole('POSP')">
+            <div class="icon-wrapper"><i class="bi bi-person-lines-fill"></i></div>
+            <div>
+              <h3 class="role-title">POSP Portal</h3>
+              <p class="role-desc">Point of Sales Person records</p>
+            </div>
+          </button>
+          
           <button class="glass-card" (click)="selectRole('CLAIMS')">
             <div class="icon-wrapper"><i class="bi bi-shield-plus"></i></div>
             <div>
@@ -554,7 +562,7 @@ export class LoginComponent {
   password = '';
   loading = false;
   error = '';
-  selectedRole: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'CLAIMS' | 'UNDERWRITING' | null = null;
+  selectedRole: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'POSP' | 'CLAIMS' | 'UNDERWRITING' | null = null;
 
   constructor(private authService: AuthService, private router: Router) { }
 
@@ -562,6 +570,7 @@ export class LoginComponent {
     switch (this.selectedRole) {
       case 'ADMIN': return 'System Admin';
       case 'RM': return 'Relationship Manager & Sales';
+      case 'POSP': return 'POSP Portal';
       case 'SERVICING': return 'Policy Servicing';
       case 'MIS': return 'MIS Dashboard';
       case 'CLAIMS': return 'Claims Team';
@@ -570,7 +579,7 @@ export class LoginComponent {
     }
   }
 
-  selectRole(role: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'CLAIMS' | 'UNDERWRITING') {
+  selectRole(role: 'ADMIN' | 'RENEWER' | 'SERVICING' | 'MIS' | 'RM' | 'POSP' | 'CLAIMS' | 'UNDERWRITING') {
     this.selectedRole = role;
     this.error = '';
     this.username = '';
@@ -623,6 +632,12 @@ export class LoginComponent {
             this.loading = false;
             return;
           }
+          if (this.selectedRole === 'POSP' && user.role !== 'POSP' && user.role !== 'ADMIN') {
+            this.error = 'Access Denied: You are not a POSP.';
+            this.authService.logout();
+            this.loading = false;
+            return;
+          }
           if (this.selectedRole === 'UNDERWRITING' && user.role !== 'UNDERWRITING' && user.role !== 'UNDERWRITING_MANAGER' && user.role !== 'ADMIN') {
             this.error = 'Access Denied: You are not authorized for the Underwriting Team.';
             this.authService.logout();
@@ -630,7 +645,7 @@ export class LoginComponent {
             return;
           }
 
-          if (user.role === 'ADMIN' || user.role === 'RM') {
+          if (user.role === 'ADMIN' || user.role === 'RM' || user.role === 'POSP') {
             this.router.navigate(['/admin']);
           } else if (user.role === 'SERVICING') {
             this.router.navigate(['/servicing']);
