@@ -62,6 +62,7 @@ import { ApiService } from '../../services/api.service';
                   <option value="MIS">MIS</option>
                   <option value="ADMIN">Administrator</option>
                   <option value="RM">Relationship Manager</option>
+                    <option value="POSP">Point of Sales Person (POSP)</option>
                   <option value="CLAIMS_MANAGER">Claims Manager</option>
                   <option value="SALES_MANAGER">Sales Manager</option>
                   <option value="UNDERWRITING_MANAGER">Underwriting Manager</option>
