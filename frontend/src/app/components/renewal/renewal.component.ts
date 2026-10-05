@@ -1033,6 +1033,7 @@ export class RenewalComponent implements OnInit {
 
   showFollowUps(): boolean {
     if (this.isTeamRole()) return false;
+    if (this.selectedSourceTeam != null && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') return false;
     if (this.selectedDay === 600) return false;
     return typeof this.selectedDay === 'number';
   }
@@ -1047,9 +1048,10 @@ export class RenewalComponent implements OnInit {
     if (this.selectedDay === 'returned-to-renewer') return "Policies Returned to Renewer (75 Days)";
 
     const isTeam = this.isTeamRole();
+    const isReturnsView = this.selectedSourceTeam != null && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null';
 
     if (this.selectedDay === 600) {
-        return isTeam ? 'All Tasks' : 'All Policies in Next 60 Days';
+        return (isTeam || isReturnsView) ? 'All Tasks' : 'All Policies in Next 60 Days';
     }
 
     const day = this.selectedDay as number;
@@ -1057,6 +1059,11 @@ export class RenewalComponent implements OnInit {
         if (day === 0) return 'Tasks Assigned Today';
         if (day < 0) return `Tasks Assigned ${Math.abs(day)} Days Ago`;
         return `Tasks Assigned in ${day} days`;
+    } else if (isReturnsView) {
+        let teamName = this.selectedSourceTeam.charAt(0).toUpperCase() + this.selectedSourceTeam.slice(1).toLowerCase();
+        if (day === 0) return `Returned by ${teamName} Today`;
+        if (day < 0) return `Returned by ${teamName} ${Math.abs(day)} Days Ago`;
+        return `Returned by ${teamName} in ${day} days`;
     } else {
         if (day === 0) return 'Upcoming Renewals (Expiring Today)';
         if (day > 0) {

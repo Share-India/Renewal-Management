@@ -134,7 +134,15 @@ public class RenewalService {
                 if (user.getAssignedPosp() != null && !user.getAssignedPosp().isEmpty() && !user.getAssignedPosp().equals("null")) {
                     if (p.getAssociateName() == null)
                         return false;
-                    if (!user.getAssignedPosp().equalsIgnoreCase(p.getAssociateName().trim()))
+                    String[] allowedPosps = user.getAssignedPosp().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String posp : allowedPosps) {
+                        if (posp.equalsIgnoreCase(p.getAssociateName().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match)
                         return false;
                 }
                 return true;
@@ -286,7 +294,15 @@ public class RenewalService {
             if (effectiveUser.getRole() != null && effectiveUser.getRole().contains("POSP")) {
                 if (effectiveUser.getAssignedPosp() != null && !effectiveUser.getAssignedPosp().isEmpty() && !effectiveUser.getAssignedPosp().equals("null")) {
                     if (p.getAssociateName() == null) return false;
-                    if (!effectiveUser.getAssignedPosp().equalsIgnoreCase(p.getAssociateName().trim())) return false;
+                    String[] allowedPosps = effectiveUser.getAssignedPosp().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String posp : allowedPosps) {
+                        if (posp.equalsIgnoreCase(p.getAssociateName().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) return false;
                 }
                 return true;
             }
@@ -462,6 +478,7 @@ public class RenewalService {
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Object> getAdminStats(String branch) {
+        if ("null".equals(branch)) branch = null;
         Map<String, Object> stats = new HashMap<>();
 
         long totalPolicies;
@@ -526,6 +543,7 @@ public class RenewalService {
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<Integer, Long> getTimelineCounts(String branch, String sourceTeam) {
+        if ("null".equals(branch)) branch = null;
         Map<Integer, Long> counts = new HashMap<>();
         LocalDate today = LocalDate.now();
 
@@ -558,6 +576,19 @@ public class RenewalService {
 
             if (isReturnsView) {
                 filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+                // Filter out policies that have been handled!
+                filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> {
+                    if (p.getStatus() != null && p.getStatus().equals("PENDING_ISSUANCE")) return false;
+                    if (p.getReminder() != null) {
+                        String outcome = p.getReminder().getLastCallOutcome();
+                        if (outcome != null) {
+                            outcome = outcome.toLowerCase();
+                            if (outcome.equals("pending issuance") || outcome.equals("renewed") || outcome.equals("externally renewed")) return false;
+                        }
+                        if (p.getReminder().getFollowUpDate() != null) return false;
+                    }
+                    return true;
+                }).collect(java.util.stream.Collectors.toList());
             }
 
             for (Integer offset : specificDays) {
@@ -1649,6 +1680,7 @@ public class RenewalService {
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Integer> getTodaysWorkProgress(String branch, String sourceTeam) {
+        if ("null".equals(branch)) branch = null;
         LocalDate today = LocalDate.now();
 
         // 1. Get the remaining tasks for today (excludes anything already completed today)

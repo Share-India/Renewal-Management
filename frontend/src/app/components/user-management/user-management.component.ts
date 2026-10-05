@@ -135,7 +135,7 @@ import { ApiService } from '../../services/api.service';
             <!-- POSP Assignment Filter -->
             <ng-container *ngIf="newUser.role === 'POSP'">
               <div class="form-group">
-                <label>Assigned POSP Name</label>
+                <label>Assigned POSP Names</label>
                 <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
                   <div *ngIf="availablePospNames.length === 0" class="text-muted text-center p-2">
                     Loading POSP names or none available...
@@ -144,9 +144,16 @@ import { ApiService } from '../../services/api.service';
                     <div class="mb-2">
                       <input type="text" class="form-control form-control-sm" placeholder="Search POSP names..." [(ngModel)]="pospSearchTerm" name="pospSearchTerm">
                     </div>
+                    <div class="form-check border-bottom pb-2 mb-2">
+                      <input class="form-check-input" type="checkbox" id="selectAllPosps" 
+                             [checked]="allPospsSelected" (change)="toggleAllPosps($event)">
+                      <label class="form-check-label fw-bold" for="selectAllPosps">
+                        All POSP Names
+                      </label>
+                    </div>
                     <div class="form-check" *ngFor="let posp of filteredPosps; let i = index">
-                      <input class="form-check-input" type="radio" name="pospSelection" [id]="'posp_' + i" 
-                             [value]="posp" [(ngModel)]="selectedPosp">
+                      <input class="form-check-input" type="checkbox" [id]="'posp_' + i" 
+                             [checked]="selectedPosps.includes(posp)" (change)="togglePosp(posp, $event)">
                       <label class="form-check-label" [for]="'posp_' + i">
                         {{ posp }}
                       </label>
@@ -709,7 +716,7 @@ export class UserManagementComponent implements OnInit {
   // User List
   availableRmNames: string[] = [];
   availablePospNames: string[] = [];
-  selectedPosp: string = '';
+  selectedPosps: string[] = [];
   pospSearchTerm: string = '';
   selectedRms: string[] = [];
   loadingRmNames = false;
@@ -717,6 +724,28 @@ export class UserManagementComponent implements OnInit {
 
   get allRmsSelected(): boolean {
     return this.selectedRms.length > 0 && this.selectedRms.length === this.availableRmNames.length;
+  }
+
+  get allPospsSelected(): boolean {
+    return this.selectedPosps.length > 0 && this.selectedPosps.length === this.availablePospNames.length;
+  }
+
+  togglePosp(posp: string, event: any) {
+    if (event.target.checked) {
+      if (!this.selectedPosps.includes(posp)) {
+        this.selectedPosps.push(posp);
+      }
+    } else {
+      this.selectedPosps = this.selectedPosps.filter(p => p !== posp);
+    }
+  }
+
+  toggleAllPosps(event: any) {
+    if (event.target.checked) {
+      this.selectedPosps = [...this.availablePospNames];
+    } else {
+      this.selectedPosps = [];
+    }
   }
 
   get filteredPosps(): string[] {
@@ -887,7 +916,7 @@ export class UserManagementComponent implements OnInit {
         this.newUser.assignedProductType = '';
       }
     } else if (this.newUser.role === 'POSP') {
-      this.newUser.assignedPosp = this.selectedPosp;
+      this.newUser.assignedPosp = this.selectedPosps.join(',');
       this.newUser.assignedRm = '';
       this.newUser.assignedProductType = '';
       this.newUser.assignedPremiumRange = '';
@@ -917,6 +946,7 @@ export class UserManagementComponent implements OnInit {
         this.selectedPremiumRanges = [];
         this.selectedCustomers = [];
         this.selectedRms = [];
+        this.selectedPosps = [];
         this.rmSearchTerm = '';
         this.assignmentMode = 'product';
         this.loading = false;
