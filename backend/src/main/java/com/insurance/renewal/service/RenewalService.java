@@ -155,6 +155,9 @@ public class RenewalService {
             if (user.getUsername().equals(p.getCurrentAssignee())) {
                 return true;
             }
+            if (p.getCurrentAssignee() != null && !p.getCurrentAssignee().trim().isEmpty()) {
+                return false; // Explicitly assigned to someone else
+            }
 
             if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
                     && !user.getAssignedBranch().equals("null")) {
@@ -313,6 +316,9 @@ public class RenewalService {
             }
             if (effectiveUser.getUsername().equals(p.getCurrentAssignee())) {
                 return true;
+            }
+            if (p.getCurrentAssignee() != null && !p.getCurrentAssignee().trim().isEmpty()) {
+                return false; // Explicitly assigned to someone else
             }
 
             if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().isEmpty()
