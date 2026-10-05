@@ -110,6 +110,12 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT COUNT(p) FROM Policy p WHERE LOWER(p.rmName) IN :rmNames")
         long countByRmNamesIgnoreCase(@Param("rmNames") List<String> rmNames);
 
+        @Query("SELECT COUNT(p) FROM Policy p WHERE (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) AND LOWER(p.associateName) IN :associateNames")
+        long countByBranchAndAssociateNamesIgnoreCase(@Param("branch") String branch, @Param("associateNames") List<String> associateNames);
+
+        @Query("SELECT COUNT(p) FROM Policy p WHERE LOWER(p.associateName) IN :associateNames")
+        long countByAssociateNamesIgnoreCase(@Param("associateNames") List<String> associateNames);
+
         @org.springframework.data.jpa.repository.Modifying
         @Query(value = "UPDATE policies p " +
                 "SET p.last_expiry_date = COALESCE(p.last_expiry_date, p.expiry_date), " +

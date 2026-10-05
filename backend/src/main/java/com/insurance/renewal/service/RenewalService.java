@@ -511,6 +511,27 @@ public class RenewalService {
                     totalPolicies = 0;
                     totalReminders = 0;
                 }
+            } else if (user.getRole().contains("POSP")) {
+                List<String> assignedPosps = null;
+                if (user.getAssignedPosp() != null && !user.getAssignedPosp().trim().isEmpty() && !user.getAssignedPosp().equals("null")) {
+                    assignedPosps = java.util.Arrays.stream(user.getAssignedPosp().split(","))
+                            .map(String::trim)
+                            .map(String::toLowerCase)
+                            .collect(java.util.stream.Collectors.toList());
+                }
+                
+                if (assignedPosps != null && !assignedPosps.isEmpty()) {
+                    if (branch != null && !branch.trim().isEmpty()) {
+                        totalPolicies = policyRepository.countByBranchAndAssociateNamesIgnoreCase(branch, assignedPosps);
+                        totalReminders = reminderRepository.countByReminderStatusAndBranchAndAssociateNamesIgnoreCase("PENDING", branch, assignedPosps);
+                    } else {
+                        totalPolicies = policyRepository.countByAssociateNamesIgnoreCase(assignedPosps);
+                        totalReminders = reminderRepository.countByReminderStatusAndAssociateNamesIgnoreCase("PENDING", assignedPosps);
+                    }
+                } else {
+                    totalPolicies = 0;
+                    totalReminders = 0;
+                }
             } else {
                 List<Policy> allPols = (branch != null && !branch.trim().isEmpty()) ? policyRepository.findByBranchIgnoreCase(branch) : policyRepository.findAll();
                 totalPolicies = applyRenewerFilters(allPols).size();

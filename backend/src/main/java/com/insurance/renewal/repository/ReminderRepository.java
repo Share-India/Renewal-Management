@@ -88,4 +88,15 @@ public interface ReminderRepository extends JpaRepository<Reminder, Long> {
             "SET r.reminder_status = 'Renewed', r.last_call_outcome = 'Renewed' " +
             "WHERE p.status = 'ACTIVE' AND LOWER(p.type) = 'life insurance' AND p.policy_issue_date = CURRENT_DATE", nativeQuery = true)
     int bulkUpdateAutoIssuedReminders();
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Reminder r JOIN r.policy p WHERE LOWER(r.reminderStatus) = LOWER(:status) AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) AND LOWER(p.associateName) IN :associateNames")
+    long countByReminderStatusAndBranchAndAssociateNamesIgnoreCase(
+        @org.springframework.data.repository.query.Param("status") String status, 
+        @org.springframework.data.repository.query.Param("branch") String branch,
+        @org.springframework.data.repository.query.Param("associateNames") List<String> associateNames);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(r) FROM Reminder r JOIN r.policy p WHERE LOWER(r.reminderStatus) = LOWER(:status) AND LOWER(p.associateName) IN :associateNames")
+    long countByReminderStatusAndAssociateNamesIgnoreCase(
+        @org.springframework.data.repository.query.Param("status") String status, 
+        @org.springframework.data.repository.query.Param("associateNames") List<String> associateNames);
 }
