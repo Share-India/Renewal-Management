@@ -117,7 +117,7 @@ export class CustomerListComponent {
     get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
 
     canDeleteDocument(doc: any, team: string): boolean {
-        const currentUser = this.authService.getUsername();
+        const currentUser = this.authService.getCurrentUser()?.username;
         if (team === 'CLAIMS' && this.isClaimsManager) return true;
         if (team === 'UNDERWRITING' && this.isUnderwritingManager) return true;
         return doc.uploadedByUsername === currentUser;
