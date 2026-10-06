@@ -27,6 +27,8 @@ public class PolicyDocument {
     
     private String originalFilename;
 
+    private String uploadedByUsername;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "policy_id")
     @JsonIgnore

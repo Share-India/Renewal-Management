@@ -116,6 +116,13 @@ export class CustomerListComponent {
     get isClaimsUser(): boolean { return this.authService.hasRole('CLAIMS'); }
     get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
 
+    canDeleteDocument(doc: any, team: string): boolean {
+        const currentUser = this.authService.getUsername();
+        if (team === 'CLAIMS' && this.isClaimsManager) return true;
+        if (team === 'UNDERWRITING' && this.isUnderwritingManager) return true;
+        return doc.uploadedByUsername === currentUser;
+    }
+
     get canViewSensitiveInfo(): boolean {
         // Hide PAN and GST for RENEWER role
         if (this.authService.hasRole('RENEWER')) {

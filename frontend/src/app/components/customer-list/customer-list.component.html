@@ -536,7 +536,7 @@
                                         (click)="viewTeamDocument(doc.id)">
                                         <i class="bi bi-eye me-1"></i> View
                                     </button>
-                                    <button *ngIf="(isClaimsManager || isClaimsUser)" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                    <button *ngIf="canDeleteDocument(doc, 'CLAIMS')" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
                                         (click)="deleteTeamDocument(doc.id)" title="Delete Document">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -568,7 +568,7 @@
                                         (click)="viewTeamDocument(doc.id)">
                                         <i class="bi bi-eye me-1"></i> View
                                     </button>
-                                    <button *ngIf="(isSalesManager || isSalesUser)" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                    <button *ngIf="canDeleteDocument(doc, 'SALES')" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
                                         (click)="deleteTeamDocument(doc.id)" title="Delete Document">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -600,7 +600,7 @@
                                         (click)="viewTeamDocument(doc.id)">
                                         <i class="bi bi-eye me-1"></i> View
                                     </button>
-                                    <button *ngIf="(isUnderwritingManager || isUnderwritingUser)" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
+                                    <button *ngIf="canDeleteDocument(doc, 'UNDERWRITING')" class="btn btn-sm btn-outline-danger rounded-pill px-3 text-nowrap"
                                         (click)="deleteTeamDocument(doc.id)" title="Delete Document">
                                         <i class="bi bi-trash"></i>
                                     </button>

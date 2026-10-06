@@ -310,6 +310,12 @@ public class RoutingController {
                         doc.setUploadedByTeam(team);
                         doc.setDocumentType(team + "_DOCUMENT");
                         doc.setOriginalFilename(file.getOriginalFilename());
+                        
+                        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                        if (auth != null && auth.isAuthenticated()) {
+                            doc.setUploadedByUsername(auth.getName());
+                        }
+
                         doc.setPolicy(policy);
                         policy.getTeamDocuments().add(doc);
                         policyDocumentRepository.save(doc);
