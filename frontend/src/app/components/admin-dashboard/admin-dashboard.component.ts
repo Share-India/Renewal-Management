@@ -624,6 +624,13 @@ import * as XLSX from 'xlsx';
               <!-- Additional Details -->
               <div class="col-12 mt-4"><h5 class="border-bottom pb-2">Additional Details</h5></div>
               <div class="col-md-6">
+                <label class="form-label">Branch *</label>
+                <select class="form-select" [(ngModel)]="renewalForm.branch">
+                  <option value="">Select branch</option>
+                  <option *ngFor="let b of availableBranches" [value]="b">{{b}}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
                 <label class="form-label">RM Name</label>
                 <input type="text" class="form-control" [(ngModel)]="renewalForm.rmName" placeholder="Enter RM name">
               </div>
@@ -2100,7 +2107,7 @@ export class AdminDashboardComponent implements OnInit {
     if (!this.renewalForm.customer.firstName || !this.renewalForm.customer.lastName ||
       !this.renewalForm.customer.email || !this.renewalForm.customer.phone ||
       !this.renewalForm.policyNumber || !this.renewalForm.insuranceName ||
-      !this.renewalForm.type || !this.renewalForm.amount ||
+      !this.renewalForm.type || !this.renewalForm.amount || !this.renewalForm.branch ||
       !this.renewalForm.policyStartDate || !this.renewalForm.policyEndDate) {
       this.notificationService.showErrorModal('Please fill all required fields marked with *');
       return;
