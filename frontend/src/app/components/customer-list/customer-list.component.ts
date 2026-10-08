@@ -706,6 +706,45 @@ Renewal Due Date : ${endDate}`;
     // ----------------------------------------
     // Document Uploads
     // ----------------------------------------
+    showRenewerUploadModal: boolean = false;
+    renewerFiles: File[] = [];
+    renewerNote: string = '';
+
+    openRenewerUpload(policy: any) {
+        this.selectedPolicy = policy;
+        this.showRenewerUploadModal = true;
+        this.renewerFiles = [];
+        this.renewerNote = '';
+    }
+    closeRenewerUpload() {
+        this.showRenewerUploadModal = false;
+        this.renewerFiles = [];
+        this.renewerNote = '';
+    }
+    onRenewerFilesSelected(event: any) {
+        if (event.target.files.length > 0) {
+            this.renewerFiles = Array.from(event.target.files);
+        }
+    }
+    submitRenewerUpload() {
+        const formData = new FormData();
+        formData.append('team', 'RENEWER');
+        if (this.renewerNote) formData.append('note', this.renewerNote);
+        this.renewerFiles.forEach(file => formData.append('files', file));
+        
+        this.apiService.uploadTeamDocuments(this.selectedPolicy.id, formData).subscribe({
+            next: () => {
+                this.notificationService.showSuccessToast('Documents uploaded successfully.');
+                this.closeRenewerUpload();
+                this.dataUpdated.emit();
+            },
+            error: (err) => {
+                console.error('Renewer upload error:', err);
+                this.notificationService.showErrorModal('Error uploading documents: ' + (err.error?.message || err.message || JSON.stringify(err)));
+            }
+        });
+    }
+
     claimsFiles: File[] = [];
     underwritingFiles: File[] = [];
 
