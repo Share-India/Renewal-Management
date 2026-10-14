@@ -161,6 +161,17 @@ public class RoutingController {
         if (policyOpt.isEmpty())
             return ResponseEntity.notFound().build();
 
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            User currentUser = userRepository.findByUsername(auth.getName()).orElse(null);
+            if (currentUser != null && currentUser.getRole() != null) {
+                String role = currentUser.getRole().toUpperCase();
+                if (role.contains("ADMIN")) {
+                    return ResponseEntity.status(403).body(Map.of("message", "Admins cannot set hot sales. Only Sales/RM personnel are permitted."));
+                }
+            }
+        }
+
         Policy policy = policyOpt.get();
         Boolean isHotSale = payload.containsKey("isHotSale") && payload.get("isHotSale") != null ? 
                 Boolean.parseBoolean(payload.get("isHotSale").toString()) : 

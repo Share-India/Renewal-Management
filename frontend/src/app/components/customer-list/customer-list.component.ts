@@ -117,11 +117,15 @@ export class CustomerListComponent {
     get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
 
     get canSetHotSale(): boolean {
-        return this.isRm || this.isSalesManager || this.isSalesUser || this.adminViewAs === 'sales';
+        // Admin must never be able to set hot sales - only actual Sales/RM personnel
+        if (this.isAdmin || this.authService.isAdmin()) {
+            return false;
+        }
+        return this.authService.hasRole('RM') || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER');
     }
 
     get currentHotSaleSource(): string {
-        if (this.adminViewAs === 'sales' || this.isSalesManager || this.isSalesUser) {
+        if (this.adminViewAs === 'sales' || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER')) {
             return 'SALES';
         }
         return 'RM';
