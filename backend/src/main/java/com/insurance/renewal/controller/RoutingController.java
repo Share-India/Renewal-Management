@@ -182,7 +182,6 @@ public class RoutingController {
         policy.setIsHotSale(isHotSale);
         if (Boolean.TRUE.equals(isHotSale)) {
             policy.setHotSaleSource(source);
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             policy.setHotSaleBy(auth != null ? auth.getName() : "RM");
             logHistory(policy, "Marked as Hot Sale (" + source + ")", null);
         } else {
