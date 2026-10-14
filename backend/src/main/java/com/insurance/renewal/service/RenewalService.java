@@ -96,10 +96,23 @@ public class RenewalService {
             // Role CLAIMS, SALES, UNDERWRITING Logic
             String role = user.getRole();
             if (role != null) {
-                if (role.equals("ROLE_CLAIMS_MANAGER")) return "CLAIMS".equals(p.getTargetTeam());
+                if (role.equals("ROLE_CLAIMS_MANAGER")) {
+                    if ("CLAIMS".equals(p.getTargetTeam())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    return false;
+                }
                 if (role.equals("ROLE_SALES_MANAGER")) return "SALES".equals(p.getTargetTeam());
-                if (role.equals("ROLE_UNDERWRITING_MANAGER")) return "UNDERWRITING".equals(p.getTargetTeam());
-                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_SALES") || role.equals("ROLE_UNDERWRITING")) {
+                if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
+                    if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    return false;
+                }
+                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_UNDERWRITING")) {
+                    if (user.getUsername().equals(p.getCurrentAssignee())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    return false;
+                }
+                if (role.equals("ROLE_SALES")) {
                     return user.getUsername().equals(p.getCurrentAssignee());
                 }
             }
@@ -252,10 +265,23 @@ public class RenewalService {
             // Role CLAIMS, SALES, UNDERWRITING Logic
             String role = effectiveUser.getRole();
             if (role != null) {
-                if (role.equals("ROLE_CLAIMS_MANAGER")) return "CLAIMS".equals(p.getTargetTeam());
+                if (role.equals("ROLE_CLAIMS_MANAGER")) {
+                    if ("CLAIMS".equals(p.getTargetTeam())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    return false;
+                }
                 if (role.equals("ROLE_SALES_MANAGER")) return "SALES".equals(p.getTargetTeam());
-                if (role.equals("ROLE_UNDERWRITING_MANAGER")) return "UNDERWRITING".equals(p.getTargetTeam());
-                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_SALES") || role.equals("ROLE_UNDERWRITING")) {
+                if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
+                    if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    return false;
+                }
+                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_UNDERWRITING")) {
+                    if (effectiveUser.getUsername().equals(p.getCurrentAssignee())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    return false;
+                }
+                if (role.equals("ROLE_SALES")) {
                     return effectiveUser.getUsername().equals(p.getCurrentAssignee());
                 }
             }
@@ -879,7 +905,17 @@ public class RenewalService {
 
     public List<Policy> getPoliciesForServicing(String branch) {
         branch = resolveEffectiveBranch(branch);
-        return policyRepository.findByStatus("PENDING_ISSUANCE", branch);
+        List<Policy> pending = policyRepository.findByStatus("PENDING_ISSUANCE", branch);
+        List<Policy> rmHotSales = policyRepository.findHotSalesBySource("RM", branch);
+
+        java.util.Map<Long, Policy> merged = new java.util.LinkedHashMap<>();
+        if (pending != null) {
+            for (Policy p : pending) merged.put(p.getId(), p);
+        }
+        if (rmHotSales != null) {
+            for (Policy p : rmHotSales) merged.put(p.getId(), p);
+        }
+        return new java.util.ArrayList<>(merged.values());
     }
 
     public List<Policy> getServicedPolicies(String branch) {

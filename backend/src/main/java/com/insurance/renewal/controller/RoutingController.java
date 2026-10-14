@@ -152,6 +152,38 @@ public class RoutingController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{policyId}/hot-sale")
+    public ResponseEntity<?> toggleHotSale(
+            @PathVariable Long policyId,
+            @RequestBody Map<String, Object> payload) {
+
+        Optional<Policy> policyOpt = policyRepository.findById(policyId);
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
+
+        Policy policy = policyOpt.get();
+        Boolean isHotSale = payload.containsKey("isHotSale") && payload.get("isHotSale") != null ? 
+                Boolean.parseBoolean(payload.get("isHotSale").toString()) : 
+                !Boolean.TRUE.equals(policy.getIsHotSale());
+        String source = payload.containsKey("source") && payload.get("source") != null ? 
+                payload.get("source").toString() : "RM";
+
+        policy.setIsHotSale(isHotSale);
+        if (Boolean.TRUE.equals(isHotSale)) {
+            policy.setHotSaleSource(source);
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            policy.setHotSaleBy(auth != null ? auth.getName() : "RM");
+            logHistory(policy, "Marked as Hot Sale (" + source + ")", null);
+        } else {
+            policy.setHotSaleSource(null);
+            policy.setHotSaleBy(null);
+            logHistory(policy, "Removed Hot Sale status", null);
+        }
+
+        policyRepository.save(policy);
+        return ResponseEntity.ok(policy);
+    }
+
     @PostMapping("/{policyId}/upload-underwriting")
     public ResponseEntity<?> uploadUnderwriting(
             @PathVariable Long policyId,

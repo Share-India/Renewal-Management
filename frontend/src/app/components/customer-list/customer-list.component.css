@@ -395,3 +395,17 @@
     color: white;
     border-color: #198754;
 }
+
+/* Hot Sale Highlight Style */
+.hot-sale-row {
+    background-color: #fff7ed !important;
+    border-left: 5px solid #f97316 !important;
+}
+
+.hot-sale-row > td {
+    background-color: #fff7ed !important;
+}
+
+.hot-sale-row:hover > td {
+    background-color: #ffedd5 !important;
+}

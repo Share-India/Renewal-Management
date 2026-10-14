@@ -119,8 +119,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let policy of filteredPolicies">
-                                <td class="ps-4 fw-bold text-dark">{{ policy.policyNumber }}</td>
+                            <tr *ngFor="let policy of filteredPolicies" [class.hot-sale-row]="policy.isHotSale && policy.hotSaleSource === 'RM'">
+                                <td class="ps-4 fw-bold text-dark">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span>{{ policy.policyNumber }}</span>
+                                        <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;"><i class="bi bi-fire text-warning"></i> HOT SALE</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
                                     </div>
@@ -184,8 +189,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let policy of filteredPolicies">
-                                <td class="ps-4 fw-bold text-dark">{{ policy.policyNumber }}</td>
+                            <tr *ngFor="let policy of filteredPolicies" [class.hot-sale-row]="policy.isHotSale && policy.hotSaleSource === 'RM'">
+                                <td class="ps-4 fw-bold text-dark">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span>{{ policy.policyNumber }}</span>
+                                        <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;"><i class="bi bi-fire text-warning"></i> HOT SALE</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
                                     </div>
@@ -237,8 +247,13 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr *ngFor="let policy of filteredPolicies">
-                                <td class="ps-4 fw-bold text-dark">{{ policy.policyNumber }}</td>
+                            <tr *ngFor="let policy of filteredPolicies" [class.hot-sale-row]="policy.isHotSale && policy.hotSaleSource === 'RM'">
+                                <td class="ps-4 fw-bold text-dark">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span>{{ policy.policyNumber }}</span>
+                                        <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;"><i class="bi bi-fire text-warning"></i> HOT SALE</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
                                     </div>

@@ -265,6 +265,10 @@ export class ApiService {
         return this.http.delete(`${this.baseUrl}/routing/document/${documentId}`, { headers: this.getHeaders() });
     }
 
+    toggleHotSale(policyId: number, data: { isHotSale: boolean, source?: string | null }): Observable<any> {
+        return this.http.post(`${this.baseUrl}/routing/${policyId}/hot-sale`, data, { headers: this.getHeaders() });
+    }
+
     getAuditLogs(id: number): Observable<any[]> {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/${id}/audit-logs`, { headers: this.getHeaders() });
     }

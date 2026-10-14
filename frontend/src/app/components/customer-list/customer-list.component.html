@@ -25,9 +25,15 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of policies">
+                <tr *ngFor="let policy of policies" [class.hot-sale-row]="isPolicyHotSale(policy)">
                     <td style="word-break: break-all; min-width: 140px;">
-                        <div class="fw-bold">{{ policy.policyNumber }}</div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="fw-bold">{{ policy.policyNumber }}</span>
+                            <span *ngIf="isPolicyHotSale(policy)" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1"
+                                style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;">
+                                <i class="bi bi-fire text-warning"></i> HOT SALE
+                            </span>
+                        </div>
                         <div *ngIf="(isAdmin || isClaimsManager || isSalesManager || isUnderwritingManager) && policy.currentAssignee" class="mt-1 small text-muted fw-medium">
                             <i class="bi bi-person-check-fill text-primary me-1"></i>{{ policy.currentAssignee }}
                         </div>
@@ -112,6 +118,18 @@
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #e8eaf6; color: #3949ab; font-size: 0.85rem;" 
                                 (click)="openRmUpdateModal(policy)" title="Add RM Update">
                                 RM
+                            </button>
+
+                            <!-- Hot Sale Button (Only for Sales/RM) -->
+                            <button *ngIf="canSetHotSale" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
+                                [style.background-color]="policy.isHotSale ? '#ffedd5' : '#fff7ed'" 
+                                [style.color]="policy.isHotSale ? '#c2410c' : '#ea580c'" 
+                                [style.border]="policy.isHotSale ? '1.5px solid #f97316' : '1px solid #fed7aa'" 
+                                style="width: 36px; height: 36px; border-radius: 10px;" 
+                                (click)="toggleHotSale(policy)" 
+                                [title]="policy.isHotSale ? 'Hot Sale Active (Click to remove)' : 'Mark as Hot Sale'">
+                                <i class="bi bi-fire" [class.text-danger]="policy.isHotSale" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
 
                             <!-- Workflow Buttons -->

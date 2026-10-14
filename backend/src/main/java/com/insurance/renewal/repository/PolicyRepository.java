@@ -58,6 +58,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
                         "(:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> searchPolicies(@Param("query") String query, @Param("branch") String branch);
 
+        @Query("SELECT p FROM Policy p WHERE p.isHotSale = true AND p.hotSaleSource = :source AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
+        List<Policy> findHotSalesBySource(@Param("source") String source, @Param("branch") String branch);
+
         List<Policy> findByLateRenewalTrue();
 
         @Query("SELECT p FROM Policy p WHERE p.status = :status AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")

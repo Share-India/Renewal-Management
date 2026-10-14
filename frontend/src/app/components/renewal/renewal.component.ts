@@ -910,11 +910,23 @@ export class RenewalComponent implements OnInit {
     };
 
     const targetTeamFilterFn = (p: any) => {
-        if (!this.adminViewAs) return true;
+        if (!this.adminViewAs) {
+            const role = this.getEffectiveRole();
+            if (role === 'CLAIMS_MANAGER' || role === 'CLAIMS') {
+                return p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES');
+            }
+            if (role === 'UNDERWRITING_MANAGER' || role === 'UNDERWRITING') {
+                return p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES');
+            }
+            if (role === 'SALES_MANAGER' || role === 'SALES') {
+                return p.targetTeam === 'SALES';
+            }
+            return true;
+        }
         if (this.selectedDay === 'returned-to-renewer') return true;
-        if (this.adminViewAs === 'claims') return p.targetTeam === 'CLAIMS';
+        if (this.adminViewAs === 'claims') return p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES');
         if (this.adminViewAs === 'sales') return p.targetTeam === 'SALES';
-        if (this.adminViewAs === 'underwriting') return p.targetTeam === 'UNDERWRITING';
+        if (this.adminViewAs === 'underwriting') return p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES');
         return true;
     };
 

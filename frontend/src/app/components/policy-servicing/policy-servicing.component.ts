@@ -85,8 +85,16 @@ import { ApiService } from '../../services/api.service';
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of getPoliciesForTab(activeTab)">
-                <td class="fw-bold">{{ policy.policyNumber }}</td>
+                <tr *ngFor="let policy of getPoliciesForTab(activeTab)" [class.hot-sale-row]="policy.isHotSale && policy.hotSaleSource === 'RM'">
+                <td>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="fw-bold">{{ policy.policyNumber }}</span>
+                        <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1"
+                            style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;">
+                            <i class="bi bi-fire text-warning"></i> HOT SALE
+                        </span>
+                    </div>
+                </td>
                 <td>
                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
                     <div class="small text-muted">{{ policy.customer.email }}</div>
@@ -155,8 +163,16 @@ import { ApiService } from '../../services/api.service';
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of filteredServicedPolicies">
-                <td class="fw-bold">{{ policy.policyNumber }}</td>
+                <tr *ngFor="let policy of filteredServicedPolicies" [class.hot-sale-row]="policy.isHotSale && policy.hotSaleSource === 'RM'">
+                <td>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="fw-bold">{{ policy.policyNumber }}</span>
+                        <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1"
+                            style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;">
+                            <i class="bi bi-fire text-warning"></i> HOT SALE
+                        </span>
+                    </div>
+                </td>
                 <td>
                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
                     <div class="small text-muted" *ngIf="policy.customer.phone && policy.customer.phone != 0 && policy.customer.phone !== 'null'">{{ policy.customer.phone }}</div>
@@ -515,6 +531,16 @@ import { ApiService } from '../../services/api.service';
       margin-bottom: 25px; 
       padding-bottom: 15px; 
       border-bottom: 1px solid #e2e8f0;
+    }
+    .hot-sale-row {
+      background-color: #fff7ed !important;
+      border-left: 5px solid #f97316 !important;
+    }
+    .hot-sale-row > td {
+      background-color: #fff7ed !important;
+    }
+    .hot-sale-row:hover > td {
+      background-color: #ffedd5 !important;
     }
     .header-section h2 { 
       margin-bottom: 8px; 

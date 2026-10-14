@@ -174,6 +174,15 @@ public class Policy {
     @Column(name = "servicing_note", columnDefinition = "TEXT")
     private String servicingNote;
 
+    @Column(name = "is_hot_sale")
+    private Boolean isHotSale = false;
+
+    @Column(name = "hot_sale_source")
+    private String hotSaleSource; // "RM" or "SALES"
+
+    @Column(name = "hot_sale_by")
+    private String hotSaleBy;
+
     @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private java.util.List<PolicyDocument> teamDocuments = new java.util.ArrayList<>();
 

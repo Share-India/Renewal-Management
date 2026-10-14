@@ -116,6 +116,67 @@ export class CustomerListComponent {
     get isClaimsUser(): boolean { return this.authService.hasRole('CLAIMS'); }
     get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
 
+    get canSetHotSale(): boolean {
+        return this.isRm || this.isSalesManager || this.isSalesUser || this.adminViewAs === 'sales';
+    }
+
+    get currentHotSaleSource(): string {
+        if (this.adminViewAs === 'sales' || this.isSalesManager || this.isSalesUser) {
+            return 'SALES';
+        }
+        return 'RM';
+    }
+
+    isPolicyHotSale(policy: any): boolean {
+        if (!policy || !policy.isHotSale) return false;
+
+        // If marked from RM Dashboard
+        if (policy.hotSaleSource === 'RM') {
+            // Visible at: Admin, Renewer, Policy Servicing, MIS, Sales/RM dashboard
+            if (this.isAdmin) return true;
+            if (this.isRenewer) return true;
+            if (this.isRm) return true;
+            if (this.isSalesManager || this.isSalesUser) return true;
+            if (this.authService.hasRole('SERVICING') || this.authService.hasRole('MIS')) return true;
+            return false;
+        }
+
+        // If marked from Sales Work
+        if (policy.hotSaleSource === 'SALES') {
+            // Visible at: Claims Team, Underwriting team, Sales/RM dashboard (and Admin)
+            if (this.isAdmin) return true;
+            if (this.isClaimsManager || this.isClaimsUser) return true;
+            if (this.isUnderwritingManager || this.isUnderwritingUser) return true;
+            if (this.isRm || this.isSalesManager || this.isSalesUser) return true;
+            return false;
+        }
+
+        return !!policy.isHotSale;
+    }
+
+    toggleHotSale(policy: any) {
+        if (!this.canSetHotSale) return;
+        const newStatus = !policy.isHotSale;
+        const source = newStatus ? this.currentHotSaleSource : null;
+
+        this.apiService.toggleHotSale(policy.id, { isHotSale: newStatus, source: source }).subscribe({
+            next: (res: any) => {
+                policy.isHotSale = newStatus;
+                policy.hotSaleSource = source;
+                if (newStatus) {
+                    this.notificationService.showSuccessToast(`Marked as Hot Sale (${source})`);
+                } else {
+                    this.notificationService.showSuccessToast('Hot Sale status removed');
+                }
+                this.dataUpdated.emit();
+            },
+            error: (err: any) => {
+                console.error('Error toggling hot sale:', err);
+                this.notificationService.showErrorModal('Error updating Hot Sale status');
+            }
+        });
+    }
+
     canDeleteDocument(doc: any, team: string): boolean {
         const currentUser = this.authService.getCurrentUser()?.username;
         if (team === 'CLAIMS' && this.isClaimsManager) return true;
