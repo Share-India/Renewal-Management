@@ -36,25 +36,27 @@ public class RenewalController {
         System.out.println("API Request: /timeline/" + days);
         List<Policy> policies = renewalService.getPoliciesForTimeline(days, branch, sourceTeam);
 
-        // PROJECT DATES FOR VISUAL CONSISTENCY (As per User "Consider dates according
-        // to you")
-        LocalDate targetDate = LocalDate.now().plusDays(days);
-        int targetYear = targetDate.getYear();
+        // PROJECT DATES FOR VISUAL CONSISTENCY (As per User "Consider dates according to you")
+        // Only run for normal expiry timeline, not for team routing / returns
+        if (sourceTeam == null || sourceTeam.trim().isEmpty() || "null".equals(sourceTeam)) {
+            LocalDate targetDate = LocalDate.now().plusDays(days);
+            int targetYear = targetDate.getYear();
 
-        policies.forEach(p -> {
-            if (p.getExpiryDate().getYear() != targetYear) {
-                // Shift year to match Target
-                p.setExpiryDate(p.getExpiryDate().withYear(targetYear));
-                // Adjust Start/End dates roughly (assuming 1 year term)
-                p.setPolicyEndDate(p.getExpiryDate());
-                p.setPolicyStartDate(p.getExpiryDate().minusYears(1).plusDays(1));
+            policies.forEach(p -> {
+                if (p.getExpiryDate() != null && p.getExpiryDate().getYear() != targetYear) {
+                    // Shift year to match Target
+                    p.setExpiryDate(p.getExpiryDate().withYear(targetYear));
+                    // Adjust Start/End dates roughly (assuming 1 year term)
+                    p.setPolicyEndDate(p.getExpiryDate());
+                    p.setPolicyStartDate(p.getExpiryDate().minusYears(1).plusDays(1));
 
-                // Fix Status visual (Don't show EXPIRED for future target)
-                if (days >= 0) {
-                    p.setStatus("ACTIVE");
+                    // Fix Status visual (Don't show EXPIRED for future target)
+                    if (days >= 0) {
+                        p.setStatus("ACTIVE");
+                    }
                 }
-            }
-        });
+            });
+        }
 
         System.out.println("Found " + policies.size() + " policies for " + days + " days bucket.");
         policies.forEach(

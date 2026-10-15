@@ -17,8 +17,9 @@ export class TimelineComponent implements OnChanges {
 
     days: number[] = [75, 60, 45, 30, 15, 7, 3, 2, 1];
     postExpiryDays: number[] = [-1, -2, -3, -7, -15, -30, -45, -60, -75];
-    selectedDay: number | null = null;
+    @Input() selectedDay: number | string | null = null;
     isTeamTimeline: boolean = false;
+
 
     ngOnChanges() {
         if ((this.userRole && (this.userRole.includes('CLAIMS') || this.userRole.includes('SALES') || this.userRole.includes('UNDERWRITING'))) || 

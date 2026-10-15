@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Optional;
 
 @Service
 public class RenewalService {
@@ -169,7 +170,12 @@ public class RenewalService {
                 return true;
             }
             if (p.getCurrentAssignee() != null && !p.getCurrentAssignee().trim().isEmpty()) {
-                return false; // Explicitly assigned to someone else
+                Optional<com.insurance.renewal.entity.User> assigneeUser = userRepository.findByUsername(p.getCurrentAssignee());
+                if (assigneeUser.isPresent() && !"ROLE_RENEWER".equals(assigneeUser.get().getRole())) {
+                    // Leftover assignee from CLAIMS/UNDERWRITING/SALES team; allow criteria matching below
+                } else {
+                    return false; // Explicitly assigned to someone else
+                }
             }
 
             if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
@@ -344,7 +350,12 @@ public class RenewalService {
                 return true;
             }
             if (p.getCurrentAssignee() != null && !p.getCurrentAssignee().trim().isEmpty()) {
-                return false; // Explicitly assigned to someone else
+                Optional<com.insurance.renewal.entity.User> assigneeUser = userRepository.findByUsername(p.getCurrentAssignee());
+                if (assigneeUser.isPresent() && !"ROLE_RENEWER".equals(assigneeUser.get().getRole())) {
+                    // Leftover assignee from CLAIMS/UNDERWRITING/SALES team; allow criteria matching below
+                } else {
+                    return false; // Explicitly assigned to someone else
+                }
             }
 
             if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().isEmpty()
@@ -443,12 +454,28 @@ public class RenewalService {
 
         List<Policy> policies;
         if (isReturnsView) {
-            policies = policyRepository.findAdminPoliciesByRoutedAtForTimeline(targetDate, branch);
-            policies = policies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            policies = policyRepository.findPoliciesByRoutedAt(targetDate);
+            policies = policies.stream()
+                .filter(p -> sourceTeam.equalsIgnoreCase(p.getLastRoutedFrom()))
+                .filter(p -> !"PENDING_ISSUANCE".equalsIgnoreCase(p.getStatus()))
+                .filter(p -> {
+                    if (p.getReminder() != null) {
+                        String outcome = p.getReminder().getLastCallOutcome();
+                        if (outcome != null) {
+                            outcome = outcome.toLowerCase();
+                            if (outcome.equals("pending issuance") || outcome.equals("renewed") || outcome.equals("externally renewed")) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                })
+                .collect(java.util.stream.Collectors.toList());
         } else {
             // Use the new method that excludes policies with future follow-ups
             policies = policyRepository.findAdminPoliciesForTimeline(targetDate, branch);
         }
+
         
         return applyRenewerFilters(policies);
     }
@@ -628,21 +655,21 @@ public class RenewalService {
             List<Policy> filteredTeamPolicies = applyRenewerFilters(allRoutedPolicies);
 
             if (isReturnsView) {
-                filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+                filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> sourceTeam.equalsIgnoreCase(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
                 // Filter out policies that have been handled!
                 filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> {
-                    if (p.getStatus() != null && p.getStatus().equals("PENDING_ISSUANCE")) return false;
+                    if (p.getStatus() != null && "PENDING_ISSUANCE".equalsIgnoreCase(p.getStatus())) return false;
                     if (p.getReminder() != null) {
                         String outcome = p.getReminder().getLastCallOutcome();
                         if (outcome != null) {
                             outcome = outcome.toLowerCase();
                             if (outcome.equals("pending issuance") || outcome.equals("renewed") || outcome.equals("externally renewed")) return false;
                         }
-                        if (p.getReminder().getFollowUpDate() != null) return false;
                     }
                     return true;
                 }).collect(java.util.stream.Collectors.toList());
             }
+
 
             for (Integer offset : specificDays) {
                 LocalDate targetDate = today.plusDays(offset);
@@ -1650,10 +1677,22 @@ public class RenewalService {
         // Fetch policies
         List<Policy> expiring;
         if (isTeam || isReturnsView) {
-            expiring = policyRepository.findPoliciesByRoutedAtForTodaysWork(targetDates, branch);
+            List<Policy> routedPolicies = policyRepository.findPoliciesByRoutedAtIn(targetDates);
+            routedPolicies = routedPolicies.stream().filter(p -> {
+                if (p.getStatus() != null && "PENDING_ISSUANCE".equalsIgnoreCase(p.getStatus())) return false;
+                if (p.getReminder() != null) {
+                    String outcome = p.getReminder().getLastCallOutcome();
+                    if (outcome != null) {
+                        outcome = outcome.toLowerCase();
+                        if (outcome.equals("pending issuance") || outcome.equals("renewed") || outcome.equals("externally renewed")) return false;
+                    }
+                }
+                return true;
+            }).collect(java.util.stream.Collectors.toList());
             if (isReturnsView) {
-                expiring = expiring.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+                routedPolicies = routedPolicies.stream().filter(p -> sourceTeam.equalsIgnoreCase(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
             }
+            expiring = routedPolicies;
         } else {
             expiring = policyRepository.findPoliciesForTodaysWork(targetDates, branch);
         }

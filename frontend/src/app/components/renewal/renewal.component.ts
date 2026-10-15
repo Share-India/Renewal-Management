@@ -113,7 +113,7 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
 
-      <app-timeline [counts]="timelineCounts" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam"></app-timeline>
+      <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam"></app-timeline>
       
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedBranch" [sourceTeam]="selectedSourceTeam"></app-work-progress>
 
@@ -612,8 +612,10 @@ export class RenewalComponent implements OnInit {
       if (this.selectedSourceTeam !== team) {
         this.selectedSourceTeam = team;
         this.refreshTimelineCounts();
-        if (this.selectedDay !== null && this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value' && this.selectedDay !== 600) {
-          this.onDaySelected(this.selectedDay as number, true);
+        if (team && team.trim() !== '') {
+          this.onDaySelected(0);
+        } else {
+          this.openTodaysWork();
         }
       }
     });

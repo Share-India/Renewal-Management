@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterModule } from '@angular/router';
+import { RouterOutlet, RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from './services/auth.service';
 import { ApiService } from './services/api.service';
@@ -16,7 +16,7 @@ export class AppComponent implements OnInit {
   title = 'insurance-renewal-app';
   selectedSourceTeam: string = '';
 
-  constructor(public authService: AuthService, public apiService: ApiService) { }
+  constructor(public authService: AuthService, public apiService: ApiService, private router: Router) { }
 
   ngOnInit() {
     this.apiService.selectedSourceTeam$.subscribe(team => {
@@ -27,6 +27,9 @@ export class AppComponent implements OnInit {
   setSourceTeam(team: string) {
     const newTeam = this.selectedSourceTeam === team ? '' : team;
     this.apiService.selectedSourceTeamSubject.next(newTeam);
+    if (this.router.url !== '/' && !this.router.url.startsWith('/?')) {
+      this.router.navigate(['/']);
+    }
   }
 
   logout() {

@@ -154,6 +154,9 @@ public class Policy {
     @Column(name = "current_assignee")
     private String currentAssignee;
 
+    @Column(name = "original_renewer")
+    private String originalRenewer;
+
     @Column(name = "claims_excel_path")
     private String claimsExcelPath;
 

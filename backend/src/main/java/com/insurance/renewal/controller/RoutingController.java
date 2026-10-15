@@ -56,7 +56,10 @@ public class RoutingController {
             return ResponseEntity.notFound().build();
 
         Policy policy = policyOpt.get();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = auth != null ? auth.getName() : "System";
         String actionLog = "Policy updated";
+
         if (payload.containsKey("targetTeam")) {
             String team = payload.get("targetTeam");
             policy.setTargetTeam(team);
@@ -65,11 +68,52 @@ public class RoutingController {
                 policy.setLastRoutedFrom(payload.get("sourceTeam"));
             }
             actionLog = "Routed to " + team;
+
+            if ("RENEWER".equalsIgnoreCase(team)) {
+                // Determine who to assign to on return
+                String returnAssignee = policy.getOriginalRenewer();
+                if (returnAssignee == null || returnAssignee.trim().isEmpty()) {
+                    // Try to find the renewer who previously handled/routed this policy from CallHistory
+                    List<com.insurance.renewal.entity.CallHistory> histories = callHistoryRepository.findByPolicyIdOrderByCallDateDesc(policy.getId());
+                    for (com.insurance.renewal.entity.CallHistory h : histories) {
+                        if (h.getAgentName() != null && !h.getAgentName().equals("System") && !h.getAgentName().equals("System Admin")) {
+                            Optional<User> uOpt = userRepository.findByUsername(h.getAgentName());
+                            if (uOpt.isPresent() && "ROLE_RENEWER".equals(uOpt.get().getRole())) {
+                                returnAssignee = h.getAgentName();
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // If an assignedUser was explicitly sent in payload
+                if (payload.containsKey("assignedUser") && payload.get("assignedUser") != null && !payload.get("assignedUser").trim().isEmpty() && !payload.get("assignedUser").equalsIgnoreCase("null")) {
+                    returnAssignee = payload.get("assignedUser").trim();
+                }
+
+                policy.setCurrentAssignee(returnAssignee);
+                actionLog = "Returned to Renewer" + (returnAssignee != null ? " (" + returnAssignee + ")" : "");
+            } else {
+                // Routing TO a team (CLAIMS, SALES, UNDERWRITING):
+                // Save original renewer if not already saved
+                if (policy.getOriginalRenewer() == null || policy.getOriginalRenewer().trim().isEmpty()) {
+                    Optional<User> uOpt = userRepository.findByUsername(currentUsername);
+                    if (uOpt.isPresent() && "ROLE_RENEWER".equals(uOpt.get().getRole())) {
+                        policy.setOriginalRenewer(currentUsername);
+                    } else if (policy.getCurrentAssignee() != null) {
+                        Optional<User> assigneeOpt = userRepository.findByUsername(policy.getCurrentAssignee());
+                        if (assigneeOpt.isPresent() && "ROLE_RENEWER".equals(assigneeOpt.get().getRole())) {
+                            policy.setOriginalRenewer(policy.getCurrentAssignee());
+                        }
+                    }
+                }
+            }
         }
-        if (payload.containsKey("assignedUser")) {
+
+        if (payload.containsKey("assignedUser") && !"RENEWER".equalsIgnoreCase(payload.get("targetTeam"))) {
             String user = payload.get("assignedUser");
             policy.setCurrentAssignee(user);
-            if (user == null || user.trim().isEmpty()) {
+            if (user == null || user.trim().isEmpty() || user.equalsIgnoreCase("null")) {
                 actionLog = "Unassigned";
             } else {
                 actionLog = "Assigned to " + user;

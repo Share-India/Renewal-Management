@@ -42,6 +42,11 @@
                                 <i class="bi bi-chat-text me-1"></i>RM Update
                             </span>
                         </div>
+                        <div *ngIf="policy.lastRoutedFrom && policy.targetTeam === 'RENEWER'" class="mt-1">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-arrow-return-left me-1"></i>Returned: {{ policy.lastRoutedFrom }}
+                            </span>
+                        </div>
                     </td>
                     <td>
                         <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>

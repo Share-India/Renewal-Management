@@ -324,7 +324,7 @@ export class ApiService {
   // Cross-Team Routing
   routePolicy(policyId: number, targetTeam: string | null, assignedUser?: string | null, sourceTeam?: string | null): Observable<any> {
     const payload: any = { targetTeam };
-    if (assignedUser !== undefined && assignedUser !== null) {
+    if (assignedUser !== undefined) {
       payload.assignedUser = assignedUser;
     }
     if (sourceTeam) {
