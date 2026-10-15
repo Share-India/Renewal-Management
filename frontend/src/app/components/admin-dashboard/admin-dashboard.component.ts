@@ -213,7 +213,7 @@ import * as XLSX from 'xlsx';
                 </div>
               </div>
               
-              <app-customer-list [policies]="selectedDateRecords.expiringPolicies" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
+              <app-customer-list [policies]="selectedDateRecords.expiringPolicies" [loading]="false" [isAdmin]="isAdmin()" (dataUpdated)="onDataUpdated()"></app-customer-list>
             </div>
             
             <hr class="divider">
@@ -225,7 +225,7 @@ import * as XLSX from 'xlsx';
                 <span *ngIf="selectedDay === 600">All Scheduled Follow-ups in Next 60 Days</span>
                 <span class="badge bg-warning">{{ selectedDateRecords.scheduledFollowUps.length }}</span>
               </h4>
-              <app-customer-list [policies]="selectedDateRecords.scheduledFollowUps" [loading]="false" [isAdmin]="true" (dataUpdated)="onDataUpdated()"></app-customer-list>
+              <app-customer-list [policies]="selectedDateRecords.scheduledFollowUps" [loading]="false" [isAdmin]="isAdmin()" (dataUpdated)="onDataUpdated()"></app-customer-list>
             </div>
           </div>
         </div>

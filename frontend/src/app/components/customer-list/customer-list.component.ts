@@ -118,7 +118,7 @@ export class CustomerListComponent {
 
     get canSetHotSale(): boolean {
         // Admin must never be able to set hot sales - only actual Sales/RM personnel
-        if (this.isAdmin || this.authService.isAdmin()) {
+        if (this.authService.isAdmin()) {
             return false;
         }
         return this.authService.hasRole('RM') || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER');
