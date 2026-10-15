@@ -147,8 +147,9 @@ export class CustomerListComponent {
 
         // If marked from Sales Work
         if (policy.hotSaleSource === 'SALES') {
-            // Visible at: Claims Team, Underwriting team, Sales/RM dashboard (and Admin)
+            // Visible at: Claims Team, Underwriting team, Sales/RM dashboard (and Admin), and Renewer if returned to renewer
             if (this.isAdmin) return true;
+            if (this.isRenewer && policy.targetTeam === 'RENEWER') return true;
             if (this.isClaimsManager || this.isClaimsUser) return true;
             if (this.isUnderwritingManager || this.isUnderwritingUser) return true;
             if (this.isRm || this.isSalesManager || this.isSalesUser) return true;

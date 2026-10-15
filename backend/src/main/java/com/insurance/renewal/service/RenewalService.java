@@ -99,22 +99,24 @@ public class RenewalService {
             if (role != null) {
                 if (role.equals("ROLE_CLAIMS_MANAGER")) {
                     if ("CLAIMS".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
                     return false;
                 }
-                if (role.equals("ROLE_SALES_MANAGER")) return "SALES".equals(p.getTargetTeam());
+                if (role.equals("ROLE_SALES_MANAGER")) {
+                    return "SALES".equals(p.getTargetTeam()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
+                }
                 if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
                     if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
                     return false;
                 }
-                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_UNDERWRITING")) {
-                    if (user.getUsername().equals(p.getCurrentAssignee())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_CLAIMS_MEMBER") || role.equals("ROLE_UNDERWRITING") || role.equals("ROLE_UNDERWRITING_MEMBER")) {
+                    if (user.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
                     return false;
                 }
-                if (role.equals("ROLE_SALES")) {
-                    return user.getUsername().equals(p.getCurrentAssignee());
+                if (role.equals("ROLE_SALES") || role.equals("ROLE_SALES_MEMBER")) {
+                    return user.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
                 }
             }
 
@@ -273,22 +275,24 @@ public class RenewalService {
             if (role != null) {
                 if (role.equals("ROLE_CLAIMS_MANAGER")) {
                     if ("CLAIMS".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
                     return false;
                 }
-                if (role.equals("ROLE_SALES_MANAGER")) return "SALES".equals(p.getTargetTeam());
+                if (role.equals("ROLE_SALES_MANAGER")) {
+                    return "SALES".equals(p.getTargetTeam()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
+                }
                 if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
                     if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
                     return false;
                 }
-                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_UNDERWRITING")) {
-                    if (effectiveUser.getUsername().equals(p.getCurrentAssignee())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource())) return true;
+                if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_CLAIMS_MEMBER") || role.equals("ROLE_UNDERWRITING") || role.equals("ROLE_UNDERWRITING_MEMBER")) {
+                    if (effectiveUser.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
+                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
                     return false;
                 }
-                if (role.equals("ROLE_SALES")) {
-                    return effectiveUser.getUsername().equals(p.getCurrentAssignee());
+                if (role.equals("ROLE_SALES") || role.equals("ROLE_SALES_MEMBER")) {
+                    return effectiveUser.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
                 }
             }
 

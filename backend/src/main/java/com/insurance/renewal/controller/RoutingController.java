@@ -86,6 +86,15 @@ public class RoutingController {
                     }
                 }
 
+                if (returnAssignee == null || returnAssignee.trim().isEmpty()) {
+                    if (policy.getCurrentAssignee() != null) {
+                        Optional<User> currOpt = userRepository.findByUsername(policy.getCurrentAssignee());
+                        if (currOpt.isPresent() && "ROLE_RENEWER".equals(currOpt.get().getRole())) {
+                            returnAssignee = policy.getCurrentAssignee();
+                        }
+                    }
+                }
+
                 // If an assignedUser was explicitly sent in payload
                 if (payload.containsKey("assignedUser") && payload.get("assignedUser") != null && !payload.get("assignedUser").trim().isEmpty() && !payload.get("assignedUser").equalsIgnoreCase("null")) {
                     returnAssignee = payload.get("assignedUser").trim();
@@ -227,6 +236,14 @@ public class RoutingController {
         if (Boolean.TRUE.equals(isHotSale)) {
             policy.setHotSaleSource(source);
             policy.setHotSaleBy(auth != null ? auth.getName() : "RM");
+            if (policy.getOriginalRenewer() == null || policy.getOriginalRenewer().trim().isEmpty()) {
+                if (policy.getCurrentAssignee() != null) {
+                    Optional<User> assigneeOpt = userRepository.findByUsername(policy.getCurrentAssignee());
+                    if (assigneeOpt.isPresent() && "ROLE_RENEWER".equals(assigneeOpt.get().getRole())) {
+                        policy.setOriginalRenewer(policy.getCurrentAssignee());
+                    }
+                }
+            }
             logHistory(policy, "Marked as Hot Sale (" + source + ")", null);
         } else {
             policy.setHotSaleSource(null);

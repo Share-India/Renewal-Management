@@ -915,20 +915,20 @@ export class RenewalComponent implements OnInit {
         if (!this.adminViewAs) {
             const role = this.getEffectiveRole();
             if (role === 'CLAIMS_MANAGER' || role === 'CLAIMS') {
-                return p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES');
+                return (p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
             }
             if (role === 'UNDERWRITING_MANAGER' || role === 'UNDERWRITING') {
-                return p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES');
+                return (p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
             }
             if (role === 'SALES_MANAGER' || role === 'SALES') {
-                return p.targetTeam === 'SALES';
+                return p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER';
             }
             return true;
         }
         if (this.selectedDay === 'returned-to-renewer') return true;
-        if (this.adminViewAs === 'claims') return p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES');
-        if (this.adminViewAs === 'sales') return p.targetTeam === 'SALES';
-        if (this.adminViewAs === 'underwriting') return p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES');
+        if (this.adminViewAs === 'claims') return (p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
+        if (this.adminViewAs === 'sales') return p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER';
+        if (this.adminViewAs === 'underwriting') return (p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
         return true;
     };
 
