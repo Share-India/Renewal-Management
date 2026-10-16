@@ -115,8 +115,8 @@ import { forkJoin, of } from 'rxjs';
 
       <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam"></app-timeline>
       
-      <!-- Daily Records Calendar / Date Picker Bar (Restricted to ±2 Months) -->
-      <div class="card shadow-sm border-0 mb-4 mt-3" style="border-radius: 12px; background: #ffffff;">
+      <!-- Daily Records Calendar / Date Picker Bar (Restricted to ±2 Months, only on Renewals Dashboard) -->
+      <div class="card shadow-sm border-0 mb-4 mt-3" style="border-radius: 12px; background: #ffffff;" *ngIf="showDatePicker()">
         <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div class="d-flex align-items-center gap-2">
             <span class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
@@ -152,7 +152,7 @@ import { forkJoin, of } from 'rxjs';
 
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedBranch" [sourceTeam]="selectedSourceTeam"></app-work-progress>
 
-      <div class="row" *ngIf="selectedDay !== null || selectedDate">
+      <div class="row" *ngIf="selectedDay !== null || (showDatePicker() && selectedDate)">
         <!-- Main List: Renewals OR Post-Expiry -->
         <div class="col-12 mb-4">
           
@@ -259,10 +259,10 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
       
-      <div *ngIf="selectedDay === null && !selectedDate" class="text-center mt-5 empty-state">
+      <div *ngIf="selectedDay === null && !(showDatePicker() && selectedDate)" class="text-center mt-5 empty-state">
         <div class="empty-icon"><i class="bi bi-calendar-event"></i></div>
-        <h3>Select a Timeline Bucket or Pick a Date</h3>
-        <p class="text-muted">Click on a day in the timeline above or pick a date to view expiring policies and scheduled calls.</p>
+        <h3>{{ showDatePicker() ? 'Select a Timeline Bucket or Pick a Date' : 'Select a Timeline Bucket' }}</h3>
+        <p class="text-muted">{{ showDatePicker() ? 'Click on a day in the timeline above or pick a date to view expiring policies and scheduled calls.' : 'Click on a day above to view tasks.' }}</p>
       </div>
 
       <!-- Renewal Modal -->
@@ -652,6 +652,7 @@ export class RenewalComponent implements OnInit {
     this.apiService.selectedSourceTeam$.subscribe(team => {
       if (this.selectedSourceTeam !== team) {
         this.selectedSourceTeam = team;
+        this.selectedDate = '';
         this.refreshTimelineCounts();
         if (team && team.trim() !== '') {
           this.onDaySelected(0);
@@ -675,7 +676,7 @@ export class RenewalComponent implements OnInit {
       // If a day is selected or it's today's work, we need to refresh that too
       if (this.selectedDay === 600) {
         this.onDaySelected(600, true);
-      } else if (this.selectedDate) {
+      } else if (this.showDatePicker() && this.selectedDate) {
         this.onDateChange();
       } else if (this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value' && this.selectedDay !== null) {
         this.onDaySelected(this.selectedDay as number, true);
@@ -690,7 +691,7 @@ export class RenewalComponent implements OnInit {
     this.fetchTopHighValuePolicies();
     if (this.selectedDay === 600) {
       this.onDaySelected(600, true);
-    } else if (this.selectedDate) {
+    } else if (this.showDatePicker() && this.selectedDate) {
       this.onDateChange();
     } else if (this.selectedDay !== null && this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value') {
       this.onDaySelected(this.selectedDay as number, true);
@@ -717,7 +718,7 @@ export class RenewalComponent implements OnInit {
     this.selectedDay = day;
     this.loading = true;
 
-    if (day !== 600) {
+    if (day !== 600 && this.showDatePicker()) {
       const targetDate = new Date();
       targetDate.setDate(targetDate.getDate() + day);
       const yyyy = targetDate.getFullYear();
@@ -1184,7 +1185,7 @@ export class RenewalComponent implements OnInit {
       this.openTodaysWork();
     } else if (this.selectedDay === 'returned-to-renewer') {
       this.openReturnedToRenewer();
-    } else if (this.selectedDate) {
+    } else if (this.showDatePicker() && this.selectedDate) {
       this.onDateChange();
     } else if (this.selectedDay !== null && typeof this.selectedDay === 'number') {
       this.onDaySelected(this.selectedDay);
@@ -1194,7 +1195,7 @@ export class RenewalComponent implements OnInit {
   isUpcoming(): boolean {
     if (this.selectedDay === 'todays-work') return true;
     if (this.selectedDay === 'returned-to-renewer') return true;
-    if (this.selectedDate) {
+    if (this.showDatePicker() && this.selectedDate) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const sel = new Date(this.selectedDate + 'T00:00:00');
@@ -1210,11 +1211,17 @@ export class RenewalComponent implements OnInit {
     return teamRoles.includes(role);
   }
 
+  showDatePicker(): boolean {
+    if (this.isTeamRole()) return false;
+    if (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') return false;
+    return true;
+  }
+
   showFollowUps(): boolean {
     if (this.isTeamRole()) return false;
     if (this.selectedSourceTeam != null && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') return false;
     if (this.selectedDay === 600) return false;
-    if (this.selectedDate) return this.followUps.length > 0;
+    if (this.showDatePicker() && this.selectedDate) return this.followUps.length > 0;
     return typeof this.selectedDay === 'number';
   }
 
@@ -1223,7 +1230,7 @@ export class RenewalComponent implements OnInit {
       return `Search Results for "${this.listSearchTerm}"`;
     }
     
-    if (this.selectedDay === null && !this.selectedDate) return '';
+    if (this.selectedDay === null && !(this.showDatePicker() && this.selectedDate)) return '';
     if (this.selectedDay === 'todays-work') return "Today's Work ";
     if (this.selectedDay === 'returned-to-renewer') return "Policies Returned to Renewer (75 Days)";
 
@@ -1234,7 +1241,7 @@ export class RenewalComponent implements OnInit {
         return (isTeam || isReturnsView) ? 'All Tasks' : 'All Policies in Next 60 Days';
     }
 
-    if (this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
+    if (this.showDatePicker() && this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
       const d = new Date(this.selectedDate + 'T00:00:00');
       const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       return this.isUpcoming() ? `Policies Expiring on ${formatted}` : `Policies Expired on ${formatted}`;
@@ -1252,7 +1259,7 @@ export class RenewalComponent implements OnInit {
         return `Returned by ${teamName} in ${day} days`;
     } else {
         let dateSuffix = '';
-        if (this.selectedDate) {
+        if (this.showDatePicker() && this.selectedDate) {
           const d = new Date(this.selectedDate + 'T00:00:00');
           dateSuffix = ` - ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
         }
@@ -1266,11 +1273,11 @@ export class RenewalComponent implements OnInit {
   }
 
   getFollowUpDueText(): string {
-    if (this.selectedDay === null && !this.selectedDate) return '';
+    if (this.selectedDay === null && !(this.showDatePicker() && this.selectedDate)) return '';
     if (this.selectedDay === 'todays-work') return '';
     if (this.selectedDay === 600) return 'in Next 60 Days';
 
-    if (this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
+    if (this.showDatePicker() && this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
       const d = new Date(this.selectedDate + 'T00:00:00');
       return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
