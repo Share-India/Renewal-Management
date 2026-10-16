@@ -115,9 +115,44 @@ import { forkJoin, of } from 'rxjs';
 
       <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" (daySelected)="onDaySelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam"></app-timeline>
       
+      <!-- Daily Records Calendar / Date Picker Bar (Restricted to ±2 Months) -->
+      <div class="card shadow-sm border-0 mb-4 mt-3" style="border-radius: 12px; background: #ffffff;">
+        <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+              <i class="bi bi-calendar3 fs-6"></i>
+            </span>
+            <div>
+              <span class="fw-bold text-dark d-block" style="font-size: 0.95rem;">📅 Daily Records View</span>
+              <span class="text-muted" style="font-size: 0.75rem;">
+                Select date to view expiring policies (Allowed range: {{ minSelectableDate | date:'MMM yyyy' }} – {{ maxSelectableDate | date:'MMM yyyy' }})
+              </span>
+            </div>
+          </div>
+          
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 text-muted small fw-semibold text-nowrap">Expiry Date:</label>
+            <input type="date" 
+                   class="form-control form-control-sm border-secondary-subtle fw-semibold" 
+                   style="min-width: 160px; max-width: 190px;"
+                   [min]="minSelectableDate" 
+                   [max]="maxSelectableDate" 
+                   [(ngModel)]="selectedDate" 
+                   (change)="onDateChange()"
+                   title="Select date within current month ± 2 months">
+            <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
+                    *ngIf="selectedDate" 
+                    (click)="clearDateSelection()" 
+                    title="Clear selected date">
+              <i class="bi bi-x-circle"></i> Clear
+            </button>
+          </div>
+        </div>
+      </div>
+
       <app-work-progress *ngIf="selectedDay === 'todays-work'" [branch]="selectedBranch" [sourceTeam]="selectedSourceTeam"></app-work-progress>
 
-      <div class="row" *ngIf="selectedDay !== null">
+      <div class="row" *ngIf="selectedDay !== null || selectedDate">
         <!-- Main List: Renewals OR Post-Expiry -->
         <div class="col-12 mb-4">
           
@@ -224,10 +259,10 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
       
-      <div *ngIf="selectedDay === null" class="text-center mt-5 empty-state">
+      <div *ngIf="selectedDay === null && !selectedDate" class="text-center mt-5 empty-state">
         <div class="empty-icon"><i class="bi bi-calendar-event"></i></div>
-        <h3>Select a Timeline Bucket</h3>
-        <p class="text-muted">Click on a day above to view expiring policies and scheduled calls.</p>
+        <h3>Select a Timeline Bucket or Pick a Date</h3>
+        <p class="text-muted">Click on a day in the timeline above or pick a date to view expiring policies and scheduled calls.</p>
       </div>
 
       <!-- Renewal Modal -->
@@ -515,6 +550,10 @@ export class RenewalComponent implements OnInit {
   selectedDay: number | string | null = null;
   selectedSourceTeam: string = '';
 
+  selectedDate: string = '';
+  minSelectableDate: string = '';
+  maxSelectableDate: string = '';
+
   timelineCounts: { [key: number]: number } = {};
 
   availableBranches: string[] = [];
@@ -600,6 +639,8 @@ export class RenewalComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.calculateDateRange();
+
     const user = this.authService.getCurrentUser();
     if (user && user.assignedBranch && user.assignedBranch !== 'null') {
       this.availableBranches = user.assignedBranch.split(',').map((b: string) => b.trim());
@@ -634,7 +675,9 @@ export class RenewalComponent implements OnInit {
       // If a day is selected or it's today's work, we need to refresh that too
       if (this.selectedDay === 600) {
         this.onDaySelected(600, true);
-      } else if (this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value') {
+      } else if (this.selectedDate) {
+        this.onDateChange();
+      } else if (this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value' && this.selectedDay !== null) {
         this.onDaySelected(this.selectedDay as number, true);
       } else if (this.selectedDay === 'todays-work') {
         this.setTodaysWorkTab(this.todaysWorkTab);
@@ -647,6 +690,8 @@ export class RenewalComponent implements OnInit {
     this.fetchTopHighValuePolicies();
     if (this.selectedDay === 600) {
       this.onDaySelected(600, true);
+    } else if (this.selectedDate) {
+      this.onDateChange();
     } else if (this.selectedDay !== null && this.selectedDay !== 'todays-work' && this.selectedDay !== 'high-value') {
       this.onDaySelected(this.selectedDay as number, true);
     } else if (this.selectedDay === 'todays-work') {
@@ -671,6 +716,23 @@ export class RenewalComponent implements OnInit {
     
     this.selectedDay = day;
     this.loading = true;
+
+    if (day !== 600) {
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + day);
+      const yyyy = targetDate.getFullYear();
+      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(targetDate.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
+      if (dateStr >= this.minSelectableDate && dateStr <= this.maxSelectableDate) {
+        this.selectedDate = dateStr;
+      } else {
+        this.selectedDate = '';
+      }
+    } else {
+      this.selectedDate = '';
+    }
 
     if (day === 600) {
       this.apiService.getRecordsForNext60Days().subscribe({
@@ -954,6 +1016,7 @@ export class RenewalComponent implements OnInit {
   }
 
   openReturnedToRenewer() {
+    this.selectedDate = '';
     this.listSearchTerm = '';
     this.searchBy = 'customer';
     this.selectedDay = 'returned-to-renewer';
@@ -980,12 +1043,13 @@ export class RenewalComponent implements OnInit {
   }
 
   openTodaysWork() {
+    this.selectedDate = '';
     this.listSearchTerm = '';
     this.searchBy = 'customer';
-      this.selectedDay = 'todays-work';
-      this.loading = true;
-      this.apiService.getTodaysWork(this.selectedBranch, this.selectedSourceTeam).subscribe({
-        next: (policies) => {
+    this.selectedDay = 'todays-work';
+    this.loading = true;
+    this.apiService.getTodaysWork(this.selectedBranch, this.selectedSourceTeam).subscribe({
+      next: (policies) => {
         const todayStr = new Date().toISOString().split('T')[0];
 
         const normalizeDate = (val: any) => {
@@ -1028,12 +1092,100 @@ export class RenewalComponent implements OnInit {
     });
   }
 
+  calculateDateRange() {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+
+    // Min: 1st day of (currentMonth - 2)
+    const minDateObj = new Date(currentYear, currentMonth - 2, 1);
+    const minY = minDateObj.getFullYear();
+    const minM = String(minDateObj.getMonth() + 1).padStart(2, '0');
+    this.minSelectableDate = `${minY}-${minM}-01`;
+
+    // Max: Last day of (currentMonth + 2)
+    const maxDateObj = new Date(currentYear, currentMonth + 3, 0);
+    const maxY = maxDateObj.getFullYear();
+    const maxM = String(maxDateObj.getMonth() + 1).padStart(2, '0');
+    const maxD = String(maxDateObj.getDate()).padStart(2, '0');
+    this.maxSelectableDate = `${maxY}-${maxM}-${maxD}`;
+  }
+
+  onDateChange() {
+    if (!this.selectedDate) {
+      this.clearDateSelection();
+      return;
+    }
+
+    if (this.selectedDate < this.minSelectableDate || this.selectedDate > this.maxSelectableDate) {
+      this.notificationService.showErrorModal(
+        `Selection restricted: Please pick a date between ${this.minSelectableDate} and ${this.maxSelectableDate} (Current month ± 2 months).`
+      );
+      this.selectedDate = '';
+      return;
+    }
+
+    this.listSearchTerm = '';
+    this.searchBy = 'customer';
+
+    const selected = new Date(this.selectedDate + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = selected.getTime() - today.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    const validBuckets = [75, 60, 45, 30, 15, 7, 3, 2, 1, 0, -1, -2, -3, -7, -15, -30, -45, -60, -75];
+    if (validBuckets.includes(diffDays)) {
+      this.selectedDay = diffDays;
+    } else {
+      this.selectedDay = 'custom-date';
+    }
+
+    this.loading = true;
+    this.apiService.getRecordsForDate(this.selectedDate, this.selectedBranch).subscribe({
+      next: (data) => {
+        this.basePolicies = data.expiringPolicies || [];
+        this.baseFollowUps = data.scheduledFollowUps || [];
+
+        const typesSet = new Set<string>();
+        [...this.basePolicies, ...this.baseFollowUps].forEach(p => {
+          if (p.type) typesSet.add(p.type);
+        });
+        this.availablePolicyTypes = Array.from(typesSet).sort();
+
+        this.applyFilters();
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching records for date:', err);
+        this.basePolicies = [];
+        this.baseFollowUps = [];
+        this.applyFilters();
+        this.loading = false;
+      }
+    });
+  }
+
+  clearDateSelection() {
+    this.selectedDate = '';
+    this.selectedDay = null;
+    this.basePolicies = [];
+    this.baseFollowUps = [];
+    this.policies = [];
+    this.followUps = [];
+    this.availablePolicyTypes = [];
+    this.selectedPolicyTypes = [];
+    this.listSearchTerm = '';
+  }
+
   onDataUpdated() {
     this.refreshTimelineCounts();
     if (this.selectedDay === 'todays-work') {
       this.openTodaysWork();
     } else if (this.selectedDay === 'returned-to-renewer') {
       this.openReturnedToRenewer();
+    } else if (this.selectedDate) {
+      this.onDateChange();
     } else if (this.selectedDay !== null && typeof this.selectedDay === 'number') {
       this.onDaySelected(this.selectedDay);
     }
@@ -1042,6 +1194,12 @@ export class RenewalComponent implements OnInit {
   isUpcoming(): boolean {
     if (this.selectedDay === 'todays-work') return true;
     if (this.selectedDay === 'returned-to-renewer') return true;
+    if (this.selectedDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sel = new Date(this.selectedDate + 'T00:00:00');
+      return sel.getTime() >= today.getTime();
+    }
     return typeof this.selectedDay === 'number' && this.selectedDay >= 0;
   }
 
@@ -1056,6 +1214,7 @@ export class RenewalComponent implements OnInit {
     if (this.isTeamRole()) return false;
     if (this.selectedSourceTeam != null && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') return false;
     if (this.selectedDay === 600) return false;
+    if (this.selectedDate) return this.followUps.length > 0;
     return typeof this.selectedDay === 'number';
   }
 
@@ -1064,7 +1223,7 @@ export class RenewalComponent implements OnInit {
       return `Search Results for "${this.listSearchTerm}"`;
     }
     
-    if (this.selectedDay === null) return '';
+    if (this.selectedDay === null && !this.selectedDate) return '';
     if (this.selectedDay === 'todays-work') return "Today's Work ";
     if (this.selectedDay === 'returned-to-renewer') return "Policies Returned to Renewer (75 Days)";
 
@@ -1073,6 +1232,12 @@ export class RenewalComponent implements OnInit {
 
     if (this.selectedDay === 600) {
         return (isTeam || isReturnsView) ? 'All Tasks' : 'All Policies in Next 60 Days';
+    }
+
+    if (this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
+      const d = new Date(this.selectedDate + 'T00:00:00');
+      const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      return this.isUpcoming() ? `Policies Expiring on ${formatted}` : `Policies Expired on ${formatted}`;
     }
 
     const day = this.selectedDay as number;
@@ -1086,19 +1251,29 @@ export class RenewalComponent implements OnInit {
         if (day < 0) return `Returned by ${teamName} ${Math.abs(day)} Days Ago`;
         return `Returned by ${teamName} in ${day} days`;
     } else {
-        if (day === 0) return 'Upcoming Renewals (Expiring Today)';
+        let dateSuffix = '';
+        if (this.selectedDate) {
+          const d = new Date(this.selectedDate + 'T00:00:00');
+          dateSuffix = ` - ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        }
+        if (day === 0) return `Upcoming Renewals (Expiring Today${dateSuffix})`;
         if (day > 0) {
-          return `Upcoming Renewals (Expiring in ${day} days)`;
+          return `Upcoming Renewals (Expiring in ${day} days${dateSuffix})`;
         } else {
-          return `Post-Expiry (Expired ${Math.abs(day)} days ago)`;
+          return `Post-Expiry (Expired ${Math.abs(day)} days ago${dateSuffix})`;
         }
     }
   }
 
   getFollowUpDueText(): string {
-    if (this.selectedDay === null) return '';
+    if (this.selectedDay === null && !this.selectedDate) return '';
     if (this.selectedDay === 'todays-work') return '';
     if (this.selectedDay === 600) return 'in Next 60 Days';
+
+    if (this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
+      const d = new Date(this.selectedDate + 'T00:00:00');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
 
     const day = this.selectedDay as number;
     if (day === 0) return 'Today';

@@ -1088,6 +1088,15 @@ public class RenewalService {
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for date: " + date);
         expiring.forEach(p -> System.out.println(" - Policy: " + p.getPolicyNumber() + ", Status: " + p.getStatus()));
 
+        LocalDate today = LocalDate.now();
+        if (!date.isBefore(today)) {
+            expiring.forEach(p -> {
+                if ("EXPIRED".equalsIgnoreCase(p.getStatus())) {
+                    p.setStatus("ACTIVE");
+                }
+            });
+        }
+
         records.put("expiringPolicies", expiring);
 
         // 2. Scheduled Follow-ups on this date
