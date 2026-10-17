@@ -160,26 +160,26 @@ import { forkJoin, of } from 'rxjs';
           <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3 pb-2" [ngClass]="{'border-bottom': selectedDay !== 'todays-work'}">
             <!-- Left Side: Title -->
             <div class="d-flex flex-column align-items-start">
-              <h3 class="section-title mb-0" [ngClass]="isUpcoming() ? 'text-primary' : 'text-danger'">
+              <h3 class="section-title mb-0 border-0 pb-0" [ngClass]="isUpcoming() ? 'text-primary' : 'text-danger'">
                 <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
                 <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'followups'" class="text-warning">Today's Follow-ups <span class="badge bg-warning text-dark ms-2 fs-6 fw-normal">Total: {{ todaysFollowUps.length }}</span></span>
                 <span *ngIf="selectedDay !== 'todays-work'">{{ getSectionTitle() }}</span>
               </h3>
             </div>
 
-            <!-- Right Side: Search Bar and Day Filter -->
-            <div class="d-flex flex-wrap gap-3 align-items-start pt-2">
+            <!-- Right Side: Search Bar and Day Filter (Aligned to Right) -->
+            <div class="d-flex flex-wrap gap-2 align-items-center ms-auto justify-content-end">
               <!-- Type Filter -->
-              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 180px;" #typeDropdown>
-                <span class="px-3 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 170px;" #typeDropdown>
+                <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
                 <div #typeDropdown class="dropdown flex-grow-1" style="height: 100%;" [class.show]="isDropdownOpen">
-                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" (click)="isDropdownOpen = !isDropdownOpen; $event.stopPropagation()" style="background: white; text-align: left; padding: 0.375rem 2.25rem 0.375rem 0.75rem;">
-                    <span class="text-truncate" style="max-width: 120px;">{{ getSelectedTypesText() }}</span>
-                    <i class="bi bi-chevron-down" style="position: absolute; right: 0.75rem;"></i>
+                  <button class="btn btn-white w-100 h-100 d-flex justify-content-between align-items-center border-0 rounded-0 shadow-none text-secondary fw-bold" type="button" (click)="isDropdownOpen = !isDropdownOpen; $event.stopPropagation()" style="background: white; text-align: left; padding: 0.375rem 2rem 0.375rem 0.5rem; font-size: 0.9rem;">
+                    <span class="text-truncate" style="max-width: 110px;">{{ getSelectedTypesText() }}</span>
+                    <i class="bi bi-chevron-down" style="position: absolute; right: 0.5rem;"></i>
                   </button>
-                  <ul class="dropdown-menu w-100 shadow-sm border-0 py-2" [class.show]="isDropdownOpen" (click)="$event.stopPropagation()">
+                  <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-2" [class.show]="isDropdownOpen" (click)="$event.stopPropagation()">
                     <li>
                       <label class="dropdown-item d-flex align-items-center gap-2" style="cursor: pointer;">
                         <input class="form-check-input mt-0" type="checkbox" [checked]="selectedPolicyTypes.length === 0" (change)="togglePolicyType('all')">
@@ -198,18 +198,18 @@ import { forkJoin, of } from 'rxjs';
               </div>
 
               <!-- Search Bar -->
-              <div class="input-group shadow-sm" style="width: 350px;">
-                <select class="form-select border-secondary-subtle text-muted" style="max-width: 160px; background-color: #f8f9fa;" [(ngModel)]="searchBy" (change)="applyFilters()">
+              <div class="input-group shadow-sm" style="width: 330px;">
+                <select class="form-select border-secondary-subtle text-muted" style="max-width: 150px; background-color: #f8f9fa; font-size: 0.9rem;" [(ngModel)]="searchBy" (change)="applyFilters()">
                   <option value="customer">Customer/Policy</option>
                   <option value="rm">RM Name</option>
                 </select>
-                <input type="text" class="form-control border-secondary-subtle ps-3" 
+                <input type="text" class="form-control border-secondary-subtle ps-2" style="font-size: 0.9rem;"
                        [placeholder]="searchBy === 'customer' ? 'Search customer or policy #...' : 'Search by RM Name...'" 
                        [(ngModel)]="listSearchTerm" (input)="applyFilters()">
               </div>
 
               <!-- Day Match Filter (Only for 60 Days View) -->
-              <div class="input-group shadow-sm" style="width: 140px;" *ngIf="selectedDay === 600">
+              <div class="input-group shadow-sm" style="width: 130px;" *ngIf="selectedDay === 600">
                 <span class="input-group-text bg-white border-secondary-subtle text-muted fw-bold">Day</span>
                 <input type="number" class="form-control border-secondary-subtle text-center" 
                        placeholder="e.g. 1" [(ngModel)]="dayFilter" (input)="applyFilters()" min="0" max="60">
@@ -1258,16 +1258,11 @@ export class RenewalComponent implements OnInit {
         if (day < 0) return `Returned by ${teamName} ${Math.abs(day)} Days Ago`;
         return `Returned by ${teamName} in ${day} days`;
     } else {
-        let dateSuffix = '';
-        if (this.showDatePicker() && this.selectedDate) {
-          const d = new Date(this.selectedDate + 'T00:00:00');
-          dateSuffix = ` - ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-        }
-        if (day === 0) return `Upcoming Renewals (Expiring Today${dateSuffix})`;
+        if (day === 0) return 'Upcoming Renewals (Expiring Today)';
         if (day > 0) {
-          return `Upcoming Renewals (Expiring in ${day} days${dateSuffix})`;
+          return `Upcoming Renewals (Expiring in ${day} days)`;
         } else {
-          return `Post-Expiry (Expired ${Math.abs(day)} days ago${dateSuffix})`;
+          return `Post-Expiry (Expired ${Math.abs(day)} days ago)`;
         }
     }
   }
