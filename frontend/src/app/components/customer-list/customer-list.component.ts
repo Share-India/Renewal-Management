@@ -147,9 +147,9 @@ export class CustomerListComponent {
 
         // If marked from Sales Work
         if (policy.hotSaleSource === 'SALES') {
-            // Visible at: Claims Team, Underwriting team, Sales/RM dashboard (and Admin), and Renewer if returned to renewer
+            // Visible at: Claims Team, Underwriting team, Sales/RM dashboard (and Admin), and Renewer
             if (this.isAdmin) return true;
-            if (this.isRenewer && policy.targetTeam === 'RENEWER') return true;
+            if (this.isRenewer) return true;
             if (this.isClaimsManager || this.isClaimsUser) return true;
             if (this.isUnderwritingManager || this.isUnderwritingUser) return true;
             if (this.isRm || this.isSalesManager || this.isSalesUser) return true;
@@ -283,6 +283,56 @@ export class CustomerListComponent {
             default:
                 return 'bg-secondary';
         }
+    }
+
+    getTeamDisplayName(team: string): string {
+        if (!team) return '';
+        const upper = team.toUpperCase();
+        if (upper === 'CLAIMS') return 'Claims Team';
+        if (upper === 'SALES') return 'Sales Team';
+        if (upper === 'UNDERWRITING') return 'Underwriting Team';
+        if (upper === 'RENEWER') return 'Renewer';
+        return team + ' Team';
+    }
+
+    hasTeamUpdate(policy: any): boolean {
+        if (!policy) return false;
+        if (policy.claimsNote && policy.claimsNote.trim()) return true;
+        if (policy.salesNote && policy.salesNote.trim()) return true;
+        if (policy.underwritingNote && policy.underwritingNote.trim()) return true;
+        if (policy.claimsExcelPath || policy.claimsPdfPath || policy.underwritingDocPath) return true;
+        if (policy.teamDocuments && policy.teamDocuments.length > 0) {
+            return policy.teamDocuments.some((d: any) => d.uploadedByTeam && d.uploadedByTeam !== 'RENEWER');
+        }
+        return false;
+    }
+
+    getTeamUpdateDisplayName(policy: any): string {
+        if (!policy) return 'Team Update';
+        if (policy.targetTeam === 'CLAIMS' || policy.lastRoutedFrom === 'CLAIMS') {
+            return 'Claims Update';
+        }
+        if (policy.targetTeam === 'SALES' || policy.lastRoutedFrom === 'SALES') {
+            return 'Sales Update';
+        }
+        if (policy.targetTeam === 'UNDERWRITING' || policy.lastRoutedFrom === 'UNDERWRITING') {
+            return 'Underwriting Update';
+        }
+        if (policy.claimsNote || policy.claimsExcelPath || policy.claimsPdfPath) return 'Claims Update';
+        if (policy.salesNote) return 'Sales Update';
+        if (policy.underwritingNote || policy.underwritingDocPath) return 'Underwriting Update';
+        return 'Team Update';
+    }
+
+    getTeamUpdateTooltip(policy: any): string {
+        if (!policy) return '';
+        const parts: string[] = [];
+        if (policy.claimsNote) parts.push(`Claims: ${policy.claimsNote}`);
+        if (policy.salesNote) parts.push(`Sales: ${policy.salesNote}`);
+        if (policy.underwritingNote) parts.push(`Underwriting: ${policy.underwritingNote}`);
+        if (policy.claimsExcelPath || policy.claimsPdfPath) parts.push('Claims documents attached');
+        if (policy.underwritingDocPath) parts.push('Underwriting documents attached');
+        return parts.length > 0 ? parts.join(' | ') : 'Click to view update details';
     }
 
     sendEmail() {

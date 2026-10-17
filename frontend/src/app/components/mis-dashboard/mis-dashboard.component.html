@@ -125,6 +125,16 @@
                                         <span>{{ policy.policyNumber }}</span>
                                         <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;"><i class="bi bi-fire text-warning"></i> HOT SALE</span>
                                     </div>
+                                    <div *ngIf="policy.targetTeam && policy.targetTeam !== 'RENEWER'" class="mt-1">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-inline-flex align-items-center" style="font-size: 0.72rem;">
+                                            <i class="bi bi-arrow-right-circle me-1"></i>Routed: {{ getTeamDisplayName(policy.targetTeam) }}
+                                        </span>
+                                    </div>
+                                    <div *ngIf="policy.lastRoutedFrom && policy.targetTeam === 'RENEWER'" class="mt-1">
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-inline-flex align-items-center" style="font-size: 0.72rem;">
+                                            <i class="bi bi-arrow-return-left me-1"></i>Returned: {{ getTeamDisplayName(policy.lastRoutedFrom) }}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
@@ -194,6 +204,16 @@
                                     <div class="d-flex align-items-center gap-2 flex-wrap">
                                         <span>{{ policy.policyNumber }}</span>
                                         <span *ngIf="policy.isHotSale && policy.hotSaleSource === 'RM'" class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1" style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); font-size: 0.68rem; padding: 2px 7px; font-weight: 700;"><i class="bi bi-fire text-warning"></i> HOT SALE</span>
+                                    </div>
+                                    <div *ngIf="policy.targetTeam && policy.targetTeam !== 'RENEWER'" class="mt-1">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 d-inline-flex align-items-center" style="font-size: 0.72rem;">
+                                            <i class="bi bi-arrow-right-circle me-1"></i>Routed: {{ getTeamDisplayName(policy.targetTeam) }}
+                                        </span>
+                                    </div>
+                                    <div *ngIf="policy.lastRoutedFrom && policy.targetTeam === 'RENEWER'" class="mt-1">
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-inline-flex align-items-center" style="font-size: 0.72rem;">
+                                            <i class="bi bi-arrow-return-left me-1"></i>Returned: {{ getTeamDisplayName(policy.lastRoutedFrom) }}
+                                        </span>
                                     </div>
                                 </td>
                                 <td>

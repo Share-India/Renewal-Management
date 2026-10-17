@@ -94,6 +94,16 @@ import { ApiService } from '../../services/api.service';
                             <i class="bi bi-fire text-warning"></i> HOT SALE
                         </span>
                     </div>
+                    <div *ngIf="policy.targetTeam && policy.targetTeam !== 'RENEWER'" class="mt-1">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center" style="font-size: 0.72rem;">
+                            <i class="bi bi-arrow-right-circle me-1"></i>Routed: {{ getTeamDisplayName(policy.targetTeam) }}
+                        </span>
+                    </div>
+                    <div *ngIf="policy.lastRoutedFrom && policy.targetTeam === 'RENEWER'" class="mt-1">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center" style="font-size: 0.72rem;">
+                            <i class="bi bi-arrow-return-left me-1"></i>Returned: {{ getTeamDisplayName(policy.lastRoutedFrom) }}
+                        </span>
+                    </div>
                 </td>
                 <td>
                     <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
@@ -918,5 +928,15 @@ export class PolicyServicingComponent implements OnInit {
       default:
         return 'bg-secondary';
     }
+  }
+
+  getTeamDisplayName(team: string): string {
+    if (!team) return '';
+    const upper = team.toUpperCase();
+    if (upper === 'CLAIMS') return 'Claims Team';
+    if (upper === 'SALES') return 'Sales Team';
+    if (upper === 'UNDERWRITING') return 'Underwriting Team';
+    if (upper === 'RENEWER') return 'Renewer';
+    return team + ' Team';
   }
 }

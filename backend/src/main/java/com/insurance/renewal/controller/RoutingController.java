@@ -78,7 +78,7 @@ public class RoutingController {
                     for (com.insurance.renewal.entity.CallHistory h : histories) {
                         if (h.getAgentName() != null && !h.getAgentName().equals("System") && !h.getAgentName().equals("System Admin")) {
                             Optional<User> uOpt = userRepository.findByUsername(h.getAgentName());
-                            if (uOpt.isPresent() && "ROLE_RENEWER".equals(uOpt.get().getRole())) {
+                            if (uOpt.isPresent() && uOpt.get().getRole() != null && uOpt.get().getRole().contains("RENEWER")) {
                                 returnAssignee = h.getAgentName();
                                 break;
                             }
@@ -89,7 +89,7 @@ public class RoutingController {
                 if (returnAssignee == null || returnAssignee.trim().isEmpty()) {
                     if (policy.getCurrentAssignee() != null) {
                         Optional<User> currOpt = userRepository.findByUsername(policy.getCurrentAssignee());
-                        if (currOpt.isPresent() && "ROLE_RENEWER".equals(currOpt.get().getRole())) {
+                        if (currOpt.isPresent() && currOpt.get().getRole() != null && currOpt.get().getRole().contains("RENEWER")) {
                             returnAssignee = policy.getCurrentAssignee();
                         }
                     }
@@ -107,11 +107,11 @@ public class RoutingController {
                 // Save original renewer if not already saved
                 if (policy.getOriginalRenewer() == null || policy.getOriginalRenewer().trim().isEmpty()) {
                     Optional<User> uOpt = userRepository.findByUsername(currentUsername);
-                    if (uOpt.isPresent() && "ROLE_RENEWER".equals(uOpt.get().getRole())) {
+                    if (uOpt.isPresent() && uOpt.get().getRole() != null && uOpt.get().getRole().contains("RENEWER")) {
                         policy.setOriginalRenewer(currentUsername);
                     } else if (policy.getCurrentAssignee() != null) {
                         Optional<User> assigneeOpt = userRepository.findByUsername(policy.getCurrentAssignee());
-                        if (assigneeOpt.isPresent() && "ROLE_RENEWER".equals(assigneeOpt.get().getRole())) {
+                        if (assigneeOpt.isPresent() && assigneeOpt.get().getRole() != null && assigneeOpt.get().getRole().contains("RENEWER")) {
                             policy.setOriginalRenewer(policy.getCurrentAssignee());
                         }
                     }

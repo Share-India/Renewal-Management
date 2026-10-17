@@ -313,4 +313,14 @@ export class MisDashboardComponent implements OnInit {
 
     doc.save(`MIS_Export_${this.viewMode}_${new Date().toISOString().split('T')[0]}.pdf`);
   }
+
+  getTeamDisplayName(team: string): string {
+    if (!team) return '';
+    const upper = team.toUpperCase();
+    if (upper === 'CLAIMS') return 'Claims Team';
+    if (upper === 'SALES') return 'Sales Team';
+    if (upper === 'UNDERWRITING') return 'Underwriting Team';
+    if (upper === 'RENEWER') return 'Renewer';
+    return team + ' Team';
+  }
 }

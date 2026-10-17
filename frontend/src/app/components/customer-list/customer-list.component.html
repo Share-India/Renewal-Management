@@ -42,9 +42,25 @@
                                 <i class="bi bi-chat-text me-1"></i>RM Update
                             </span>
                         </div>
-                        <div *ngIf="policy.lastRoutedFrom && policy.targetTeam === 'RENEWER'" class="mt-1">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                <i class="bi bi-arrow-return-left me-1"></i>Returned: {{ policy.lastRoutedFrom }}
+                        <!-- Routed Status Badge (Visible all over application whenever policy is routed to a team) -->
+                        <div *ngIf="policy.targetTeam && policy.targetTeam !== 'RENEWER'" class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle d-inline-flex align-items-center">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Routed: {{ getTeamDisplayName(policy.targetTeam) }}
+                            </span>
+                            <span *ngIf="hasTeamUpdate(policy)" class="badge bg-warning-subtle text-dark border border-warning-subtle d-inline-flex align-items-center"
+                                  style="cursor: pointer;" (click)="openDetailsModal(policy)" [title]="getTeamUpdateTooltip(policy)">
+                                <i class="bi bi-pencil-square me-1 text-warning"></i>{{ getTeamUpdateDisplayName(policy) }}
+                            </span>
+                        </div>
+
+                        <!-- Returned Status Badge (When returned back to renewer) -->
+                        <div *ngIf="policy.lastRoutedFrom && policy.targetTeam === 'RENEWER'" class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center">
+                                <i class="bi bi-arrow-return-left me-1"></i>Returned: {{ getTeamDisplayName(policy.lastRoutedFrom) }}
+                            </span>
+                            <span *ngIf="hasTeamUpdate(policy)" class="badge bg-info-subtle text-dark border border-info-subtle d-inline-flex align-items-center"
+                                  style="cursor: pointer;" (click)="openDetailsModal(policy)" [title]="getTeamUpdateTooltip(policy)">
+                                <i class="bi bi-chat-left-text me-1 text-info"></i>{{ getTeamUpdateDisplayName(policy) }}
                             </span>
                         </div>
                     </td>

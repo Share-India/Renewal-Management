@@ -166,7 +166,15 @@ public class RenewalService {
 
             // Role RENEWER Logic
             if (p.getTargetTeam() != null && !p.getTargetTeam().equalsIgnoreCase("RENEWER")) {
-                return false;
+                // Policy is routed to another team (CLAIMS, SALES, UNDERWRITING).
+                // Keep it visible for the renewer who routed/owns it!
+                if (p.getOriginalRenewer() != null && !p.getOriginalRenewer().trim().isEmpty()) {
+                    if (user.getUsername().equalsIgnoreCase(p.getOriginalRenewer().trim())) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
             }
             if (user.getUsername().equals(p.getCurrentAssignee())) {
                 return true;
@@ -243,10 +251,7 @@ public class RenewalService {
                     return false;
             }
 
-            // Exclude if routed to another team
-            if (p.getTargetTeam() != null && !p.getTargetTeam().equals("RENEWER") && user.getRole() != null && user.getRole().contains("RENEWER")) {
-                return false;
-            }
+
 
             return true;
         }).collect(java.util.stream.Collectors.toList());
@@ -348,7 +353,15 @@ public class RenewalService {
 
             // Role RENEWER Logic
             if (p.getTargetTeam() != null && !p.getTargetTeam().equalsIgnoreCase("RENEWER")) {
-                return false;
+                // Policy is routed to another team (CLAIMS, SALES, UNDERWRITING).
+                // Keep it visible for the renewer who routed/owns it!
+                if (p.getOriginalRenewer() != null && !p.getOriginalRenewer().trim().isEmpty()) {
+                    if (effectiveUser.getUsername().equalsIgnoreCase(p.getOriginalRenewer().trim())) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
             }
             if (effectiveUser.getUsername().equals(p.getCurrentAssignee())) {
                 return true;
@@ -425,10 +438,7 @@ public class RenewalService {
                     return false;
             }
 
-            // Exclude if routed to another team
-            if (p.getTargetTeam() != null && !p.getTargetTeam().equals("RENEWER") && effectiveUser.getRole() != null && effectiveUser.getRole().contains("RENEWER")) {
-                return false;
-            }
+
 
             return true;
         }).collect(java.util.stream.Collectors.toList());
