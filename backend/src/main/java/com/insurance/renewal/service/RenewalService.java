@@ -103,7 +103,22 @@ public class RenewalService {
                     return false;
                 }
                 if (role.equals("ROLE_SALES_MANAGER")) {
-                    return "SALES".equals(p.getTargetTeam()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
+                    if (!"SALES".equals(p.getTargetTeam()) || "RENEWER".equalsIgnoreCase(p.getTargetTeam())) {
+                        return false;
+                    }
+                    if (user.getAssignedRm() != null && !user.getAssignedRm().trim().isEmpty() && !user.getAssignedRm().equals("null")) {
+                        if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                        String[] allowedRms = user.getAssignedRm().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String rm : allowedRms) {
+                            if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return true;
                 }
                 if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
                     if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
@@ -116,7 +131,22 @@ public class RenewalService {
                     return false;
                 }
                 if (role.equals("ROLE_SALES") || role.equals("ROLE_SALES_MEMBER")) {
-                    return user.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
+                    if (!"SALES".equals(p.getTargetTeam()) || "RENEWER".equalsIgnoreCase(p.getTargetTeam())) {
+                        return false;
+                    }
+                    if (user.getAssignedRm() != null && !user.getAssignedRm().trim().isEmpty() && !user.getAssignedRm().equals("null")) {
+                        if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                        String[] allowedRms = user.getAssignedRm().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String rm : allowedRms) {
+                            if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return user.getUsername().equals(p.getCurrentAssignee());
                 }
             }
 
@@ -124,8 +154,16 @@ public class RenewalService {
             if (user.getRole().contains("RM")) {
                 if (user.getAssignedBranch() != null && !user.getAssignedBranch().isEmpty()
                         && !user.getAssignedBranch().equals("null")) {
-                    if (p.getBranch() == null || !user.getAssignedBranch().equalsIgnoreCase(p.getBranch()))
-                        return false;
+                    if (p.getBranch() == null) return false;
+                    String[] assignedBranches = user.getAssignedBranch().split("\\s*,\\s*");
+                    boolean branchMatch = false;
+                    for (String b : assignedBranches) {
+                        if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                            branchMatch = true;
+                            break;
+                        }
+                    }
+                    if (!branchMatch) return false;
                 }
                 if (user.getAssignedRm() != null && !user.getAssignedRm().isEmpty()
                         && !user.getAssignedRm().equals("null")) {
@@ -284,7 +322,22 @@ public class RenewalService {
                     return false;
                 }
                 if (role.equals("ROLE_SALES_MANAGER")) {
-                    return "SALES".equals(p.getTargetTeam()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
+                    if (!"SALES".equals(p.getTargetTeam()) || "RENEWER".equalsIgnoreCase(p.getTargetTeam())) {
+                        return false;
+                    }
+                    if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equals("null")) {
+                        if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                        String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String rm : allowedRms) {
+                            if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return true;
                 }
                 if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
                     if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
@@ -297,7 +350,22 @@ public class RenewalService {
                     return false;
                 }
                 if (role.equals("ROLE_SALES") || role.equals("ROLE_SALES_MEMBER")) {
-                    return effectiveUser.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam());
+                    if (!"SALES".equals(p.getTargetTeam()) || "RENEWER".equalsIgnoreCase(p.getTargetTeam())) {
+                        return false;
+                    }
+                    if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equals("null")) {
+                        if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                        String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String rm : allowedRms) {
+                            if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return effectiveUser.getUsername().equals(p.getCurrentAssignee());
                 }
             }
 
@@ -525,7 +593,18 @@ public class RenewalService {
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(75);
 
-        return policyRepository.findReturnedToRenewerPolicies(team, startDate, today);
+        List<Policy> returned = policyRepository.findReturnedToRenewerPolicies(team, startDate, today);
+        if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equals("null")) {
+            String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+            returned = returned.stream().filter(p -> {
+                if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                for (String rm : allowedRms) {
+                    if (rm.equalsIgnoreCase(p.getRmName().trim())) return true;
+                }
+                return false;
+            }).collect(java.util.stream.Collectors.toList());
+        }
+        return returned;
     }
 
     public List<Policy> getFollowUpsForTimeline(int days, String branch, String sourceTeam) {

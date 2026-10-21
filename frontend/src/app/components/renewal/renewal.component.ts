@@ -932,6 +932,11 @@ export class RenewalComponent implements OnInit {
       if (['CLAIMS', 'SALES', 'UNDERWRITING', 'CLAIMS_MEMBER', 'SALES_MEMBER', 'UNDERWRITING_MEMBER'].includes(user.role)) {
          return p.currentAssignee === user.username;
       }
+      if (user.role === 'RM' && user.assignedRm && user.assignedRm.trim() !== '' && user.assignedRm !== 'null') {
+        if (!p.rmName) return false;
+        const allowedRms = user.assignedRm.split(',').map((s: string) => s.trim().toLowerCase());
+        return allowedRms.includes(p.rmName.trim().toLowerCase());
+      }
       return true;
     };
 

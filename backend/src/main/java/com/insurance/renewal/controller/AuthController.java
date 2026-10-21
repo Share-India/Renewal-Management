@@ -40,6 +40,9 @@ public class AuthController {
             if (user.getAssignedBranch() != null) response.put("assignedBranch", user.getAssignedBranch());
             if (user.getAssignedProductType() != null) response.put("assignedProductType", user.getAssignedProductType());
             if (user.getAssignedPremiumRange() != null) response.put("assignedPremiumRange", user.getAssignedPremiumRange());
+            if (user.getAssignedRm() != null) response.put("assignedRm", user.getAssignedRm());
+            if (user.getAssignedPosp() != null) response.put("assignedPosp", user.getAssignedPosp());
+            if (user.getAssignedCustomers() != null) response.put("assignedCustomers", user.getAssignedCustomers());
         });
 
         return ResponseEntity.ok(response);
