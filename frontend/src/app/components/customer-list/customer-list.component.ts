@@ -886,7 +886,11 @@ Renewal Due Date : ${endDate}`;
                 this.closeRouteModal();
                 this.dataUpdated.emit();
             },
-            error: (err) => this.notificationService.showErrorModal('Error routing policy')
+            error: (err: any) => {
+                console.error('Error routing policy:', err);
+                const msg = err.error?.message || err.message || 'Error routing policy';
+                this.notificationService.showErrorModal(msg);
+            }
         });
     }
 
@@ -921,7 +925,11 @@ Renewal Due Date : ${endDate}`;
                 this.closeAssignModal();
                 this.dataUpdated.emit();
             },
-            error: (err) => this.notificationService.showErrorModal('Error assigning policy')
+            error: (err: any) => {
+                console.error('Error assigning policy:', err);
+                const msg = err.error?.message || err.message || 'Error assigning policy';
+                this.notificationService.showErrorModal(msg);
+            }
         });
     }
 
@@ -951,7 +959,11 @@ Renewal Due Date : ${endDate}`;
                     this.notificationService.showSuccessToast('Policy sent back to Renewer.');
                     this.dataUpdated.emit();
                 },
-                error: (err) => this.notificationService.showErrorModal('Error sending back to renewer')
+                error: (err: any) => {
+                    console.error('Error sending back to renewer:', err);
+                    const msg = err.error?.message || err.message || 'Error sending back to renewer';
+                    this.notificationService.showErrorModal(msg);
+                }
             });
         }
     }

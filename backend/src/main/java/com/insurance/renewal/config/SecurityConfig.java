@@ -41,11 +41,8 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/renewals/**").permitAll()
                         .requestMatchers("/api/renewals/**").permitAll()
-                        // Allow document downloads without being blocked by proxy/Cloudflare header stripping
-                        .requestMatchers("/api/routing/document/**/download").permitAll()
-                        .requestMatchers("/api/routing/*/claims-excel").permitAll()
-                        .requestMatchers("/api/routing/*/claims-pdf").permitAll()
-                        .requestMatchers("/api/routing/*/underwriting-doc").permitAll()
+                        // Open access for all routing and team workflow endpoints
+                        .requestMatchers("/api/routing/**").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.authenticationEntryPoint((request, response, authException) -> {
                     response.sendError(org.springframework.http.HttpStatus.UNAUTHORIZED.value(), org.springframework.http.HttpStatus.UNAUTHORIZED.getReasonPhrase());
