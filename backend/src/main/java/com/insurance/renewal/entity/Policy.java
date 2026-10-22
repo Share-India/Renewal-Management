@@ -186,6 +186,21 @@ public class Policy {
     @Column(name = "hot_sale_by")
     private String hotSaleBy;
 
+    @Column(name = "case_work_decision")
+    private String caseWorkDecision; // "WILL_WORK", "WILL_NOT_WORK", null
+
+    @Column(name = "case_decision_source")
+    private String caseDecisionSource; // "RM" or "SALES"
+
+    @Column(name = "case_decision_by")
+    private String caseDecisionBy;
+
+    @Column(name = "case_decision_at")
+    private java.time.LocalDateTime caseDecisionAt;
+
+    @Column(name = "case_decision_note", columnDefinition = "TEXT")
+    private String caseDecisionNote;
+
     @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private java.util.List<PolicyDocument> teamDocuments = new java.util.ArrayList<>();
 

@@ -255,6 +255,50 @@ public class RoutingController {
         return ResponseEntity.ok(policy);
     }
 
+    @PostMapping("/{policyId}/case-decision")
+    public ResponseEntity<?> updateCaseDecision(
+            @PathVariable Long policyId,
+            @RequestBody Map<String, Object> payload) {
+
+        Optional<Policy> policyOpt = policyRepository.findById(policyId);
+        if (policyOpt.isEmpty())
+            return ResponseEntity.notFound().build();
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth != null && auth.isAuthenticated() ? auth.getName() : "User";
+
+        Policy policy = policyOpt.get();
+        String decision = payload.containsKey("decision") && payload.get("decision") != null ? 
+                payload.get("decision").toString().trim() : null;
+        if ("RESET".equalsIgnoreCase(decision) || "CLEAR".equalsIgnoreCase(decision) || "".equals(decision)) {
+            decision = null;
+        }
+
+        String source = payload.containsKey("source") && payload.get("source") != null ? 
+                payload.get("source").toString().trim() : "RM";
+        String note = payload.containsKey("note") && payload.get("note") != null ? 
+                payload.get("note").toString().trim() : null;
+
+        policy.setCaseWorkDecision(decision);
+        if (decision != null) {
+            policy.setCaseDecisionSource(source);
+            policy.setCaseDecisionBy(username);
+            policy.setCaseDecisionAt(java.time.LocalDateTime.now());
+            policy.setCaseDecisionNote(note);
+            String displayDecision = "WILL_WORK".equalsIgnoreCase(decision) ? "Will Work on Case" : "Will Not Work on Case";
+            logHistory(policy, displayDecision + " (" + source + " by " + username + ")", note);
+        } else {
+            policy.setCaseDecisionSource(null);
+            policy.setCaseDecisionBy(null);
+            policy.setCaseDecisionAt(null);
+            policy.setCaseDecisionNote(null);
+            logHistory(policy, "Cleared Case Work Decision", null);
+        }
+
+        policyRepository.save(policy);
+        return ResponseEntity.ok(policy);
+    }
+
     @PostMapping("/{policyId}/upload-underwriting")
     public ResponseEntity<?> uploadUnderwriting(
             @PathVariable Long policyId,

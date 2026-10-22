@@ -46,6 +46,13 @@ export class CustomerListComponent {
     showSalesModal: boolean = false;
     salesNote: string = '';
 
+    // Case Work Decision Logic (Will Work / Will Not Work)
+    showCaseDecisionModal: boolean = false;
+    selectedPolicyForCaseDecision: any = null;
+    selectedDecisionOption: 'WILL_WORK' | 'WILL_NOT_WORK' | '' = '';
+    caseDecisionNoteText: string = '';
+    loadingCaseDecision: boolean = false;
+
     // RM Update Logic
     showRmUpdateModal: boolean = false;
     rmUpdateText: string = '';
@@ -180,6 +187,127 @@ export class CustomerListComponent {
                 this.notificationService.showErrorModal('Error updating Hot Sale status');
             }
         });
+    }
+
+    get canSetCaseDecision(): boolean {
+        if (this.authService.isAdmin()) {
+            return false;
+        }
+        return this.authService.hasRole('RM') || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER');
+    }
+
+    get currentDecisionSource(): string {
+        if (this.adminViewAs === 'sales' || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER')) {
+            return 'SALES';
+        }
+        return 'RM';
+    }
+
+    shouldShowCaseDecision(policy: any): boolean {
+        if (!policy || !policy.caseWorkDecision) return false;
+
+        // If marked from RM Dashboard
+        if (policy.caseDecisionSource === 'RM') {
+            // Seen by: Renewer, Admin, RM, Sales
+            if (this.isAdmin || this.authService.isAdmin()) return true;
+            if (this.isRenewer) return true;
+            if (this.isRm) return true;
+            if (this.isSalesManager || this.isSalesUser) return true;
+            return false;
+        }
+
+        // If marked from Sales Work
+        if (policy.caseDecisionSource === 'SALES') {
+            // Seen by all teams: Claims Team, Underwriting team, Sales team, Renewer, Admin, Servicing, MIS
+            if (this.isAdmin || this.authService.isAdmin()) return true;
+            if (this.isRenewer) return true;
+            if (this.isClaimsManager || this.isClaimsUser) return true;
+            if (this.isUnderwritingManager || this.isUnderwritingUser) return true;
+            if (this.isSalesManager || this.isSalesUser) return true;
+            if (this.isRm) return true;
+            if (this.authService.hasRole('SERVICING') || this.authService.hasRole('MIS')) return true;
+            return false;
+        }
+
+        return true;
+    }
+
+    openCaseDecisionModal(policy: any) {
+        this.selectedPolicyForCaseDecision = policy;
+        this.selectedDecisionOption = (policy.caseWorkDecision as 'WILL_WORK' | 'WILL_NOT_WORK') || '';
+        this.caseDecisionNoteText = policy.caseDecisionNote || '';
+        this.showCaseDecisionModal = true;
+    }
+
+    closeCaseDecisionModal() {
+        this.showCaseDecisionModal = false;
+        this.selectedPolicyForCaseDecision = null;
+        this.selectedDecisionOption = '';
+        this.caseDecisionNoteText = '';
+        this.loadingCaseDecision = false;
+    }
+
+    submitCaseDecision(decision?: 'WILL_WORK' | 'WILL_NOT_WORK' | 'RESET') {
+        if (!this.selectedPolicyForCaseDecision) return;
+        const dec = decision !== undefined ? decision : this.selectedDecisionOption;
+        if (!dec) {
+            this.notificationService.showErrorModal('Please select whether to work or not work on this case.');
+            return;
+        }
+
+        this.loadingCaseDecision = true;
+        const source = this.currentDecisionSource;
+        const payload = {
+            decision: dec === 'RESET' ? null : dec,
+            source: source,
+            note: this.caseDecisionNoteText ? this.caseDecisionNoteText.trim() : null
+        };
+
+        this.apiService.saveCaseDecision(this.selectedPolicyForCaseDecision.id, payload).subscribe({
+            next: (updatedPolicy: any) => {
+                this.selectedPolicyForCaseDecision.caseWorkDecision = payload.decision;
+                this.selectedPolicyForCaseDecision.caseDecisionSource = payload.decision ? source : null;
+                this.selectedPolicyForCaseDecision.caseDecisionBy = payload.decision ? (updatedPolicy.caseDecisionBy || this.authService.getCurrentUser()?.username) : null;
+                this.selectedPolicyForCaseDecision.caseDecisionAt = payload.decision ? updatedPolicy.caseDecisionAt : null;
+                this.selectedPolicyForCaseDecision.caseDecisionNote = payload.decision ? payload.note : null;
+
+                const msg = payload.decision === 'WILL_WORK' 
+                    ? 'Policy marked as "Will Work on Case"!' 
+                    : payload.decision === 'WILL_NOT_WORK'
+                        ? 'Policy marked as "Will Not Work on Case"!'
+                        : 'Case work decision cleared.';
+                this.notificationService.showSuccessToast(msg);
+                this.closeCaseDecisionModal();
+                this.dataUpdated.emit();
+            },
+            error: (err: any) => {
+                console.error('Error saving case decision:', err);
+                this.notificationService.showErrorModal('Failed to save case decision: ' + (err.error?.message || err.message));
+                this.loadingCaseDecision = false;
+            }
+        });
+    }
+
+    getCaseDecisionTooltip(policy: any): string {
+        if (!policy || !policy.caseWorkDecision) return '';
+        const by = policy.caseDecisionBy ? ` by ${policy.caseDecisionBy}` : '';
+        const source = policy.caseDecisionSource ? ` (${policy.caseDecisionSource})` : '';
+        const note = policy.caseDecisionNote ? `\nNote: ${policy.caseDecisionNote}` : '';
+        const dec = policy.caseWorkDecision === 'WILL_WORK' ? 'Will Work on Case' : 'Will Not Work on Case';
+        return `${dec}${by}${source}${note}`;
+    }
+
+    openCaseDecisionDetails(policy: any) {
+        if (!policy || !policy.caseWorkDecision) return;
+        const dec = policy.caseWorkDecision === 'WILL_WORK' ? 'Will Work on Case' : 'Will Not Work on Case';
+        const by = policy.caseDecisionBy || 'RM/Sales';
+        const source = policy.caseDecisionSource || '';
+        const note = policy.caseDecisionNote ? `<br><br><strong>Note:</strong> ${policy.caseDecisionNote}` : '';
+
+        this.notificationService.showInfoModal(
+            `Case Work Decision`,
+            `<strong>Status:</strong> ${dec}<br><strong>Decided By:</strong> ${by} (${source})${note}`
+        );
     }
 
     canDeleteDocument(doc: any, team: string): boolean {

@@ -62,6 +62,19 @@ export class NotificationService {
     });
   }
 
+  showInfoModal(title: string, htmlContent: string): void {
+    Swal.fire({
+      icon: 'info',
+      title: title,
+      html: htmlContent,
+      customClass: {
+        confirmButton: 'btn btn-primary rounded-pill px-4 shadow-sm',
+        popup: 'rounded-4 shadow-lg border-0'
+      },
+      buttonsStyling: false
+    });
+  }
+
   async confirmAction(text: string, title: string = 'Please Confirm', confirmButtonText: string = 'Yes, confirm'): Promise<boolean> {
     // If the text itself starts with "Are you sure", it's redundant to have "Are you sure?" as the title.
     const displayTitle = text.toLowerCase().startsWith('are you sure') ? 'Action Required' : title;

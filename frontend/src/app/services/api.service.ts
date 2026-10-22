@@ -269,6 +269,10 @@ export class ApiService {
         return this.http.post(`${this.baseUrl}/routing/${policyId}/hot-sale`, data, { headers: this.getHeaders() });
     }
 
+    saveCaseDecision(policyId: number, data: { decision: string | null, source?: string | null, note?: string | null }): Observable<any> {
+        return this.http.post(`${this.baseUrl}/routing/${policyId}/case-decision`, data, { headers: this.getHeaders() });
+    }
+
     getAuditLogs(id: number): Observable<any[]> {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/${id}/audit-logs`, { headers: this.getHeaders() });
     }

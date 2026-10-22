@@ -25,7 +25,10 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of policies" [class.hot-sale-row]="isPolicyHotSale(policy)">
+                <tr *ngFor="let policy of policies" 
+                    [class.hot-sale-row]="isPolicyHotSale(policy)"
+                    [class.case-will-work-row]="shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_WORK'"
+                    [class.case-will-not-work-row]="shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_NOT_WORK'">
                     <td style="word-break: break-all; min-width: 140px;">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="fw-bold">{{ policy.policyNumber }}</span>
@@ -61,6 +64,24 @@
                             <span *ngIf="hasTeamUpdate(policy)" class="badge bg-info-subtle text-dark border border-info-subtle d-inline-flex align-items-center"
                                   style="cursor: pointer;" (click)="openDetailsModal(policy)" [title]="getTeamUpdateTooltip(policy)">
                                 <i class="bi bi-chat-left-text me-1 text-info"></i>{{ getTeamUpdateDisplayName(policy) }}
+                            </span>
+                        </div>
+
+                        <!-- Case Work Decision Badge (Visible based on source) -->
+                        <div *ngIf="shouldShowCaseDecision(policy)" class="mt-1">
+                            <span *ngIf="policy.caseWorkDecision === 'WILL_WORK'" 
+                                  class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1"
+                                  style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 0.68rem; padding: 2.5px 8px; font-weight: 700; cursor: pointer;"
+                                  (click)="canSetCaseDecision ? openCaseDecisionModal(policy) : openCaseDecisionDetails(policy)"
+                                  [title]="getCaseDecisionTooltip(policy)">
+                                <i class="bi bi-check-circle-fill text-white"></i> WILL WORK ({{ policy.caseDecisionSource }})
+                            </span>
+                            <span *ngIf="policy.caseWorkDecision === 'WILL_NOT_WORK'" 
+                                  class="badge rounded-pill text-white shadow-sm d-inline-flex align-items-center gap-1"
+                                  style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); font-size: 0.68rem; padding: 2.5px 8px; font-weight: 700; cursor: pointer;"
+                                  (click)="canSetCaseDecision ? openCaseDecisionModal(policy) : openCaseDecisionDetails(policy)"
+                                  [title]="getCaseDecisionTooltip(policy)">
+                                <i class="bi bi-x-circle-fill text-white"></i> WILL NOT WORK ({{ policy.caseDecisionSource }})
                             </span>
                         </div>
                     </td>
@@ -151,6 +172,20 @@
                                 (click)="toggleHotSale(policy)" 
                                 [title]="policy.isHotSale ? 'Hot Sale Active (Click to remove)' : 'Mark as Hot Sale'">
                                 <i class="bi bi-fire" [class.text-danger]="policy.isHotSale" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
+                            </button>
+
+                            <!-- Case Work Decision Button (Only for Sales/RM) -->
+                            <button *ngIf="canSetCaseDecision" 
+                                class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center position-relative" 
+                                [style.background-color]="policy.caseWorkDecision === 'WILL_WORK' ? '#dcfce7' : (policy.caseWorkDecision === 'WILL_NOT_WORK' ? '#fee2e2' : '#f3e8ff')" 
+                                [style.color]="policy.caseWorkDecision === 'WILL_WORK' ? '#15803d' : (policy.caseWorkDecision === 'WILL_NOT_WORK' ? '#b91c1c' : '#7e22ce')" 
+                                [style.border]="policy.caseWorkDecision === 'WILL_WORK' ? '1.5px solid #22c55e' : (policy.caseWorkDecision === 'WILL_NOT_WORK' ? '1.5px solid #ef4444' : '1px solid #d8b4fe')" 
+                                style="width: 36px; height: 36px; border-radius: 10px;" 
+                                (click)="openCaseDecisionModal(policy)" 
+                                [title]="getCaseDecisionTooltip(policy) || 'Select Case Work Decision (Will Work / Will Not Work)'">
+                                <i *ngIf="policy.caseWorkDecision === 'WILL_WORK'" class="bi bi-check-circle-fill" style="font-size: 1.15rem;"></i>
+                                <i *ngIf="policy.caseWorkDecision === 'WILL_NOT_WORK'" class="bi bi-x-circle-fill" style="font-size: 1.15rem;"></i>
+                                <i *ngIf="!policy.caseWorkDecision" class="bi bi-clipboard2-check" style="font-size: 1.15rem;"></i>
                             </button>
 
                             <!-- Workflow Buttons -->
@@ -1267,6 +1302,98 @@
             <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" (click)="closeSalesNote()">Cancel</button>
             <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitSalesNote()">
                 Save Note <i class="bi bi-journal-check"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Case Work Decision Modal -->
+<div class="modal-overlay d-flex align-items-center justify-content-center" *ngIf="showCaseDecisionModal" (click)="closeCaseDecisionModal()" style="background: rgba(0,0,0,0.5); position: fixed; inset: 0; z-index: 1060;">
+    <div class="custom-modal-content bg-white rounded-4 shadow-lg p-4" (click)="$event.stopPropagation()" style="width: 520px; max-width: 95vw;">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+            <div>
+                <h5 class="fw-bold mb-1 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-briefcase-fill text-primary"></i> Case Work Decision
+                </h5>
+                <small class="text-muted">
+                    Policy # <strong>{{ selectedPolicyForCaseDecision?.policyNumber }}</strong> • {{ selectedPolicyForCaseDecision?.customer?.firstName }} {{ selectedPolicyForCaseDecision?.customer?.lastName }}
+                </small>
+            </div>
+            <button type="button" class="btn-close" (click)="closeCaseDecisionModal()"></button>
+        </div>
+
+        <div class="modal-body p-0">
+            <p class="text-secondary small mb-3">
+                Indicate whether you or your sales team will be actively working on this renewal case. This status will be highlighted across the system.
+            </p>
+
+            <!-- Decision Options -->
+            <div class="d-flex flex-column gap-2 mb-3">
+                <div class="decision-card p-3 rounded-3 border d-flex align-items-center justify-content-between"
+                     style="cursor: pointer; transition: all 0.2s;"
+                     [style.border]="selectedDecisionOption === 'WILL_WORK' ? '2px solid #22c55e !important' : '1px solid #e5e7eb'"
+                     [style.background-color]="selectedDecisionOption === 'WILL_WORK' ? '#f0fdf4' : '#ffffff'"
+                     (click)="selectedDecisionOption = 'WILL_WORK'">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width: 42px; height: 42px; background-color: #dcfce7; color: #15803d; font-size: 1.25rem;">
+                            <i class="bi bi-check-lg"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Will Work on Case</div>
+                            <small class="text-muted">I / our team will actively work and follow up on this case.</small>
+                        </div>
+                    </div>
+                    <input class="form-check-input ms-2" type="radio" name="decisionRadio" [checked]="selectedDecisionOption === 'WILL_WORK'" style="pointer-events: none;">
+                </div>
+
+                <div class="decision-card p-3 rounded-3 border d-flex align-items-center justify-content-between"
+                     style="cursor: pointer; transition: all 0.2s;"
+                     [style.border]="selectedDecisionOption === 'WILL_NOT_WORK' ? '2px solid #ef4444 !important' : '1px solid #e5e7eb'"
+                     [style.background-color]="selectedDecisionOption === 'WILL_NOT_WORK' ? '#fef2f2' : '#ffffff'"
+                     (click)="selectedDecisionOption = 'WILL_NOT_WORK'">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width: 42px; height: 42px; background-color: #fee2e2; color: #b91c1c; font-size: 1.25rem;">
+                            <i class="bi bi-x-lg"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark">Will Not Work on Case</div>
+                            <small class="text-muted">I / our team will not be working on this renewal case.</small>
+                        </div>
+                    </div>
+                    <input class="form-check-input ms-2" type="radio" name="decisionRadio" [checked]="selectedDecisionOption === 'WILL_NOT_WORK'" style="pointer-events: none;">
+                </div>
+            </div>
+
+            <!-- Optional Remarks -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold text-secondary small">Notes / Remarks (Optional)</label>
+                <textarea class="form-control rounded-3" rows="2" 
+                          [(ngModel)]="caseDecisionNoteText" 
+                          placeholder="Add any reason or follow-up note..."></textarea>
+            </div>
+
+            <!-- Current Status Info if set -->
+            <div *ngIf="selectedPolicyForCaseDecision?.caseWorkDecision" class="bg-light p-2 rounded-2 small text-muted mb-3 d-flex align-items-center justify-content-between">
+                <span>
+                    <i class="bi bi-info-circle me-1"></i>
+                    Current: <strong>{{ selectedPolicyForCaseDecision?.caseWorkDecision === 'WILL_WORK' ? 'Will Work' : 'Will Not Work' }}</strong>
+                    by <em>{{ selectedPolicyForCaseDecision?.caseDecisionBy }}</em> ({{ selectedPolicyForCaseDecision?.caseDecisionSource }})
+                </span>
+                <button type="button" class="btn btn-link btn-sm text-danger text-decoration-none p-0" (click)="submitCaseDecision('RESET')" [disabled]="loadingCaseDecision">
+                    <i class="bi bi-trash me-1"></i>Clear
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 border-top pt-3">
+            <button type="button" class="btn btn-light rounded-pill px-3" (click)="closeCaseDecisionModal()" [disabled]="loadingCaseDecision">
+                Cancel
+            </button>
+            <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" (click)="submitCaseDecision()" [disabled]="loadingCaseDecision || !selectedDecisionOption">
+                <span *ngIf="loadingCaseDecision" class="spinner-border spinner-border-sm me-1"></span>
+                Save Decision
             </button>
         </div>
     </div>
