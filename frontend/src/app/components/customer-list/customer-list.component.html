@@ -121,13 +121,13 @@
                                 (click)="openDetailsModal(policy)" title="View Details">
                                 <i class="bi bi-eye" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button *ngIf="!isTeamRole && !isPosp" 
+                            <button *ngIf="!isTeamRole && !isPosp && !isRm" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #e3f2fd; color: #1e88e5;" 
                                 (click)="openLogCall(policy)" title="Log Call">
                                 <i class="bi bi-telephone" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button *ngIf="!isTeamRole && !isPosp" 
+                            <button *ngIf="!isTeamRole && !isPosp && !isRm" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #e8f5e9; color: #43a047;" 
                                 (click)="openRenewalModal(policy)" title="Renew Policy">
