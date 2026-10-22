@@ -804,7 +804,16 @@ Renewal Due Date : ${endDate}`;
                 // browser needs time to load it. 
                 setTimeout(() => window.URL.revokeObjectURL(url), 10000);
             },
-            error: () => this.notificationService.showErrorModal('Failed to view document. It might not exist.')
+            error: (err: any) => {
+                console.error('Failed to view document:', err);
+                const status = err?.status;
+                const msg = status === 404
+                    ? 'The requested document file could not be found on the server.'
+                    : (status === 401 || status === 403)
+                        ? 'Authentication required or session expired to view this document.'
+                        : 'Failed to view document (' + (status ? 'HTTP ' + status : 'Network Error') + ').';
+                this.notificationService.showErrorModal(msg);
+            }
         });
     }
 
@@ -1122,7 +1131,16 @@ Renewal Due Date : ${endDate}`;
                 window.open(url, '_blank');
                 setTimeout(() => window.URL.revokeObjectURL(url), 10000);
             },
-            error: () => this.notificationService.showErrorModal('Failed to view document. It might not exist.')
+            error: (err: any) => {
+                console.error('Failed to view document:', err);
+                const status = err?.status;
+                const msg = status === 404
+                    ? 'The requested document file could not be found on the server.'
+                    : (status === 401 || status === 403)
+                        ? 'Authentication required or session expired to view this document.'
+                        : 'Failed to view document (' + (status ? 'HTTP ' + status : 'Network Error') + ').';
+                this.notificationService.showErrorModal(msg);
+            }
         });
     }
 }

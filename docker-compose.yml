@@ -37,6 +37,7 @@ services:
       - "8080"
     volumes:
       - uploads_data:/app/backend/src/main/resources/uploads
+      - uploads_data:/app/uploads
 
   frontend:
     build:

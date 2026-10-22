@@ -28,6 +28,9 @@ public class RenewalController {
     @Autowired
     private PolicyRepository policyRepository;
 
+    @Autowired
+    private com.insurance.renewal.service.FileStorageService fileStorageService;
+
     @GetMapping("/timeline/{days}")
     public List<Policy> getTimelinePolicies(
             @PathVariable("days") int days,
@@ -323,15 +326,7 @@ public class RenewalController {
             // File Saving Logic
             String paymentDocumentPath = null;
             if (file != null && !file.isEmpty()) {
-                String uploadDir = "backend/src/main/resources/uploads/";
-                java.io.File directory = new java.io.File(uploadDir);
-                if (!directory.exists()) {
-                    directory.mkdirs();
-                }
-                String fileName = java.util.UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-                java.io.File dest = new java.io.File(directory.getAbsolutePath() + java.io.File.separator + fileName);
-                file.transferTo(dest);
-                paymentDocumentPath = dest.getAbsolutePath();
+                paymentDocumentPath = fileStorageService.saveFile(file);
             }
 
             String endDateStr = (String) payload.get("newEndDate");
@@ -402,16 +397,7 @@ public class RenewalController {
 
             String documentPath = null;
             if (file != null && !file.isEmpty()) {
-                // Save file
-                String uploadDir = "backend/src/main/resources/uploads/";
-                java.io.File directory = new java.io.File(uploadDir);
-                if (!directory.exists()) {
-                    directory.mkdirs();
-                }
-                String fileName = java.util.UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-                java.io.File dest = new java.io.File(directory.getAbsolutePath() + java.io.File.separator + fileName);
-                file.transferTo(dest);
-                documentPath = dest.getAbsolutePath();
+                documentPath = fileStorageService.saveFile(file);
             }
 
             String agentName = org.springframework.security.core.context.SecurityContextHolder.getContext()
@@ -471,37 +457,15 @@ public class RenewalController {
     @GetMapping("/{id}/payment-proof")
     public ResponseEntity<org.springframework.core.io.Resource> getPaymentProof(@PathVariable("id") Long id) {
         try {
-            java.io.File file = renewalService.getPaymentProofFile(id);
-            if (!file.exists()) {
+            Policy policy = policyRepository.findById(id).orElse(null);
+            if (policy == null || policy.getPaymentDocumentPath() == null) {
                 return ResponseEntity.notFound().build();
             }
-            org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-
-            String contentType = "application/octet-stream";
-            String name = file.getName().toLowerCase();
-            if (name.endsWith(".png"))
-                contentType = "image/png";
-            else if (name.endsWith(".jpg") || name.endsWith(".jpeg"))
-                contentType = "image/jpeg";
-            else if (name.endsWith(".pdf"))
-                contentType = "application/pdf";
-
-            String displayFileName = file.getName();
-            // Robust check: Is there an underscore at index 36? (Standard UUID is 36 chars)
-            if (displayFileName.length() > 37 && displayFileName.charAt(36) == '_') {
-                displayFileName = displayFileName.substring(37);
+            java.io.File file = fileStorageService.resolveFile(policy.getPaymentDocumentPath(), null);
+            if (file == null) {
+                return ResponseEntity.notFound().build();
             }
-
-            // Encode filename for filename* parameter (handles spaces/special chars)
-            String encodedFileName = java.net.URLEncoder
-                    .encode(displayFileName, java.nio.charset.StandardCharsets.UTF_8.toString())
-                    .replaceAll("\\+", "%20");
-
-            return ResponseEntity.ok()
-                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                            "inline; filename=\"" + displayFileName + "\"; filename*=UTF-8''" + encodedFileName)
-                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
-                    .body(resource);
+            return fileStorageService.serveFile(file, "Payment_Proof_" + policy.getPolicyNumber());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.notFound().build();
@@ -511,37 +475,15 @@ public class RenewalController {
     @GetMapping("/{id}/policy-document")
     public ResponseEntity<org.springframework.core.io.Resource> getPolicyDocument(@PathVariable("id") Long id) {
         try {
-            java.io.File file = renewalService.getPolicyDocumentFile(id);
-            if (!file.exists()) {
+            Policy policy = policyRepository.findById(id).orElse(null);
+            if (policy == null || policy.getPolicyDocumentPath() == null) {
                 return ResponseEntity.notFound().build();
             }
-            org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-
-            String contentType = "application/octet-stream";
-            String name = file.getName().toLowerCase();
-            if (name.endsWith(".pdf"))
-                contentType = "application/pdf";
-            else if (name.endsWith(".png"))
-                contentType = "image/png";
-            else if (name.endsWith(".jpg") || name.endsWith(".jpeg"))
-                contentType = "image/jpeg";
-
-            String displayFileName = file.getName();
-            // Robust check: Is there an underscore at index 36?
-            if (displayFileName.length() > 37 && displayFileName.charAt(36) == '_') {
-                displayFileName = displayFileName.substring(37);
+            java.io.File file = fileStorageService.resolveFile(policy.getPolicyDocumentPath(), null);
+            if (file == null) {
+                return ResponseEntity.notFound().build();
             }
-
-            // Encode filename for filename* parameter
-            String encodedFileName = java.net.URLEncoder
-                    .encode(displayFileName, java.nio.charset.StandardCharsets.UTF_8.toString())
-                    .replaceAll("\\+", "%20");
-
-            return ResponseEntity.ok()
-                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                            "inline; filename=\"" + displayFileName + "\"; filename*=UTF-8''" + encodedFileName)
-                    .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
-                    .body(resource);
+            return fileStorageService.serveFile(file, "Policy_" + policy.getPolicyNumber());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.notFound().build();

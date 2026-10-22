@@ -2024,7 +2024,16 @@ export class AdminDashboardComponent implements OnInit {
         // optimize: revoke url after some time? or let browser handle it on close.
         // window.URL.revokeObjectURL(url); // Can't revoke immediately if valid
       },
-      error: () => this.notificationService.showErrorModal('Failed to view document. It might not exist.')
+      error: (err: any) => {
+                console.error('Failed to view document:', err);
+                const status = err?.status;
+                const msg = status === 404
+                    ? 'The requested document file could not be found on the server.'
+                    : (status === 401 || status === 403)
+                        ? 'Authentication required or session expired to view this document.'
+                        : 'Failed to view document (' + (status ? 'HTTP ' + status : 'Network Error') + ').';
+                this.notificationService.showErrorModal(msg);
+            }
     });
   }
 

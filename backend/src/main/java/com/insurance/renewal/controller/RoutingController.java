@@ -37,6 +37,9 @@ public class RoutingController {
     @Autowired
     private com.insurance.renewal.repository.PolicyDocumentRepository policyDocumentRepository;
 
+    @Autowired
+    private com.insurance.renewal.service.FileStorageService fileStorageService;
+
     private void logHistory(Policy policy, String outcome, String notes) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = auth != null ? auth.getName() : "System";
@@ -382,25 +385,11 @@ public class RoutingController {
         if (path == null)
             return ResponseEntity.notFound().build();
 
-        java.io.File file = new java.io.File(path);
-        if (!file.exists())
+        java.io.File file = fileStorageService.resolveFile(path, null);
+        if (file == null)
             return ResponseEntity.notFound().build();
 
-        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-
-        String contentType = "application/octet-stream";
-        if (path.endsWith(".pdf"))
-            contentType = "application/pdf";
-        else if (path.endsWith(".xlsx"))
-            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        else if (path.endsWith(".csv"))
-            contentType = "text/csv";
-
-        return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + file.getName() + "\"")
-                .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
-                .body(resource);
+        return fileStorageService.serveFile(file, file.getName());
     }
 
     @PostMapping("/team/create-user")
@@ -496,8 +485,8 @@ public class RoutingController {
         if (docOpt.isPresent()) {
             com.insurance.renewal.entity.PolicyDocument doc = docOpt.get();
             try {
-                java.io.File file = new java.io.File(doc.getFilePath());
-                if (file.exists())
+                java.io.File file = fileStorageService.resolveFile(doc.getFilePath(), doc.getFileName());
+                if (file != null && file.exists())
                     file.delete();
             } catch (Exception e) {
             }
@@ -514,48 +503,14 @@ public class RoutingController {
             return ResponseEntity.notFound().build();
 
         com.insurance.renewal.entity.PolicyDocument doc = docOpt.get();
-        java.io.File file = new java.io.File(doc.getFilePath());
-        if (!file.exists())
+        java.io.File file = fileStorageService.resolveFile(doc.getFilePath(), doc.getFileName());
+        if (file == null)
             return ResponseEntity.notFound().build();
 
-        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-
-        String contentType = "application/octet-stream";
-        String path = doc.getFilePath().toLowerCase();
-        if (path.endsWith(".pdf"))
-            contentType = "application/pdf";
-        else if (path.endsWith(".xlsx"))
-            contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        else if (path.endsWith(".csv"))
-            contentType = "text/csv";
-        else if (path.endsWith(".png"))
-            contentType = "image/png";
-        else if (path.endsWith(".jpg") || path.endsWith(".jpeg"))
-            contentType = "image/jpeg";
-
-        return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + doc.getFileName() + "\"")
-                .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
-                .body(resource);
+        return fileStorageService.serveFile(file, doc.getFileName());
     }
 
     private String saveFile(MultipartFile file) {
-        if (file == null || file.isEmpty())
-            return null;
-        try {
-            String uploadDir = "backend/src/main/resources/uploads/";
-            java.io.File directory = new java.io.File(uploadDir);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-            String fileName = java.util.UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            java.io.File dest = new java.io.File(directory.getAbsolutePath() + java.io.File.separator + fileName);
-            file.transferTo(dest);
-            return dest.getAbsolutePath();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return fileStorageService.saveFile(file);
     }
 }
