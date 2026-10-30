@@ -16,12 +16,21 @@ export class TimelineComponent implements OnChanges {
     @Input() userRole: string = '';
     @Input() selectedSourceTeam: string = '';
     @Input() selectedDate: string = '';
+    @Input() isManager: boolean = false;
 
     days: number[] = [75, 60, 45, 30, 15, 7, 3, 2, 1];
     postExpiryDays: number[] = [-1, -2, -3, -7, -15, -30, -45, -60, -75];
     @Input() selectedDay: number | string | null = null;
     isTeamTimeline: boolean = false;
 
+    get canShowDatePicker(): boolean {
+        if (this.isManager) return true;
+        if (!this.userRole) return false;
+        const role = this.userRole.toUpperCase();
+        return role.includes('CLAIMS_MANAGER') || 
+               role.includes('SALES_MANAGER') || 
+               role.includes('UNDERWRITING_MANAGER');
+    }
 
     ngOnChanges() {
         if ((this.userRole && (this.userRole.includes('CLAIMS') || this.userRole.includes('SALES') || this.userRole.includes('UNDERWRITING'))) || 

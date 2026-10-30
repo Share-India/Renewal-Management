@@ -113,7 +113,7 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
 
-      <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" [selectedDate]="selectedDate" (daySelected)="onDaySelected($event)" (dateSelected)="onTimelineDateSelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam"></app-timeline>
+      <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" [selectedDate]="selectedDate" (daySelected)="onDaySelected($event)" (dateSelected)="onTimelineDateSelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam" [isManager]="isManager()"></app-timeline>
       
       <!-- Daily Records Calendar / Date Picker Bar (Restricted to ±2 Months, only on Renewals Dashboard) -->
       <div class="card shadow-sm border-0 mb-4 mt-3" style="border-radius: 12px; background: #ffffff;" *ngIf="showDatePicker()">
@@ -261,8 +261,8 @@ import { forkJoin, of } from 'rxjs';
       
       <div *ngIf="selectedDay === null && !selectedDate" class="text-center mt-5 empty-state">
         <div class="empty-icon"><i class="bi bi-calendar-event"></i></div>
-        <h3>{{ showDatePicker() || isTeamRole() ? 'Select a Timeline Bucket or Pick a Date' : 'Select a Timeline Bucket' }}</h3>
-        <p class="text-muted">{{ showDatePicker() || isTeamRole() ? 'Click on a day in the timeline above or pick a date to view expiring policies.' : 'Click on a day above to view tasks.' }}</p>
+        <h3>{{ showDatePicker() || isManager() ? 'Select a Timeline Bucket or Pick a Date' : 'Select a Timeline Bucket' }}</h3>
+        <p class="text-muted">{{ showDatePicker() || isManager() ? 'Click on a day in the timeline above or pick a date to view expiring policies.' : 'Click on a day above to view tasks.' }}</p>
       </div>
 
       <!-- Renewal Modal -->

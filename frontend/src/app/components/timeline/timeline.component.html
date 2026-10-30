@@ -3,30 +3,33 @@
     <h3 class="mb-0 text-dark fw-semibold" style="font-size: 1.5rem;">
       {{ isTeamTimeline ? 'Pending Tasks Timeline' : 'Renewal Timeline' }}
     </h3>
-    <div class="d-flex align-items-center gap-2">
-      <!-- Calendar / Day Selector beside 60 Days View button (for Claims, Sales, Underwriting team managers) -->
-      <div class="d-flex align-items-center gap-1" *ngIf="isTeamTimeline">
-        <label class="form-label mb-0 text-muted small fw-semibold text-nowrap d-none d-sm-inline">Expiry Date:</label>
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <!-- Calendar / Date Selector beside 60 Days View button (ONLY for Claims, Sales, Underwriting team managers) -->
+      <div class="date-selector-pill" [class.has-selected-date]="!!selectedDate" *ngIf="canShowDatePicker">
+        <div class="date-picker-prefix">
+          <i class="bi bi-calendar-event text-primary date-icon"></i>
+          <span class="date-picker-label d-none d-sm-inline">Expiry Date</span>
+        </div>
+        <span class="date-picker-divider d-none d-sm-inline"></span>
         <input type="date" 
-               class="form-control form-control-sm border-secondary-subtle fw-semibold shadow-sm" 
-               style="width: auto; min-width: 145px; height: 31px;"
+               class="date-picker-input" 
                [value]="selectedDate" 
                (change)="onDateChange($event)"
-               title="Select Expiry Date">
-        <button class="btn btn-sm btn-outline-secondary px-2 d-flex align-items-center gap-1 shadow-sm" 
-                style="height: 31px;"
+               title="Filter policies by Expiry Date">
+        <button type="button" 
+                class="btn-clear-date" 
                 *ngIf="selectedDate" 
                 (click)="clearDate()" 
                 title="Clear selected date">
-          <i class="bi bi-x-circle"></i> <span class="d-none d-md-inline small">Clear</span>
+          <i class="bi bi-x-circle-fill"></i>
         </button>
       </div>
 
-      <button class="btn btn-outline-primary btn-sm" 
-              style="height: 31px;"
+      <button class="btn btn-outline-primary btn-sm timeline-btn-60 d-flex align-items-center gap-1" 
               (click)="select60Days()"
               [class.active]="selectedDay === 600">
-        60 Days View
+        <i class="bi bi-calendar-range"></i>
+        <span>60 Days View</span>
       </button>
     </div>
   </div>
