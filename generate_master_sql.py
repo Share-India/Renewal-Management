@@ -123,14 +123,15 @@ def generate_master_script():
             else:
                 c_email = f"dummy_{uuid.uuid4().hex[:8]}@example.com"
 
-        cust_key = (c_first, c_last, c_email)
+        # Key customer strictly by (first, last, phone, email) to ensure 100% data fidelity per policy
+        cust_key = (c_first, c_last, c_phone or '', c_email)
         policy_customer_keys[pol_no] = cust_key
 
         distinct_customers[cust_key] = {
             'first': c_first,
             'last': c_last,
-            'email': c_email,
             'phone': c_phone,
+            'email': c_email,
             'dob': c_dob,
             'addr': c_addr,
             'city': c_city,
@@ -139,7 +140,7 @@ def generate_master_script():
             'freq': c_freq
         }
 
-    print(f"Distinct customer profiles: {len(distinct_customers)}")
+    print(f"Distinct customer profiles (Name + Phone + Email): {len(distinct_customers)}")
 
     policy_rows = []
     for pol_no, r in excel_policies.items():
@@ -173,7 +174,8 @@ def generate_master_script():
             'pol_no': pol_no,
             'first': cust_key[0],
             'last': cust_key[1],
-            'email': cust_key[2],
+            'phone': cust_key[2],
+            'email': cust_key[3],
             'type': p_type,
             'ins': p_ins,
             'prod': p_prod,
@@ -290,15 +292,15 @@ DROP TEMPORARY TABLE temp_dup_policies;
 CREATE TEMPORARY TABLE stage_customers (
     first_name VARCHAR(100),
     last_name VARCHAR(150),
-    email VARCHAR(255),
     phone VARCHAR(50),
+    email VARCHAR(255),
     dob DATE,
     address TEXT,
     city VARCHAR(100),
     state VARCHAR(100),
     pincode VARCHAR(20),
     billing_frequency VARCHAR(50),
-    INDEX (first_name(50), last_name(50), email(100))
+    INDEX (first_name(50), last_name(50), phone(20), email(100))
 );
 \n""")
 
@@ -310,8 +312,8 @@ CREATE TEMPORARY TABLE stage_customers (
             for c in batch:
                 dob_val = f"'{c['dob']}'" if c['dob'] else "NULL"
                 vals.append(
-                    f"({sql_escape(c['first'])}, {sql_escape(c['last'])}, {sql_escape(c['email'])}, "
-                    f"{sql_escape(c['phone'])}, {dob_val}, {sql_escape(c['addr'])}, {sql_escape(c['city'])}, "
+                    f"({sql_escape(c['first'])}, {sql_escape(c['last'])}, {sql_escape(c['phone'])}, {sql_escape(c['email'])}, "
+                    f"{dob_val}, {sql_escape(c['addr'])}, {sql_escape(c['city'])}, "
                     f"{sql_escape(c['state'])}, {sql_escape(c['pin'])}, {sql_escape(c['freq'])})"
                 )
             f.write(f"INSERT INTO stage_customers VALUES\n" + ",\n".join(vals) + ";\n")
@@ -319,16 +321,15 @@ CREATE TEMPORARY TABLE stage_customers (
         # Step 6: Insert missing customers & update existing customer details
         f.write("\n-- Step 6: Insert missing customers & update existing customer details\n")
         f.write("""
-INSERT INTO customers (first_name, last_name, email, phone, dob, address, city, state, pincode, billing_frequency, created_at)
-SELECT s.first_name, s.last_name, s.email, s.phone, s.dob, s.address, s.city, s.state, s.pincode, s.billing_frequency, NOW()
+INSERT INTO customers (first_name, last_name, phone, email, dob, address, city, state, pincode, billing_frequency, created_at)
+SELECT s.first_name, s.last_name, s.phone, s.email, s.dob, s.address, s.city, s.state, s.pincode, s.billing_frequency, NOW()
 FROM stage_customers s
-LEFT JOIN customers c ON c.first_name = s.first_name AND c.last_name = s.last_name AND c.email = s.email
+LEFT JOIN customers c ON c.first_name = s.first_name AND c.last_name = s.last_name AND COALESCE(c.phone, '') = COALESCE(s.phone, '') AND c.email = s.email
 WHERE c.id IS NULL;
 
 UPDATE customers c
-JOIN stage_customers s ON c.first_name = s.first_name AND c.last_name = s.last_name AND c.email = s.email
-SET c.phone = COALESCE(s.phone, c.phone),
-    c.dob = COALESCE(s.dob, c.dob),
+JOIN stage_customers s ON c.first_name = s.first_name AND c.last_name = s.last_name AND COALESCE(c.phone, '') = COALESCE(s.phone, '') AND c.email = s.email
+SET c.dob = COALESCE(s.dob, c.dob),
     c.address = COALESCE(s.address, c.address),
     c.city = COALESCE(s.city, c.city),
     c.state = COALESCE(s.state, c.state),
@@ -340,10 +341,10 @@ SET c.phone = COALESCE(s.phone, c.phone),
         f.write("-- Step 7: Create cust_lookup for exact 1:1 customer_id linking\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS cust_lookup;
 CREATE TEMPORARY TABLE cust_lookup AS
-SELECT first_name, last_name, email, MAX(id) AS customer_id
+SELECT first_name, last_name, COALESCE(phone, '') AS phone, email, MAX(id) AS customer_id
 FROM customers
-GROUP BY first_name, last_name, email;
-ALTER TABLE cust_lookup ADD PRIMARY KEY (first_name(50), last_name(50), email(100));
+GROUP BY first_name, last_name, COALESCE(phone, ''), email;
+ALTER TABLE cust_lookup ADD PRIMARY KEY (first_name(50), last_name(50), phone(20), email(100));
 \n""")
 
         # Step 8: Staging Policies Table
@@ -353,6 +354,7 @@ CREATE TEMPORARY TABLE stage_policies (
     policy_number VARCHAR(100),
     first_name VARCHAR(100),
     last_name VARCHAR(150),
+    phone VARCHAR(50),
     email VARCHAR(255),
     type VARCHAR(100),
     insurance_name VARCHAR(150),
@@ -370,7 +372,7 @@ CREATE TEMPORARY TABLE stage_policies (
     vehicle_model VARCHAR(250),
     branch VARCHAR(50),
     PRIMARY KEY (policy_number),
-    INDEX (first_name(50), last_name(50), email(100))
+    INDEX (first_name(50), last_name(50), phone(20), email(100))
 );
 \n""")
 
@@ -383,7 +385,7 @@ CREATE TEMPORARY TABLE stage_policies (
                 end_val = f"'{p['end']}'" if p['end'] else "NULL"
                 exp_val = f"'{p['exp']}'" if p['exp'] else "NULL"
                 vals.append(
-                    f"({sql_escape(p['pol_no'])}, {sql_escape(p['first'])}, {sql_escape(p['last'])}, {sql_escape(p['email'])}, "
+                    f"({sql_escape(p['pol_no'])}, {sql_escape(p['first'])}, {sql_escape(p['last'])}, {sql_escape(p['phone'])}, {sql_escape(p['email'])}, "
                     f"{sql_escape(p['type'])}, {sql_escape(p['ins'])}, {sql_escape(p['prod'])}, {st_val}, {end_val}, {exp_val}, "
                     f"{p['amt']}, {p['prem']}, {sql_escape(p['rm'])}, {sql_escape(p['rm_em'])}, {sql_escape(p['assoc'])}, "
                     f"{sql_escape(p['assoc_c'])}, {sql_escape(p['v_reg'])}, {sql_escape(p['model'])}, {sql_escape(p['branch'])})"
@@ -395,7 +397,10 @@ CREATE TEMPORARY TABLE stage_policies (
         f.write("""
 UPDATE policies p
 JOIN stage_policies s ON p.policy_number = s.policy_number
-JOIN cust_lookup c ON c.first_name = s.first_name AND c.last_name = s.last_name AND c.email = s.email
+JOIN cust_lookup c ON c.first_name = s.first_name 
+                   AND c.last_name = s.last_name 
+                   AND c.phone = COALESCE(s.phone, '') 
+                   AND c.email = s.email
 SET p.customer_id = c.customer_id,
     p.type = s.type,
     p.insurance_name = s.insurance_name,
@@ -420,7 +425,10 @@ SET p.customer_id = c.customer_id,
 INSERT INTO policies (policy_number, customer_id, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, amount, due_premium, rm_name, rm_email, associate_name, associate_code, vehicle_reg_no, vehicle_model, branch, status, created_at)
 SELECT s.policy_number, c.customer_id, s.type, s.insurance_name, s.product_name, s.policy_start_date, s.policy_end_date, s.expiry_date, s.amount, s.due_premium, s.rm_name, s.rm_email, s.associate_name, s.associate_code, s.vehicle_reg_no, s.vehicle_model, s.branch, 'ACTIVE', NOW()
 FROM stage_policies s
-JOIN cust_lookup c ON c.first_name = s.first_name AND c.last_name = s.last_name AND c.email = s.email
+JOIN cust_lookup c ON c.first_name = s.first_name 
+                   AND c.last_name = s.last_name 
+                   AND c.phone = COALESCE(s.phone, '') 
+                   AND c.email = s.email
 LEFT JOIN policies p ON p.policy_number = s.policy_number
 WHERE p.id IS NULL;
 \n""")
@@ -435,7 +443,7 @@ LEFT JOIN reminders r ON r.policy_id = p.id
 WHERE r.id IS NULL;
 \n""")
 
-        # Step 12: Cleanup & Commit
+        # Step 12: Cleanup & Restore
         f.write("-- Step 12: Cleanup & Restore\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS stage_customers;
 DROP TEMPORARY TABLE IF EXISTS stage_policies;
