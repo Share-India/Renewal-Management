@@ -873,6 +873,10 @@ Renewal Due Date : ${endDate}`;
     openRouteModal(policy: any) {
         this.selectedPolicy = policy;
         this.showRouteModal = true;
+        if (this.isClaimsManager) this.selectedRouteTeam = 'CLAIMS';
+        else if (this.isSalesManager) this.selectedRouteTeam = 'SALES';
+        else if (this.isUnderwritingManager) this.selectedRouteTeam = 'UNDERWRITING';
+        else this.selectedRouteTeam = '';
     }
     closeRouteModal() {
         this.showRouteModal = false;

@@ -140,6 +140,11 @@ import { forkJoin, of } from 'rxjs';
                    [(ngModel)]="selectedDate" 
                    (change)="onDateChange()"
                    title="Select date within current month ± 2 months">
+            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" 
+                    (click)="setTodayDate()" 
+                    title="View Today's Expiries">
+              <i class="bi bi-calendar-check"></i> Today
+            </button>
             <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
                     *ngIf="selectedDate" 
                     (click)="clearDateSelection()" 
@@ -169,6 +174,23 @@ import { forkJoin, of } from 'rxjs';
 
             <!-- Right Side: Search Bar and Day Filter (Aligned to Right) -->
             <div class="d-flex flex-wrap gap-2 align-items-center ms-auto justify-content-end">
+              <!-- Routing Filter (Manager & Admin) -->
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" 
+                   *ngIf="isManager() || isAdmin()" style="height: 38px;">
+                <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                  <i class="bi bi-diagram-3-fill me-1"></i> Routing
+                </span>
+                <select class="form-select form-select-sm border-0 shadow-none fw-semibold text-secondary ps-2 pe-4" 
+                        style="background-color: transparent; cursor: pointer; min-width: 155px; height: 100%; font-size: 0.85rem;" 
+                        [(ngModel)]="selectedRoutingStatus" 
+                        (change)="applyFilters()">
+                  <option value="all">All (Routed & Unrouted)</option>
+                  <option value="routed">Routed ({{ getMyTeamDisplayName() }})</option>
+                  <option value="not-routed">Not Routed</option>
+                  <option value="other-routed" *ngIf="isManager()">Routed (Other Teams)</option>
+                </select>
+              </div>
+
               <!-- Type Filter -->
               <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 170px;" #typeDropdown>
                 <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
@@ -562,6 +584,36 @@ export class RenewalComponent implements OnInit {
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
   adminViewAs: string = '';
+  selectedRoutingStatus: 'all' | 'routed' | 'not-routed' | 'other-routed' = 'all';
+
+  isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
+
+  getMyTeamName(): string {
+    const role = this.getEffectiveRole();
+    if (role === 'CLAIMS_MANAGER' || role === 'CLAIMS' || this.adminViewAs === 'claims') return 'CLAIMS';
+    if (role === 'SALES_MANAGER' || role === 'SALES' || this.adminViewAs === 'sales') return 'SALES';
+    if (role === 'UNDERWRITING_MANAGER' || role === 'UNDERWRITING' || this.adminViewAs === 'underwriting') return 'UNDERWRITING';
+    return '';
+  }
+
+  getMyTeamDisplayName(): string {
+    const team = this.getMyTeamName();
+    if (team === 'CLAIMS') return 'Claims';
+    if (team === 'SALES') return 'Sales';
+    if (team === 'UNDERWRITING') return 'Underwriting';
+    return 'All Teams';
+  }
+
+  setTodayDate() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    this.selectedDate = `${yyyy}-${mm}-${dd}`;
+    this.onDateChange();
+  }
 
   constructor(
     private apiService: ApiService,
@@ -733,6 +785,11 @@ export class RenewalComponent implements OnInit {
       }
     } else {
       this.selectedDate = '';
+    }
+
+    if (this.isManager() && this.selectedDate) {
+      this.onDateChange();
+      return;
     }
 
     if (day === 600) {
@@ -980,23 +1037,39 @@ export class RenewalComponent implements OnInit {
     };
 
     const targetTeamFilterFn = (p: any) => {
-        if (!this.adminViewAs) {
-            const role = this.getEffectiveRole();
-            if (role === 'CLAIMS_MANAGER' || role === 'CLAIMS') {
-                return (p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
+        if (this.selectedDay === 'returned-to-renewer') return true;
+
+        const role = this.getEffectiveRole();
+        const isMgr = this.isManager();
+        const isAdminUser = this.isAdmin();
+
+        if (isMgr || (isAdminUser && this.adminViewAs)) {
+            const myTeam = this.getMyTeamName();
+            const isRoutedToMyTeam = p.targetTeam === myTeam || (p.isHotSale && p.hotSaleSource === 'SALES' && myTeam === 'SALES');
+            const isUnrouted = !p.targetTeam || p.targetTeam === 'RENEWER';
+            const isRoutedToOther = p.targetTeam && p.targetTeam !== 'RENEWER' && p.targetTeam !== myTeam;
+
+            if (this.selectedRoutingStatus === 'routed') {
+                return isRoutedToMyTeam;
+            } else if (this.selectedRoutingStatus === 'not-routed') {
+                return isUnrouted;
+            } else if (this.selectedRoutingStatus === 'other-routed') {
+                return isRoutedToOther;
             }
-            if (role === 'UNDERWRITING_MANAGER' || role === 'UNDERWRITING') {
-                return (p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
-            }
-            if (role === 'SALES_MANAGER' || role === 'SALES') {
-                return p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER';
-            }
+            return true; // 'all'
+        }
+
+        if (isAdminUser && !this.adminViewAs) {
+            const isUnrouted = !p.targetTeam || p.targetTeam === 'RENEWER';
+            const isRouted = p.targetTeam && p.targetTeam !== 'RENEWER';
+            if (this.selectedRoutingStatus === 'routed') return isRouted;
+            if (this.selectedRoutingStatus === 'not-routed') return isUnrouted;
             return true;
         }
-        if (this.selectedDay === 'returned-to-renewer') return true;
-        if (this.adminViewAs === 'claims') return (p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
-        if (this.adminViewAs === 'sales') return p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER';
-        if (this.adminViewAs === 'underwriting') return (p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
+
+        if (role === 'CLAIMS') return (p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
+        if (role === 'UNDERWRITING') return (p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER';
+        if (role === 'SALES') return p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER';
         return true;
     };
 
@@ -1217,16 +1290,17 @@ export class RenewalComponent implements OnInit {
   }
 
   showDatePicker(): boolean {
-    if (this.isTeamRole()) return false;
     if (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') return false;
+    if (this.isManager()) return true;
+    if (this.isTeamRole()) return false;
     return true;
   }
 
   showFollowUps(): boolean {
-    if (this.isTeamRole()) return false;
     if (this.selectedSourceTeam != null && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') return false;
     if (this.selectedDay === 600) return false;
     if (this.showDatePicker() && this.selectedDate) return this.followUps.length > 0;
+    if (this.isTeamRole()) return false;
     return typeof this.selectedDay === 'number';
   }
 
@@ -1246,7 +1320,7 @@ export class RenewalComponent implements OnInit {
         return (isTeam || isReturnsView) ? 'All Tasks' : 'All Policies in Next 60 Days';
     }
 
-    if (this.showDatePicker() && this.selectedDate && (this.selectedDay === 'custom-date' || typeof this.selectedDay !== 'number')) {
+    if (this.showDatePicker() && this.selectedDate) {
       const d = new Date(this.selectedDate + 'T00:00:00');
       const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       return this.isUpcoming() ? `Policies Expiring on ${formatted}` : `Policies Expired on ${formatted}`;

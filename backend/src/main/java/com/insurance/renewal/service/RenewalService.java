@@ -92,6 +92,43 @@ public class RenewalService {
         return applySpecificRenewerFilters(policies, effectiveUser);
     }
 
+    public List<Policy> applyRenewerFiltersForDateRecords(List<Policy> policies) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated())
+            return policies;
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+
+        if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN"))
+            return policies;
+
+        String role = effectiveUser.getRole();
+        if (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER")) {
+            return policies.stream().filter(p -> {
+                if (role.equals("ROLE_SALES_MANAGER") && effectiveUser.getAssignedRm() != null 
+                        && !effectiveUser.getAssignedRm().trim().isEmpty() 
+                        && !effectiveUser.getAssignedRm().equals("null")) {
+                    if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                    String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String rm : allowedRms) {
+                        if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) return false;
+                }
+                return true;
+            }).collect(java.util.stream.Collectors.toList());
+        }
+
+        return applySpecificRenewerFilters(policies, effectiveUser);
+    }
+
     private List<Policy> applySpecificRenewerFilters(List<Policy> policies, com.insurance.renewal.entity.User user) {
         return policies.stream().filter(p -> {
             // Role CLAIMS, SALES, UNDERWRITING Logic
@@ -512,6 +549,45 @@ public class RenewalService {
         }).collect(java.util.stream.Collectors.toList());
     }
 
+    public List<Reminder> applyRenewerFiltersToRemindersForDateRecords(List<Reminder> reminders) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated())
+            return reminders;
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+
+        if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN"))
+            return reminders;
+
+        String role = effectiveUser.getRole();
+        if (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER")) {
+            return reminders.stream().filter(r -> {
+                Policy p = r.getPolicy();
+                if (p == null) return false;
+                if (role.equals("ROLE_SALES_MANAGER") && effectiveUser.getAssignedRm() != null 
+                        && !effectiveUser.getAssignedRm().trim().isEmpty() 
+                        && !effectiveUser.getAssignedRm().equals("null")) {
+                    if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                    String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String rm : allowedRms) {
+                        if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) return false;
+                }
+                return true;
+            }).collect(java.util.stream.Collectors.toList());
+        }
+
+        return applyRenewerFiltersToReminders(reminders);
+    }
+
     // Get policies expiring in exactly 'days' from now
     // If days is negative, it means expired 'days' ago
     public List<Policy> getPoliciesForTimeline(int days, String branch, String sourceTeam) {
@@ -528,10 +604,17 @@ public class RenewalService {
             
         boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
         boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
+        boolean isTeamManager = role != null && (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER"));
+        boolean isTeamMember = isTeam && !isTeamManager;
 
-        if (isTeam) {
+        if (isTeamMember) {
             List<Policy> teamPolicies = policyRepository.findPoliciesByRoutedAt(targetDate);
             return applyRenewerFilters(teamPolicies);
+        }
+
+        if (isTeamManager) {
+            List<Policy> managerPolicies = policyRepository.findAdminPoliciesForTimeline(targetDate, branch);
+            return applyRenewerFiltersForDateRecords(managerPolicies);
         }
 
         List<Policy> policies;
@@ -609,8 +692,21 @@ public class RenewalService {
 
     public List<Policy> getFollowUpsForTimeline(int days, String branch, String sourceTeam) {
         LocalDate targetDate = LocalDate.now().plusDays(days);
-        List<Reminder> reminders = applyRenewerFiltersToReminders(
-                reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch));
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        String role = null;
+        if (auth != null && auth.isAuthenticated()) {
+            com.insurance.renewal.entity.User user = userRepository.findByUsername(auth.getName()).orElse(null);
+            com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+            role = effectiveUser != null ? effectiveUser.getRole() : null;
+        }
+        boolean isTeamManager = role != null && (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER"));
+
+        List<Reminder> reminders = isTeamManager ?
+                applyRenewerFiltersToRemindersForDateRecords(
+                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch)) :
+                applyRenewerFiltersToReminders(
+                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch));
         
         List<Policy> policies = reminders.stream()
                 .filter(reminder -> reminder.getPolicy() != null)
@@ -730,14 +826,16 @@ public class RenewalService {
         }
             
         boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
+        boolean isTeamManager = role != null && (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER"));
+        boolean isTeamMember = isTeam && !isTeamManager;
 
         boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
 
-        List<Integer> specificDays = (isTeam || isReturnsView) ? 
+        List<Integer> specificDays = (isTeamMember || isReturnsView) ? 
             Arrays.asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15) :
             Arrays.asList(75, 60, 45, 30, 15, 7, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -30, -45, -60, -75);
 
-        if (isTeam || isReturnsView) {
+        if (isTeamMember || isReturnsView) {
             // Map the specific days to LocalDates
             List<LocalDate> targetDates = specificDays.stream()
                     .map(offset -> today.plusDays(offset))
@@ -770,6 +868,22 @@ public class RenewalService {
                         .filter(p -> targetDate.equals(p.getRoutedAt()))
                         .count();
                 counts.put(offset, count);
+            }
+        } else if (isTeamManager) {
+            for (Integer offset : specificDays) {
+                LocalDate targetDate = today.plusDays(offset);
+                List<Policy> expiringPolicies = applyRenewerFiltersForDateRecords(
+                        policyRepository.findAdminPoliciesForTimeline(targetDate, branch));
+                long expiringCount = expiringPolicies.size();
+
+                List<Reminder> scheduledReminders = applyRenewerFiltersToRemindersForDateRecords(
+                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(
+                                targetDate.atStartOfDay(),
+                                targetDate.atTime(23, 59, 59),
+                                branch));
+                long followUpCount = scheduledReminders.size();
+
+                counts.put(offset, expiringCount + followUpCount);
             }
         } else {
             for (Integer offset : specificDays) {
@@ -1173,7 +1287,7 @@ public class RenewalService {
         Map<String, List<Policy>> records = new HashMap<>();
 
         // 1. Expiring Policies on this date
-        List<Policy> expiring = applyRenewerFilters(policyRepository.findAdminPoliciesForTimeline(date, branch));
+        List<Policy> expiring = applyRenewerFiltersForDateRecords(policyRepository.findAdminPoliciesForTimeline(date, branch));
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for date: " + date);
         expiring.forEach(p -> System.out.println(" - Policy: " + p.getPolicyNumber() + ", Status: " + p.getStatus()));
 
@@ -1194,7 +1308,7 @@ public class RenewalService {
         System.out.println("Fetching follow-ups between " + start + " and " + end);
 
         List<Reminder> reminders = reminderRepository.findByFollowUpDateBetweenWithValidPolicy(start, end, branch);
-        List<Reminder> filteredReminders = applyRenewerFiltersToReminders(reminders);
+        List<Reminder> filteredReminders = applyRenewerFiltersToRemindersForDateRecords(reminders);
         System.out.println("Found " + filteredReminders.size() + " follow-ups.");
 
         List<Policy> scheduledFollowUps = filteredReminders.stream()
@@ -1221,7 +1335,7 @@ public class RenewalService {
         // 3. Worked on Policies (Renewed/Called today)
         List<Reminder> workedOn = reminderRepository.findByLastReminderSentAtBetweenWithValidPolicy(
                 date.atStartOfDay(), date.atTime(23, 59, 59), branch);
-        List<Reminder> filteredWorkedOn = applyRenewerFiltersToReminders(workedOn);
+        List<Reminder> filteredWorkedOn = applyRenewerFiltersToRemindersForDateRecords(workedOn);
 
         List<Policy> workedOnPolicies = filteredWorkedOn.stream()
                 .map(reminder -> {
@@ -1243,7 +1357,7 @@ public class RenewalService {
         LocalDate endBase = today.plusDays(60);
 
         // 1. ALL Policies expiring in next 60 days (ignoring followUps / updates)
-        List<Policy> expiring = applyRenewerFilters(policyRepository.findAllPoliciesForTargetDateRange(today, endBase, branch));
+        List<Policy> expiring = applyRenewerFiltersForDateRecords(policyRepository.findAllPoliciesForTargetDateRange(today, endBase, branch));
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for next 60 days");
 
         records.put("expiringPolicies", expiring);

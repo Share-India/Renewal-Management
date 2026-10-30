@@ -22,8 +22,9 @@ export class TimelineComponent implements OnChanges {
 
 
     ngOnChanges() {
-        if ((this.userRole && (this.userRole.includes('CLAIMS') || this.userRole.includes('SALES') || this.userRole.includes('UNDERWRITING'))) || 
-            (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== '')) {
+        const isManager = this.userRole && (this.userRole === 'CLAIMS_MANAGER' || this.userRole === 'SALES_MANAGER' || this.userRole === 'UNDERWRITING_MANAGER');
+        if (!isManager && ((this.userRole && (this.userRole.includes('CLAIMS') || this.userRole.includes('SALES') || this.userRole.includes('UNDERWRITING'))) || 
+            (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== ''))) {
             this.isTeamTimeline = true;
             this.days = [0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15];
             this.postExpiryDays = [];
