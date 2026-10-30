@@ -66,6 +66,15 @@ def norm_pol(val):
         return ''
     return str(val).strip().replace('\xad', '').replace('\xa0', ' ')
 
+def determine_branch(city, state):
+    c_lower = (city or '').lower()
+    s_lower = (state or '').lower()
+    if 'delhi' in c_lower or 'delhi' in s_lower:
+        return 'Delhi'
+    if 'noida' in c_lower or 'noida' in s_lower:
+        return 'Noida'
+    return 'Mumbai'
+
 def sql_escape(val):
     if val is None:
         return 'NULL'
@@ -156,6 +165,10 @@ def generate_master_script():
         if p_mgf and p_model and p_mgf not in p_model:
             p_model = f"{p_model} ({p_mgf})"[:250]
 
+        c_city = clean_str(r[header_map['City']])
+        c_state = clean_str(r[header_map['State']])
+        p_branch = determine_branch(c_city, c_state)
+
         policy_rows.append({
             'pol_no': pol_no,
             'first': cust_key[0],
@@ -174,7 +187,8 @@ def generate_master_script():
             'assoc': p_assoc,
             'assoc_c': p_assoc_c,
             'v_reg': p_v_reg,
-            'model': p_model
+            'model': p_model,
+            'branch': p_branch
         })
 
     print(f"Writing high-performance SQL to {sql_path}...")
@@ -193,30 +207,40 @@ def generate_master_script():
         f.write("SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n")
         f.write("SET NAMES utf8mb4;\n\n")
 
-        # Step 1: Remove UNIQUE constraint on customers(email) to allow family/broker shared emails
-        f.write("-- Step 1: Remove UNIQUE constraint on customers(email) to allow shared emails\n")
-        f.write("SET @drop_sql = IF(\n")
-        f.write("    (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'customers' AND index_name = 'UK_rfbvkrffamfql7cjmen8v976v') > 0,\n")
-        f.write("    'ALTER TABLE customers DROP INDEX `UK_rfbvkrffamfql7cjmen8v976v`',\n")
-        f.write("    'SELECT 1'\n")
+        # Step 1: Remove UNIQUE constraint on customers(email) to allow shared emails
+        f.write("-- Step 1: Remove UNIQUE constraint on customers(email) if present\n")
+        f.write("SET @cust_uk := (\n")
+        f.write("    SELECT index_name \n")
+        f.write("    FROM information_schema.statistics \n")
+        f.write("    WHERE table_schema = DATABASE() \n")
+        f.write("      AND table_name = 'customers' \n")
+        f.write("      AND column_name = 'email' \n")
+        f.write("      AND non_unique = 0 \n")
+        f.write("    LIMIT 1\n")
         f.write(");\n")
-        f.write("PREPARE stmt1 FROM @drop_sql;\n")
-        f.write("EXECUTE stmt1;\n")
-        f.write("DEALLOCATE PREPARE stmt1;\n\n")
+        f.write("SET @drop_cust_uk := IF(@cust_uk IS NOT NULL, CONCAT('ALTER TABLE customers DROP INDEX `', @cust_uk, '`'), 'SELECT 1');\n")
+        f.write("PREPARE stmt_cust_uk FROM @drop_cust_uk;\n")
+        f.write("EXECUTE stmt_cust_uk;\n")
+        f.write("DEALLOCATE PREPARE stmt_cust_uk;\n\n")
 
-        f.write("SET @add_sql = IF(\n")
-        f.write("    (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'customers' AND index_name = 'idx_customer_email') = 0,\n")
-        f.write("    'ALTER TABLE customers ADD INDEX `idx_customer_email` (`email`)',\n")
-        f.write("    'SELECT 1'\n")
+        f.write("SET @has_email_idx := (\n")
+        f.write("    SELECT COUNT(*) \n")
+        f.write("    FROM information_schema.statistics \n")
+        f.write("    WHERE table_schema = DATABASE() \n")
+        f.write("      AND table_name = 'customers' \n")
+        f.write("      AND index_name = 'idx_customer_email'\n")
         f.write(");\n")
+        f.write("SET @add_sql := IF(@has_email_idx = 0, 'ALTER TABLE customers ADD INDEX `idx_customer_email` (`email`)', 'SELECT 1');\n")
         f.write("PREPARE stmt2 FROM @add_sql;\n")
         f.write("EXECUTE stmt2;\n")
         f.write("DEALLOCATE PREPARE stmt2;\n\n")
 
-        f.write("START TRANSACTION;\n\n")
+        # Step 2: Trim policy numbers
+        f.write("-- Step 2: Clean and trim policy numbers\n")
+        f.write("UPDATE policies SET policy_number = TRIM(policy_number) WHERE policy_number != TRIM(policy_number);\n\n")
 
-        # Step 2: FAST DEDUPLICATION using Indexed Temporary Table (Preserving historical call history)
-        f.write("-- Step 2: Instant Policy Deduplication (Preserving Agent Call Outcomes & Logs)\n")
+        # Step 3: Deduplication using Temporary Table
+        f.write("-- Step 3: Instant Policy Deduplication (Preserving Agent Call Outcomes & Logs)\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS temp_dup_policies;
 CREATE TEMPORARY TABLE temp_dup_policies AS
 SELECT p.id AS del_id, k.keep_id
@@ -244,16 +268,24 @@ DELETE p FROM policies p JOIN temp_dup_policies d ON p.id = d.del_id;
 DROP TEMPORARY TABLE temp_dup_policies;
 \n""")
 
-        # Step 3: Enforce UNIQUE KEY on policies(policy_number)
-        f.write("-- Step 3: Enforce UNIQUE KEY on policies(policy_number) to prevent duplicates\n")
-        f.write("SET @exist := (SELECT COUNT(*) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'policies' AND index_name = 'UK_oa74bk3bbln2o1hgik4b93rp9');\n")
-        f.write("SET @sqlstmt := IF(@exist = 0, 'ALTER TABLE policies ADD UNIQUE KEY `UK_oa74bk3bbln2o1hgik4b93rp9` (`policy_number`)', 'SELECT 1');\n")
-        f.write("PREPARE stmt3 FROM @sqlstmt;\n")
-        f.write("EXECUTE stmt3;\n")
-        f.write("DEALLOCATE PREPARE stmt3;\n\n")
+        # Step 4: Enforce UNIQUE KEY on policies(policy_number)
+        f.write("-- Step 4: Enforce UNIQUE KEY on policies(policy_number) to prevent duplicates\n")
+        f.write("SET @pol_uk := (\n")
+        f.write("    SELECT index_name \n")
+        f.write("    FROM information_schema.statistics \n")
+        f.write("    WHERE table_schema = DATABASE() \n")
+        f.write("      AND table_name = 'policies' \n")
+        f.write("      AND column_name = 'policy_number' \n")
+        f.write("      AND non_unique = 0 \n")
+        f.write("    LIMIT 1\n")
+        f.write(");\n")
+        f.write("SET @add_pol_uk := IF(@pol_uk IS NULL, 'ALTER TABLE policies ADD UNIQUE KEY `UK_oa74bk3bbln2o1hgik4b93rp9` (`policy_number`)', 'SELECT 1');\n")
+        f.write("PREPARE stmt_pol_uk FROM @add_pol_uk;\n")
+        f.write("EXECUTE stmt_pol_uk;\n")
+        f.write("DEALLOCATE PREPARE stmt_pol_uk;\n\n")
 
-        # Step 4: Staging Customer Table
-        f.write("-- Step 4: Load Customers into Staging Table\n")
+        # Step 5: Staging Customer Table
+        f.write("-- Step 5: Load Customers into Staging Table\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS stage_customers;
 CREATE TEMPORARY TABLE stage_customers (
     first_name VARCHAR(100),
@@ -270,7 +302,6 @@ CREATE TEMPORARY TABLE stage_customers (
 );
 \n""")
 
-        # Bulk insert stage_customers in batches of 500
         cust_list = list(distinct_customers.values())
         batch_size = 500
         for i in range(0, len(cust_list), batch_size):
@@ -285,8 +316,8 @@ CREATE TEMPORARY TABLE stage_customers (
                 )
             f.write(f"INSERT INTO stage_customers VALUES\n" + ",\n".join(vals) + ";\n")
 
-        # Step 5: Insert missing customers & update existing customers from staging
-        f.write("\n-- Step 5: Insert missing customers & update existing customer details\n")
+        # Step 6: Insert missing customers & update existing customer details
+        f.write("\n-- Step 6: Insert missing customers & update existing customer details\n")
         f.write("""
 INSERT INTO customers (first_name, last_name, email, phone, dob, address, city, state, pincode, billing_frequency, created_at)
 SELECT s.first_name, s.last_name, s.email, s.phone, s.dob, s.address, s.city, s.state, s.pincode, s.billing_frequency, NOW()
@@ -305,8 +336,8 @@ SET c.phone = COALESCE(s.phone, c.phone),
     c.billing_frequency = COALESCE(s.billing_frequency, c.billing_frequency);
 \n""")
 
-        # Step 6: Create cust_lookup table to guarantee 1:1 customer mapping
-        f.write("-- Step 6: Create cust_lookup for exact 1:1 customer_id linking\n")
+        # Step 7: Create cust_lookup table to guarantee 1:1 customer mapping
+        f.write("-- Step 7: Create cust_lookup for exact 1:1 customer_id linking\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS cust_lookup;
 CREATE TEMPORARY TABLE cust_lookup AS
 SELECT first_name, last_name, email, MAX(id) AS customer_id
@@ -315,8 +346,8 @@ GROUP BY first_name, last_name, email;
 ALTER TABLE cust_lookup ADD PRIMARY KEY (first_name(50), last_name(50), email(100));
 \n""")
 
-        # Step 7: Staging Policies Table
-        f.write("-- Step 7: Load Excel Policies into Staging Table\n")
+        # Step 8: Staging Policies Table
+        f.write("-- Step 8: Load Excel Policies into Staging Table\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS stage_policies;
 CREATE TEMPORARY TABLE stage_policies (
     policy_number VARCHAR(100),
@@ -337,6 +368,7 @@ CREATE TEMPORARY TABLE stage_policies (
     associate_code VARCHAR(100),
     vehicle_reg_no VARCHAR(100),
     vehicle_model VARCHAR(250),
+    branch VARCHAR(50),
     PRIMARY KEY (policy_number),
     INDEX (first_name(50), last_name(50), email(100))
 );
@@ -354,12 +386,12 @@ CREATE TEMPORARY TABLE stage_policies (
                     f"({sql_escape(p['pol_no'])}, {sql_escape(p['first'])}, {sql_escape(p['last'])}, {sql_escape(p['email'])}, "
                     f"{sql_escape(p['type'])}, {sql_escape(p['ins'])}, {sql_escape(p['prod'])}, {st_val}, {end_val}, {exp_val}, "
                     f"{p['amt']}, {p['prem']}, {sql_escape(p['rm'])}, {sql_escape(p['rm_em'])}, {sql_escape(p['assoc'])}, "
-                    f"{sql_escape(p['assoc_c'])}, {sql_escape(p['v_reg'])}, {sql_escape(p['model'])})"
+                    f"{sql_escape(p['assoc_c'])}, {sql_escape(p['v_reg'])}, {sql_escape(p['model'])}, {sql_escape(p['branch'])})"
                 )
             f.write(f"INSERT INTO stage_policies VALUES\n" + ",\n".join(vals) + ";\n")
 
-        # Step 8: Update policies with exact customer link and fresh Excel data
-        f.write("\n-- Step 8: Update policies with exact customer link & Excel data\n")
+        # Step 9: Update policies with exact customer link and fresh Excel data
+        f.write("\n-- Step 9: Update policies with exact customer link & Excel data\n")
         f.write("""
 UPDATE policies p
 JOIN stage_policies s ON p.policy_number = s.policy_number
@@ -378,22 +410,23 @@ SET p.customer_id = c.customer_id,
     p.associate_name = s.associate_name,
     p.associate_code = s.associate_code,
     p.vehicle_reg_no = s.vehicle_reg_no,
-    p.vehicle_model = s.vehicle_model;
+    p.vehicle_model = s.vehicle_model,
+    p.branch = COALESCE(p.branch, s.branch);
 \n""")
 
-        # Step 9: Insert any missing policies
-        f.write("-- Step 9: Insert any missing policies from Excel\n")
+        # Step 10: Insert any missing policies
+        f.write("-- Step 10: Insert any missing policies from Excel\n")
         f.write("""
-INSERT INTO policies (policy_number, customer_id, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, amount, due_premium, rm_name, rm_email, associate_name, associate_code, vehicle_reg_no, vehicle_model, status, created_at)
-SELECT s.policy_number, c.customer_id, s.type, s.insurance_name, s.product_name, s.policy_start_date, s.policy_end_date, s.expiry_date, s.amount, s.due_premium, s.rm_name, s.rm_email, s.associate_name, s.associate_code, s.vehicle_reg_no, s.vehicle_model, 'ACTIVE', NOW()
+INSERT INTO policies (policy_number, customer_id, type, insurance_name, product_name, policy_start_date, policy_end_date, expiry_date, amount, due_premium, rm_name, rm_email, associate_name, associate_code, vehicle_reg_no, vehicle_model, branch, status, created_at)
+SELECT s.policy_number, c.customer_id, s.type, s.insurance_name, s.product_name, s.policy_start_date, s.policy_end_date, s.expiry_date, s.amount, s.due_premium, s.rm_name, s.rm_email, s.associate_name, s.associate_code, s.vehicle_reg_no, s.vehicle_model, s.branch, 'ACTIVE', NOW()
 FROM stage_policies s
 JOIN cust_lookup c ON c.first_name = s.first_name AND c.last_name = s.last_name AND c.email = s.email
 LEFT JOIN policies p ON p.policy_number = s.policy_number
 WHERE p.id IS NULL;
 \n""")
 
-        # Step 10: Ensure every policy has an active reminder
-        f.write("-- Step 10: Ensure all policies have an active reminder\n")
+        # Step 11: Ensure every policy has an active reminder
+        f.write("-- Step 11: Ensure all policies have an active reminder\n")
         f.write("""
 INSERT INTO reminders (policy_id, reminder_status, follow_up_required, last_call_outcome, created_at)
 SELECT p.id, 'PENDING', 0, 'Pending', NOW()
@@ -402,13 +435,11 @@ LEFT JOIN reminders r ON r.policy_id = p.id
 WHERE r.id IS NULL;
 \n""")
 
-        # Step 11: Cleanup & Commit
-        f.write("-- Step 11: Cleanup & Commit\n")
+        # Step 12: Cleanup & Commit
+        f.write("-- Step 12: Cleanup & Restore\n")
         f.write("""DROP TEMPORARY TABLE IF EXISTS stage_customers;
 DROP TEMPORARY TABLE IF EXISTS stage_policies;
 DROP TEMPORARY TABLE IF EXISTS cust_lookup;
-
-COMMIT;
 
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
