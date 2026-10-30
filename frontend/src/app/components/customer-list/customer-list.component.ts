@@ -198,19 +198,7 @@ export class CustomerListComponent {
     }
 
     canSendBackToRenewer(policy: any): boolean {
-        if (!policy || !policy.targetTeam || policy.targetTeam === 'RENEWER') {
-            return false;
-        }
-        if (this.isClaimsManager || this.isClaimsUser) {
-            return policy.targetTeam === 'CLAIMS';
-        }
-        if (this.isSalesManager || this.isSalesUser) {
-            return policy.targetTeam === 'SALES';
-        }
-        if (this.isUnderwritingManager || this.isUnderwritingUser) {
-            return policy.targetTeam === 'UNDERWRITING';
-        }
-        return false;
+        return this.isTeamRole;
     }
 
     get currentDecisionSource(): string {
