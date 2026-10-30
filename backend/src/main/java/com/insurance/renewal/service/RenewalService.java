@@ -101,32 +101,95 @@ public class RenewalService {
         String username = auth.getName();
         com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
         com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
-
+        
         if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN"))
             return policies;
 
         String role = effectiveUser.getRole();
-        if (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER")) {
+        if ("ROLE_CLAIMS_MANAGER".equals(role) || "ROLE_UNDERWRITING_MANAGER".equals(role) || "ROLE_SALES_MANAGER".equals(role)) {
             return policies.stream().filter(p -> {
-                if (role.equals("ROLE_SALES_MANAGER") && effectiveUser.getAssignedRm() != null 
-                        && !effectiveUser.getAssignedRm().trim().isEmpty() 
-                        && !effectiveUser.getAssignedRm().equals("null")) {
-                    if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
-                    String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
-                    boolean match = false;
-                    for (String rm : allowedRms) {
-                        if (rm.equalsIgnoreCase(p.getRmName().trim())) {
-                            match = true;
+                if ("ROLE_SALES_MANAGER".equals(role)) {
+                    if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equals("null")) {
+                        if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                        String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String rm : allowedRms) {
+                            if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                }
+                if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().trim().isEmpty() && !effectiveUser.getAssignedBranch().equals("null")) {
+                    if (p.getBranch() == null) return false;
+                    String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                    boolean branchMatch = false;
+                    for (String b : assignedBranches) {
+                        if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                            branchMatch = true;
                             break;
                         }
                     }
-                    if (!match) return false;
+                    if (!branchMatch) return false;
                 }
                 return true;
             }).collect(java.util.stream.Collectors.toList());
         }
 
         return applySpecificRenewerFilters(policies, effectiveUser);
+    }
+
+    private List<Reminder> applyRenewerFiltersToRemindersForDateRecords(List<Reminder> reminders) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated())
+            return reminders;
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+        
+        if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN"))
+            return reminders;
+
+        String role = effectiveUser.getRole();
+        if ("ROLE_CLAIMS_MANAGER".equals(role) || "ROLE_UNDERWRITING_MANAGER".equals(role) || "ROLE_SALES_MANAGER".equals(role)) {
+            return reminders.stream().filter(r -> {
+                Policy p = r.getPolicy();
+                if (p == null) return false;
+                if ("ROLE_SALES_MANAGER".equals(role)) {
+                    if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equals("null")) {
+                        if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
+                        String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String rm : allowedRms) {
+                            if (rm.equalsIgnoreCase(p.getRmName().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                }
+                if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().trim().isEmpty() && !effectiveUser.getAssignedBranch().equals("null")) {
+                    if (p.getBranch() == null) return false;
+                    String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                    boolean branchMatch = false;
+                    for (String b : assignedBranches) {
+                        if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                            branchMatch = true;
+                            break;
+                        }
+                    }
+                    if (!branchMatch) return false;
+                }
+                return true;
+            }).collect(java.util.stream.Collectors.toList());
+        }
+
+        return applyRenewerFiltersToReminders(reminders);
     }
 
     private List<Policy> applySpecificRenewerFilters(List<Policy> policies, com.insurance.renewal.entity.User user) {
@@ -549,45 +612,6 @@ public class RenewalService {
         }).collect(java.util.stream.Collectors.toList());
     }
 
-    public List<Reminder> applyRenewerFiltersToRemindersForDateRecords(List<Reminder> reminders) {
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated())
-            return reminders;
-
-        String username = auth.getName();
-        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
-        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
-
-        if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN"))
-            return reminders;
-
-        String role = effectiveUser.getRole();
-        if (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER")) {
-            return reminders.stream().filter(r -> {
-                Policy p = r.getPolicy();
-                if (p == null) return false;
-                if (role.equals("ROLE_SALES_MANAGER") && effectiveUser.getAssignedRm() != null 
-                        && !effectiveUser.getAssignedRm().trim().isEmpty() 
-                        && !effectiveUser.getAssignedRm().equals("null")) {
-                    if (p.getRmName() == null || p.getRmName().trim().isEmpty()) return false;
-                    String[] allowedRms = effectiveUser.getAssignedRm().split("\\s*,\\s*");
-                    boolean match = false;
-                    for (String rm : allowedRms) {
-                        if (rm.equalsIgnoreCase(p.getRmName().trim())) {
-                            match = true;
-                            break;
-                        }
-                    }
-                    if (!match) return false;
-                }
-                return true;
-            }).collect(java.util.stream.Collectors.toList());
-        }
-
-        return applyRenewerFiltersToReminders(reminders);
-    }
-
     // Get policies expiring in exactly 'days' from now
     // If days is negative, it means expired 'days' ago
     public List<Policy> getPoliciesForTimeline(int days, String branch, String sourceTeam) {
@@ -604,17 +628,10 @@ public class RenewalService {
             
         boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
         boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
-        boolean isTeamManager = role != null && (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER"));
-        boolean isTeamMember = isTeam && !isTeamManager;
 
-        if (isTeamMember) {
+        if (isTeam) {
             List<Policy> teamPolicies = policyRepository.findPoliciesByRoutedAt(targetDate);
             return applyRenewerFilters(teamPolicies);
-        }
-
-        if (isTeamManager) {
-            List<Policy> managerPolicies = policyRepository.findAdminPoliciesForTimeline(targetDate, branch);
-            return applyRenewerFiltersForDateRecords(managerPolicies);
         }
 
         List<Policy> policies;
@@ -692,21 +709,8 @@ public class RenewalService {
 
     public List<Policy> getFollowUpsForTimeline(int days, String branch, String sourceTeam) {
         LocalDate targetDate = LocalDate.now().plusDays(days);
-        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        String role = null;
-        if (auth != null && auth.isAuthenticated()) {
-            com.insurance.renewal.entity.User user = userRepository.findByUsername(auth.getName()).orElse(null);
-            com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
-            role = effectiveUser != null ? effectiveUser.getRole() : null;
-        }
-        boolean isTeamManager = role != null && (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER"));
-
-        List<Reminder> reminders = isTeamManager ?
-                applyRenewerFiltersToRemindersForDateRecords(
-                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch)) :
-                applyRenewerFiltersToReminders(
-                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch));
+        List<Reminder> reminders = applyRenewerFiltersToReminders(
+                reminderRepository.findByFollowUpDateBetweenWithValidPolicy(targetDate.atStartOfDay(), targetDate.atTime(23, 59, 59), branch));
         
         List<Policy> policies = reminders.stream()
                 .filter(reminder -> reminder.getPolicy() != null)
@@ -826,16 +830,14 @@ public class RenewalService {
         }
             
         boolean isTeam = role != null && (role.contains("CLAIMS") || role.contains("SALES") || role.contains("UNDERWRITING"));
-        boolean isTeamManager = role != null && (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("ROLE_SALES_MANAGER") || role.equals("ROLE_UNDERWRITING_MANAGER"));
-        boolean isTeamMember = isTeam && !isTeamManager;
 
         boolean isReturnsView = sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null");
 
-        List<Integer> specificDays = (isTeamMember || isReturnsView) ? 
+        List<Integer> specificDays = (isTeam || isReturnsView) ? 
             Arrays.asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15) :
             Arrays.asList(75, 60, 45, 30, 15, 7, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -30, -45, -60, -75);
 
-        if (isTeamMember || isReturnsView) {
+        if (isTeam || isReturnsView) {
             // Map the specific days to LocalDates
             List<LocalDate> targetDates = specificDays.stream()
                     .map(offset -> today.plusDays(offset))
@@ -868,22 +870,6 @@ public class RenewalService {
                         .filter(p -> targetDate.equals(p.getRoutedAt()))
                         .count();
                 counts.put(offset, count);
-            }
-        } else if (isTeamManager) {
-            for (Integer offset : specificDays) {
-                LocalDate targetDate = today.plusDays(offset);
-                List<Policy> expiringPolicies = applyRenewerFiltersForDateRecords(
-                        policyRepository.findAdminPoliciesForTimeline(targetDate, branch));
-                long expiringCount = expiringPolicies.size();
-
-                List<Reminder> scheduledReminders = applyRenewerFiltersToRemindersForDateRecords(
-                        reminderRepository.findByFollowUpDateBetweenWithValidPolicy(
-                                targetDate.atStartOfDay(),
-                                targetDate.atTime(23, 59, 59),
-                                branch));
-                long followUpCount = scheduledReminders.size();
-
-                counts.put(offset, expiringCount + followUpCount);
             }
         } else {
             for (Integer offset : specificDays) {
@@ -1357,7 +1343,7 @@ public class RenewalService {
         LocalDate endBase = today.plusDays(60);
 
         // 1. ALL Policies expiring in next 60 days (ignoring followUps / updates)
-        List<Policy> expiring = applyRenewerFiltersForDateRecords(policyRepository.findAllPoliciesForTargetDateRange(today, endBase, branch));
+        List<Policy> expiring = applyRenewerFilters(policyRepository.findAllPoliciesForTargetDateRange(today, endBase, branch));
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for next 60 days");
 
         records.put("expiringPolicies", expiring);

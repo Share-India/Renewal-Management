@@ -1,13 +1,34 @@
 <div class="timeline-container relative" style="position: relative;" [class.admin-mode]="adminMode" [class.team-timeline]="isTeamTimeline">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h3 class="mb-0 text-dark fw-semibold" style="font-size: 1.5rem;">
       {{ isTeamTimeline ? 'Pending Tasks Timeline' : 'Renewal Timeline' }}
     </h3>
-    <button class="btn btn-outline-primary btn-sm" 
-            (click)="select60Days()"
-            [class.active]="selectedDay === 600">
-      60 Days View
-    </button>
+    <div class="d-flex align-items-center gap-2">
+      <!-- Calendar / Day Selector beside 60 Days View button (for Claims, Sales, Underwriting team managers) -->
+      <div class="d-flex align-items-center gap-1" *ngIf="isTeamTimeline">
+        <label class="form-label mb-0 text-muted small fw-semibold text-nowrap d-none d-sm-inline">Expiry Date:</label>
+        <input type="date" 
+               class="form-control form-control-sm border-secondary-subtle fw-semibold shadow-sm" 
+               style="width: auto; min-width: 145px; height: 31px;"
+               [value]="selectedDate" 
+               (change)="onDateChange($event)"
+               title="Select Expiry Date">
+        <button class="btn btn-sm btn-outline-secondary px-2 d-flex align-items-center gap-1 shadow-sm" 
+                style="height: 31px;"
+                *ngIf="selectedDate" 
+                (click)="clearDate()" 
+                title="Clear selected date">
+          <i class="bi bi-x-circle"></i> <span class="d-none d-md-inline small">Clear</span>
+        </button>
+      </div>
+
+      <button class="btn btn-outline-primary btn-sm" 
+              style="height: 31px;"
+              (click)="select60Days()"
+              [class.active]="selectedDay === 600">
+        60 Days View
+      </button>
+    </div>
   </div>
   
   <div class="timeline-scroll">
