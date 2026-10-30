@@ -45,6 +45,20 @@ export class TimelineComponent implements OnChanges {
         }
     }
 
+    openDatePicker(inputEl: HTMLInputElement) {
+        if (inputEl) {
+            try {
+                if (typeof inputEl.showPicker === 'function') {
+                    inputEl.showPicker();
+                } else {
+                    inputEl.focus();
+                }
+            } catch (e) {
+                inputEl.focus();
+            }
+        }
+    }
+
     onDateChange(event: any) {
         const val = event.target.value;
         this.selectedDate = val;

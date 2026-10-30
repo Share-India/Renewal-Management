@@ -4,28 +4,32 @@
       {{ isTeamTimeline ? 'Pending Tasks Timeline' : 'Renewal Timeline' }}
     </h3>
     <div class="d-flex align-items-center flex-wrap gap-2">
-      <!-- Calendar / Date Selector beside 60 Days View button (ONLY for Claims, Sales, Underwriting team managers) -->
-      <div class="date-selector-pill" [class.has-selected-date]="!!selectedDate" *ngIf="canShowDatePicker">
-        <div class="date-picker-prefix">
-          <i class="bi bi-calendar-event text-primary date-icon"></i>
-          <span class="date-picker-label d-none d-sm-inline">Expiry Date</span>
-        </div>
-        <span class="date-picker-divider d-none d-sm-inline"></span>
-        <input type="date" 
-               class="date-picker-input" 
-               [value]="selectedDate" 
-               (change)="onDateChange($event)"
-               title="Filter policies by Expiry Date">
+      <!-- Calendar / Date Filter Button (ONLY for Claims, Sales, Underwriting team managers) -->
+      <div class="position-relative d-inline-flex align-items-center" *ngIf="canShowDatePicker">
         <button type="button" 
-                class="btn-clear-date" 
+                class="btn btn-sm d-flex align-items-center gap-2 timeline-date-btn shadow-sm" 
+                [class.active-date]="!!selectedDate"
+                (click)="openDatePicker(datePickerInput)"
+                title="Filter policies by Expiry Date">
+          <i class="bi" [class.bi-calendar-check-fill]="!!selectedDate" [class.bi-calendar3]="!selectedDate"></i>
+          <span class="date-btn-text">{{ selectedDate ? (selectedDate | date:'dd MMM yyyy') : 'Expiry Date' }}</span>
+          <i class="bi bi-chevron-down text-muted small" *ngIf="!selectedDate"></i>
+          <span class="btn-clear-date-badge" 
                 *ngIf="selectedDate" 
-                (click)="clearDate()" 
+                (click)="$event.stopPropagation(); clearDate()" 
                 title="Clear selected date">
-          <i class="bi bi-x-circle-fill"></i>
+            <i class="bi bi-x-circle-fill"></i>
+          </span>
         </button>
+        <input #datePickerInput 
+               type="date" 
+               class="position-absolute" 
+               style="opacity: 0; pointer-events: none; width: 1px; height: 1px; position: absolute; left: 0; bottom: 0;"
+               [value]="selectedDate" 
+               (change)="onDateChange($event)">
       </div>
 
-      <button class="btn btn-outline-primary btn-sm timeline-btn-60 d-flex align-items-center gap-1" 
+      <button class="btn btn-outline-primary btn-sm timeline-btn-60 d-flex align-items-center gap-1 shadow-sm" 
               (click)="select60Days()"
               [class.active]="selectedDay === 600">
         <i class="bi bi-calendar-range"></i>

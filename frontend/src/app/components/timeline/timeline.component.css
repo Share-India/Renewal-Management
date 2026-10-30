@@ -245,106 +245,59 @@
   box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
 }
 
-
-/* Modern Date Selector Pill for Team Managers */
-.date-selector-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 0 10px;
+/* --- SLEEK TIMELINE DATE FILTER BUTTON & 60-DAY BUTTON --- */
+.timeline-date-btn {
   height: 34px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-sizing: border-box;
-}
-
-.date-selector-pill:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.1);
-}
-
-.date-selector-pill:focus-within {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
   background-color: #ffffff;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  user-select: none;
 }
 
-.date-selector-pill.has-selected-date {
-  border-color: #3b82f6;
-  background-color: #f0f7ff;
+.timeline-date-btn:hover {
+  border-color: #93c5fd;
+  background-color: #f8fafc;
+  color: #0d6efd;
+  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.12) !important;
 }
 
-.date-picker-prefix {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.timeline-date-btn.active-date {
+  border-color: #0d6efd;
+  background-color: #eff6ff;
+  color: #0d6efd;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.15) !important;
 }
 
-.date-picker-prefix .date-icon {
+.timeline-date-btn .bi-calendar3,
+.timeline-date-btn .bi-calendar-check-fill {
   font-size: 0.95rem;
-  line-height: 1;
+  color: #0d6efd;
 }
 
-.date-picker-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #475569;
+.timeline-date-btn .date-btn-text {
+  letter-spacing: 0.2px;
   white-space: nowrap;
 }
 
-.date-picker-divider {
-  width: 1px;
-  height: 16px;
-  background-color: #cbd5e1;
-  margin: 0 2px;
-}
-
-.date-picker-input {
-  border: none !important;
-  outline: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1e293b;
-  padding: 0 2px;
-  cursor: pointer;
-  font-family: inherit;
-  height: 100%;
-}
-
-.date-picker-input::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.15s ease;
-  filter: invert(30%) sepia(70%) saturate(1500%) hue-rotate(205deg) brightness(85%) contrast(90%);
-}
-
-.date-picker-input::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
-}
-
-.btn-clear-date {
-  border: none;
-  background: transparent;
-  color: #94a3b8;
-  padding: 0;
-  margin-left: 2px;
-  display: flex;
+.btn-clear-date-badge {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.92rem;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-left: 2px;
   cursor: pointer;
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition: all 0.15s ease;
   line-height: 1;
 }
 
-.btn-clear-date:hover {
+.btn-clear-date-badge:hover {
   color: #ef4444;
   transform: scale(1.15);
 }
@@ -353,9 +306,8 @@
   height: 34px;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.82rem;
-  padding-left: 0.85rem;
-  padding-right: 0.85rem;
+  font-size: 0.85rem;
+  padding: 0 14px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
