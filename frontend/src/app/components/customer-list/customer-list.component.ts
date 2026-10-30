@@ -124,8 +124,8 @@ export class CustomerListComponent {
     get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
 
     get canSetHotSale(): boolean {
-        // Admin must never be able to set hot sales - only actual Sales/RM personnel
-        if (this.authService.isAdmin()) {
+        if (this.adminViewAs === 'sales') return true;
+        if (this.authService.isAdmin() && !this.adminViewAs) {
             return false;
         }
         return this.authService.hasRole('RM') || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER');
@@ -190,10 +190,27 @@ export class CustomerListComponent {
     }
 
     get canSetCaseDecision(): boolean {
-        if (this.authService.isAdmin()) {
+        if (this.adminViewAs === 'sales') return true;
+        if (this.authService.isAdmin() && !this.adminViewAs) {
             return false;
         }
         return this.authService.hasRole('RM') || this.authService.hasRole('SALES') || this.authService.hasRole('SALES_MANAGER');
+    }
+
+    canSendBackToRenewer(policy: any): boolean {
+        if (!policy || !policy.targetTeam || policy.targetTeam === 'RENEWER') {
+            return false;
+        }
+        if (this.isClaimsManager || this.isClaimsUser) {
+            return policy.targetTeam === 'CLAIMS';
+        }
+        if (this.isSalesManager || this.isSalesUser) {
+            return policy.targetTeam === 'SALES';
+        }
+        if (this.isUnderwritingManager || this.isUnderwritingUser) {
+            return policy.targetTeam === 'UNDERWRITING';
+        }
+        return false;
     }
 
     get currentDecisionSource(): string {

@@ -68,7 +68,7 @@
                         </div>
 
                         <!-- Not Routed Status Badge (Shown when policy has not been routed to any team) -->
-                        <div *ngIf="!policy.targetTeam" class="mt-1 d-flex flex-wrap gap-1 align-items-center">
+                        <div *ngIf="(!policy.targetTeam || policy.targetTeam === 'RENEWER') && !policy.lastRoutedFrom" class="mt-1 d-flex flex-wrap gap-1 align-items-center">
                             <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle d-inline-flex align-items-center">
                                 <i class="bi bi-dash-circle me-1"></i>Not Routed
                             </span>
@@ -196,7 +196,7 @@
                             </button>
 
                             <!-- Workflow Buttons -->
-                            <button *ngIf="(isClaimsManager || isSalesManager || isUnderwritingManager) && policy.targetTeam !== 'RENEWER'" 
+                            <button *ngIf="isClaimsManager || isSalesManager || isUnderwritingManager" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #fff8e1; color: #ffb300;" 
                                 (click)="openAssignModal(policy)" title="Assign Policy">
@@ -214,26 +214,26 @@
                                 (click)="openRenewerUpload(policy)" title="Upload Document">
                                 <i class="bi bi-file-earmark-arrow-up" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i>
                             </button>
-                            <button *ngIf="(isClaimsManager || isClaimsUser) && policy.targetTeam !== 'RENEWER'" 
+                            <button *ngIf="isClaimsManager || isClaimsUser" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
                                 style="height: 36px; border-radius: 10px; background-color: #e3f2fd; color: #1e88e5;" 
                                 (click)="openClaimsUpload(policy)" title="Upload Claims Documents">
                                 <i class="bi bi-file-earmark-medical" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Upload
                             </button>
-                            <button *ngIf="(isSalesManager || isSalesUser) && policy.targetTeam !== 'RENEWER'" 
+                            <button *ngIf="isSalesManager || isSalesUser" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
                                 style="height: 36px; border-radius: 10px; background-color: #ede7f6; color: #5e35b1;" 
                                 (click)="openSalesNote(policy)" title="View & Add Sales Note">
                                 <i class="bi bi-journal-text" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Note
                             </button>
-                            <button *ngIf="(isUnderwritingManager || isUnderwritingUser) && policy.targetTeam !== 'RENEWER'" 
+                            <button *ngIf="isUnderwritingManager || isUnderwritingUser" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center gap-1 fw-semibold px-2" 
                                 style="height: 36px; border-radius: 10px; background-color: #e8f5e9; color: #43a047;" 
                                 (click)="openUnderwritingUpload(policy)" title="Upload Underwriting Documents">
                                 <i class="bi bi-file-earmark-text" style="font-size: 1.15rem; -webkit-text-stroke: 0.5px;"></i> Upload
                             </button>
 
-                            <button *ngIf="(isClaimsManager || isClaimsUser || isSalesManager || isSalesUser || isUnderwritingManager || isUnderwritingUser) && policy.targetTeam !== 'RENEWER'" 
+                            <button *ngIf="canSendBackToRenewer(policy)" 
                                 class="btn btn-sm border-0 shadow-sm d-flex align-items-center justify-content-center" 
                                 style="width: 36px; height: 36px; border-radius: 10px; background-color: #fce4ec; color: #d81b60;" 
                                 (click)="sendBackToRenewer(policy)" title="Send Back to Renewer">
