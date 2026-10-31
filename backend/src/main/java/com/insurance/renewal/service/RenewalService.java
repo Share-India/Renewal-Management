@@ -665,6 +665,7 @@ public class RenewalService {
     // Get policies expiring in exactly 'days' from now
     // If days is negative, it means expired 'days' ago
     public List<Policy> getPoliciesForTimeline(int days, String branch, String sourceTeam) {
+        final String effectiveBranch = ("null".equalsIgnoreCase(branch) || "all".equalsIgnoreCase(branch)) ? null : (branch != null && !branch.trim().isEmpty() ? branch.trim() : null);
         LocalDate targetDate = LocalDate.now().plusDays(days);
         
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
@@ -703,13 +704,13 @@ public class RenewalService {
                     return true;
                 })
                 .collect(java.util.stream.Collectors.toList());
-            if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("all") && !branch.equalsIgnoreCase("null")) {
-                policies = policies.stream().filter(p -> branch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
+            if (effectiveBranch != null) {
+                policies = policies.stream().filter(p -> effectiveBranch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
             }
             return applyReturnsRenewerFilters(policies);
         } else {
             // Use the new method that excludes policies with future follow-ups
-            policies = policyRepository.findAdminPoliciesForTimeline(targetDate, branch);
+            policies = policyRepository.findAdminPoliciesForTimeline(targetDate, effectiveBranch);
             return applyRenewerFilters(policies);
         }
     }
@@ -869,7 +870,7 @@ public class RenewalService {
 
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<Integer, Long> getTimelineCounts(String branch, String sourceTeam) {
-        if ("null".equals(branch)) branch = null;
+        final String effectiveBranch = ("null".equalsIgnoreCase(branch) || "all".equalsIgnoreCase(branch)) ? null : (branch != null && !branch.trim().isEmpty() ? branch.trim() : null);
         Map<Integer, Long> counts = new HashMap<>();
         LocalDate today = LocalDate.now();
 
@@ -915,8 +916,8 @@ public class RenewalService {
                             return true;
                         })
                         .collect(java.util.stream.Collectors.toList());
-                if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("all") && !branch.equalsIgnoreCase("null")) {
-                    filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> branch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
+                if (effectiveBranch != null) {
+                    filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> effectiveBranch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
                 }
                 filteredTeamPolicies = applyReturnsRenewerFilters(filteredTeamPolicies);
             } else {
@@ -935,7 +936,7 @@ public class RenewalService {
             for (Integer offset : specificDays) {
                 LocalDate targetDate = today.plusDays(offset);
                 List<Policy> expiringPolicies = applyRenewerFilters(
-                        policyRepository.findAdminPoliciesForTimeline(targetDate, branch));
+                        policyRepository.findAdminPoliciesForTimeline(targetDate, effectiveBranch));
                 
                 long expiringCount = expiringPolicies.size();
 
@@ -943,7 +944,7 @@ public class RenewalService {
                         reminderRepository.findByFollowUpDateBetweenWithValidPolicy(
                                 targetDate.atStartOfDay(),
                                 targetDate.atTime(23, 59, 59),
-                                branch));
+                                effectiveBranch));
                 
                 long followUpCount = scheduledReminders.size();
 
