@@ -156,7 +156,7 @@ public class RenewalService {
             return policies;
 
         String role = effectiveUser.getRole();
-        if ("ROLE_CLAIMS_MANAGER".equals(role) || "ROLE_UNDERWRITING_MANAGER".equals(role) || "ROLE_SALES_MANAGER".equals(role)) {
+        if ("ROLE_CLAIMS_MANAGER".equals(role) || "ROLE_UNDERWRITING_MANAGER".equals(role) || "ROLE_SALES_MANAGER".equals(role) || "CLAIMS_MANAGER".equals(role) || "UNDERWRITING_MANAGER".equals(role) || "SALES_MANAGER".equals(role)) {
             return policies.stream().filter(p -> {
                 if ("ROLE_SALES_MANAGER".equals(role)) {
                     if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equals("null")) {
@@ -217,7 +217,7 @@ public class RenewalService {
             return reminders;
 
         String role = effectiveUser.getRole();
-        if ("ROLE_CLAIMS_MANAGER".equals(role) || "ROLE_UNDERWRITING_MANAGER".equals(role) || "ROLE_SALES_MANAGER".equals(role)) {
+        if ("ROLE_CLAIMS_MANAGER".equals(role) || "ROLE_UNDERWRITING_MANAGER".equals(role) || "ROLE_SALES_MANAGER".equals(role) || "CLAIMS_MANAGER".equals(role) || "UNDERWRITING_MANAGER".equals(role) || "SALES_MANAGER".equals(role)) {
             return reminders.stream().filter(r -> {
                 Policy p = r.getPolicy();
                 if (p == null) return false;
@@ -271,7 +271,7 @@ public class RenewalService {
             // Role CLAIMS, SALES, UNDERWRITING Logic
             String role = user.getRole();
             if (role != null) {
-                if (role.equals("ROLE_CLAIMS_MANAGER")) {
+                if (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("CLAIMS_MANAGER")) {
                     boolean teamMatch = "CLAIMS".equals(p.getTargetTeam()) || 
                                         (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
                     if (!teamMatch) return false;
@@ -319,7 +319,7 @@ public class RenewalService {
                     }
                     return true;
                 }
-                if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
+                if (role.equals("ROLE_UNDERWRITING_MANAGER") || role.equals("UNDERWRITING_MANAGER")) {
                     boolean teamMatch = "UNDERWRITING".equals(p.getTargetTeam()) || 
                                         (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
                     if (!teamMatch) return false;
@@ -540,7 +540,7 @@ public class RenewalService {
             // Role CLAIMS, SALES, UNDERWRITING Logic
             String role = effectiveUser.getRole();
             if (role != null) {
-                if (role.equals("ROLE_CLAIMS_MANAGER")) {
+                if (role.equals("ROLE_CLAIMS_MANAGER") || role.equals("CLAIMS_MANAGER")) {
                     boolean teamMatch = "CLAIMS".equals(p.getTargetTeam()) || 
                                         (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
                     if (!teamMatch) return false;
@@ -588,7 +588,7 @@ public class RenewalService {
                     }
                     return true;
                 }
-                if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
+                if (role.equals("ROLE_UNDERWRITING_MANAGER") || role.equals("UNDERWRITING_MANAGER")) {
                     boolean teamMatch = "UNDERWRITING".equals(p.getTargetTeam()) || 
                                         (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
                     if (!teamMatch) return false;

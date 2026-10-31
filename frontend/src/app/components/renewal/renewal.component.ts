@@ -937,7 +937,8 @@ export class RenewalComponent implements OnInit {
         const allowedRms = user.assignedRm.split(',').map((s: string) => s.trim().toLowerCase());
         return allowedRms.includes(p.rmName.trim().toLowerCase());
       }
-      if (user.role === 'CLAIMS_MANAGER' || user.role === 'UNDERWRITING_MANAGER') {
+      const normalizedRole = (user.role || '').replace('ROLE_', '');
+      if (normalizedRole === 'CLAIMS_MANAGER' || normalizedRole === 'UNDERWRITING_MANAGER') {
         if (user.assignedProductType && user.assignedProductType.trim() !== '' && user.assignedProductType !== 'null') {
           if (!p.type) return false;
           const allowedTypes = user.assignedProductType.split(',').map((s: string) => s.trim().toLowerCase());
