@@ -53,7 +53,7 @@ public class RoutingController {
     }
 
     @PostMapping("/{policyId}/route")
-    public ResponseEntity<?> routePolicy(@PathVariable Long policyId, @RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> routePolicy(@PathVariable Long policyId, @RequestBody Map<String, String> payload, @RequestHeader(value = "X-Admin-View-As", required = false) String adminViewAsHeader) {
         try {
             Optional<Policy> policyOpt = policyRepository.findById(policyId);
             if (policyOpt.isEmpty())
@@ -66,10 +66,46 @@ public class RoutingController {
 
             if (payload.containsKey("targetTeam")) {
                 String team = payload.get("targetTeam");
+                String prevTargetTeam = policy.getTargetTeam();
                 policy.setTargetTeam(team);
                 policy.setRoutedAt(java.time.LocalDate.now());
-                if (payload.containsKey("sourceTeam")) {
-                    policy.setLastRoutedFrom(payload.get("sourceTeam"));
+
+
+
+                String srcTeam = payload.get("sourceTeam");
+                if (srcTeam == null || srcTeam.trim().isEmpty() || "null".equalsIgnoreCase(srcTeam)) {
+                    if (adminViewAsHeader != null && !adminViewAsHeader.trim().isEmpty()) {
+                        String viewAs = adminViewAsHeader.trim().toLowerCase();
+                        if ("claims".equals(viewAs)) srcTeam = "CLAIMS";
+                        else if ("sales".equals(viewAs)) srcTeam = "SALES";
+                        else if ("underwriting".equals(viewAs)) srcTeam = "UNDERWRITING";
+                    }
+                }
+                if (srcTeam == null || srcTeam.trim().isEmpty() || "null".equalsIgnoreCase(srcTeam)) {
+                    if (prevTargetTeam != null && !"RENEWER".equalsIgnoreCase(prevTargetTeam)) {
+                        srcTeam = prevTargetTeam;
+                    } else if (policy.getLastRoutedFrom() != null && !"RENEWER".equalsIgnoreCase(policy.getLastRoutedFrom())) {
+                        srcTeam = policy.getLastRoutedFrom();
+                    } else if (auth != null && auth.isAuthenticated()) {
+                        try {
+                            Optional<User> callerOpt = userRepository.findByUsername(auth.getName());
+                            if (callerOpt.isPresent() && callerOpt.get().getRole() != null) {
+                                String uRole = callerOpt.get().getRole().toUpperCase();
+                                if (uRole.contains("CLAIMS")) srcTeam = "CLAIMS";
+                                else if (uRole.contains("SALES")) srcTeam = "SALES";
+                                else if (uRole.contains("UNDERWRITING")) srcTeam = "UNDERWRITING";
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                if (srcTeam != null && !srcTeam.trim().isEmpty() && !"null".equalsIgnoreCase(srcTeam)) {
+                    policy.setLastRoutedFrom(srcTeam.toUpperCase());
+
+
+
+
+
                 }
                 actionLog = "Routed to " + team;
 

@@ -92,6 +92,56 @@ public class RenewalService {
         return applySpecificRenewerFilters(policies, effectiveUser);
     }
 
+    public List<Policy> applyReturnsRenewerFilters(List<Policy> policies) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated())
+            return policies;
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+        
+        if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN"))
+            return policies; // ADMIN sees everything
+
+        return policies.stream().filter(p -> {
+            // 1. If assigned to this renewer -> show
+            if (effectiveUser.getUsername() != null && effectiveUser.getUsername().equalsIgnoreCase(p.getCurrentAssignee())) {
+                return true;
+            }
+            // 2. If originalRenewer was this renewer -> show
+            if (p.getOriginalRenewer() != null && effectiveUser.getUsername() != null && effectiveUser.getUsername().equalsIgnoreCase(p.getOriginalRenewer().trim())) {
+                return true;
+            }
+            // 3. If assigned to another renewer -> hide from this renewer
+            if (p.getCurrentAssignee() != null && !p.getCurrentAssignee().trim().isEmpty()) {
+                Optional<com.insurance.renewal.entity.User> assigneeUser = userRepository.findByUsername(p.getCurrentAssignee().trim());
+                if (assigneeUser.isPresent() && assigneeUser.get().getRole() != null && assigneeUser.get().getRole().contains("RENEWER")) {
+                    if (effectiveUser.getUsername() == null || !effectiveUser.getUsername().equalsIgnoreCase(p.getCurrentAssignee().trim())) {
+                        return false;
+                    }
+                }
+            }
+            // 4. If renewer has branch restrictions, ensure policy matches branch
+            if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().trim().isEmpty()
+                    && !effectiveUser.getAssignedBranch().equals("null")) {
+                if (p.getBranch() == null) return false;
+                String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                boolean branchMatch = false;
+                for (String branch : assignedBranches) {
+                    if (branch.equalsIgnoreCase(p.getBranch().trim())) {
+                        branchMatch = true;
+                        break;
+                    }
+                }
+                if (!branchMatch) return false;
+            }
+
+            return true;
+        }).collect(java.util.stream.Collectors.toList());
+    }
+
     public List<Policy> applyRenewerFiltersForDateRecords(List<Policy> policies) {
         org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
                 .getContext().getAuthentication();
@@ -653,13 +703,15 @@ public class RenewalService {
                     return true;
                 })
                 .collect(java.util.stream.Collectors.toList());
+            if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("all") && !branch.equalsIgnoreCase("null")) {
+                policies = policies.stream().filter(p -> branch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
+            }
+            return applyReturnsRenewerFilters(policies);
         } else {
             // Use the new method that excludes policies with future follow-ups
             policies = policyRepository.findAdminPoliciesForTimeline(targetDate, branch);
+            return applyRenewerFilters(policies);
         }
-
-        
-        return applyRenewerFilters(policies);
     }
 
     public List<Policy> getHighValueDeals(String branch) {
@@ -722,7 +774,8 @@ public class RenewalService {
                 .collect(java.util.stream.Collectors.toList());
 
         if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
-            policies = policies.stream().filter(p -> sourceTeam.equals(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            policies = policies.stream().filter(p -> sourceTeam.equalsIgnoreCase(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            return applyReturnsRenewerFilters(policies);
         }
 
         return policies;
@@ -845,22 +898,29 @@ public class RenewalService {
 
             // Fetch ONLY the policies routed on these specific days
             List<Policy> allRoutedPolicies = policyRepository.findPoliciesByRoutedAtIn(targetDates);
-            List<Policy> filteredTeamPolicies = applyRenewerFilters(allRoutedPolicies);
+            List<Policy> filteredTeamPolicies;
 
             if (isReturnsView) {
-                filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> sourceTeam.equalsIgnoreCase(p.getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
-                // Filter out policies that have been handled!
-                filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> {
-                    if (p.getStatus() != null && "PENDING_ISSUANCE".equalsIgnoreCase(p.getStatus())) return false;
-                    if (p.getReminder() != null) {
-                        String outcome = p.getReminder().getLastCallOutcome();
-                        if (outcome != null) {
-                            outcome = outcome.toLowerCase();
-                            if (outcome.equals("pending issuance") || outcome.equals("renewed") || outcome.equals("externally renewed")) return false;
-                        }
-                    }
-                    return true;
-                }).collect(java.util.stream.Collectors.toList());
+                filteredTeamPolicies = allRoutedPolicies.stream()
+                        .filter(p -> sourceTeam.equalsIgnoreCase(p.getLastRoutedFrom()))
+                        .filter(p -> !"PENDING_ISSUANCE".equalsIgnoreCase(p.getStatus()))
+                        .filter(p -> {
+                            if (p.getReminder() != null) {
+                                String outcome = p.getReminder().getLastCallOutcome();
+                                if (outcome != null) {
+                                    outcome = outcome.toLowerCase();
+                                    if (outcome.equals("pending issuance") || outcome.equals("renewed") || outcome.equals("externally renewed")) return false;
+                                }
+                            }
+                            return true;
+                        })
+                        .collect(java.util.stream.Collectors.toList());
+                if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("all") && !branch.equalsIgnoreCase("null")) {
+                    filteredTeamPolicies = filteredTeamPolicies.stream().filter(p -> branch.equalsIgnoreCase(p.getBranch())).collect(java.util.stream.Collectors.toList());
+                }
+                filteredTeamPolicies = applyReturnsRenewerFilters(filteredTeamPolicies);
+            } else {
+                filteredTeamPolicies = applyRenewerFilters(allRoutedPolicies);
             }
 
 
@@ -1904,7 +1964,7 @@ public class RenewalService {
         List<Reminder> reminders = reminderRepository.findPendingFollowUpsUpTo(endOfToday, branch);
         
         if (isReturnsView) {
-            reminders = reminders.stream().filter(r -> r.getPolicy() != null && sourceTeam.equals(r.getPolicy().getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            reminders = reminders.stream().filter(r -> r.getPolicy() != null && sourceTeam.equalsIgnoreCase(r.getPolicy().getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
         }
 
         java.util.Set<Long> processedPolicyIds = new java.util.HashSet<>();
@@ -1960,6 +2020,9 @@ public class RenewalService {
             return Integer.compare(score1, score2);
         });
 
+        if (isReturnsView) {
+            return applyReturnsRenewerFilters(todaysWork);
+        }
         return applyRenewerFilters(todaysWork);
     }
 
@@ -1999,7 +2062,7 @@ public class RenewalService {
         completedRemindersToday = applyRenewerFiltersToReminders(completedRemindersToday);
 
         if (sourceTeam != null && !sourceTeam.trim().isEmpty() && !sourceTeam.equals("null")) {
-            completedRemindersToday = completedRemindersToday.stream().filter(r -> r.getPolicy() != null && sourceTeam.equals(r.getPolicy().getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
+            completedRemindersToday = completedRemindersToday.stream().filter(r -> r.getPolicy() != null && sourceTeam.equalsIgnoreCase(r.getPolicy().getLastRoutedFrom())).collect(java.util.stream.Collectors.toList());
         }
 
         List<Integer> buckets = java.util.Arrays.asList(

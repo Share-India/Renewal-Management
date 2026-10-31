@@ -980,6 +980,7 @@ export class RenewalComponent implements OnInit {
     };
 
     const targetTeamFilterFn = (p: any) => {
+        if (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') { return true; }
         if (this.selectedDate) {
             // When filtering by policy expiry date, team managers can view
             // all policies expiring on that date (routed or not routed)

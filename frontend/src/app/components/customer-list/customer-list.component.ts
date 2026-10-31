@@ -115,10 +115,10 @@ export class CustomerListComponent {
 
     // Role Checks for Routing
     get isRenewer(): boolean { return this.authService.hasRole('RENEWER'); }
-    get isClaimsManager(): boolean { return this.adminViewAs === 'claims' || this.authService.hasRole('CLAIMS_MANAGER'); }
-    get isSalesManager(): boolean { return this.adminViewAs === 'sales' || this.authService.hasRole('SALES_MANAGER'); }
+    get isClaimsManager(): boolean { const as = (this.adminViewAs || this.apiService.adminViewAs || '').toLowerCase(); return as === 'claims' || this.authService.hasRole('CLAIMS_MANAGER'); }
+    get isSalesManager(): boolean { const as = (this.adminViewAs || this.apiService.adminViewAs || '').toLowerCase(); return as === 'sales' || this.authService.hasRole('SALES_MANAGER'); }
     get isSalesUser(): boolean { return this.authService.hasRole('SALES'); }
-    get isUnderwritingManager(): boolean { return this.adminViewAs === 'underwriting' || this.authService.hasRole('UNDERWRITING_MANAGER'); }
+    get isUnderwritingManager(): boolean { const as = (this.adminViewAs || this.apiService.adminViewAs || '').toLowerCase(); return as === 'underwriting' || this.authService.hasRole('UNDERWRITING_MANAGER'); }
     get isUnderwritingUser(): boolean { return this.authService.hasRole('UNDERWRITING'); }
     get isClaimsUser(): boolean { return this.authService.hasRole('CLAIMS'); }
     get isTeamRole(): boolean { return this.isClaimsManager || this.isClaimsUser || this.isSalesManager || this.isSalesUser || this.isUnderwritingManager || this.isUnderwritingUser; }
@@ -958,10 +958,23 @@ Renewal Due Date : ${endDate}`;
 
     async sendBackToRenewer(policy: any) {
         if (await this.notificationService.confirmAction('Are you sure you want to send this back to the Renewer?')) {
-            let sourceTeam = null;
-            if (this.isClaimsManager || this.isClaimsUser) sourceTeam = 'CLAIMS';
-            else if (this.isSalesManager || this.isSalesUser) sourceTeam = 'SALES';
-            else if (this.isUnderwritingManager || this.isUnderwritingUser) sourceTeam = 'UNDERWRITING';
+            let sourceTeam: string | null = null;
+            const as = (this.adminViewAs || this.apiService.adminViewAs || '').toLowerCase();
+            if (this.isClaimsManager || this.isClaimsUser || as === 'claims') sourceTeam = 'CLAIMS';
+            else if (this.isSalesManager || this.isSalesUser || as === 'sales') sourceTeam = 'SALES';
+            else if (this.isUnderwritingManager || this.isUnderwritingUser || as === 'underwriting') sourceTeam = 'UNDERWRITING';
+            else if (policy.targetTeam && policy.targetTeam !== 'RENEWER') sourceTeam = policy.targetTeam;
+            else if (policy.lastRoutedFrom && policy.lastRoutedFrom !== 'RENEWER') sourceTeam = policy.lastRoutedFrom;
+            else {
+                const user = this.authService.getCurrentUser();
+                const uRole = (user?.role || '').toUpperCase();
+                if (uRole.includes('CLAIMS')) sourceTeam = 'CLAIMS';
+                else if (uRole.includes('SALES')) sourceTeam = 'SALES';
+                else if (uRole.includes('UNDERWRITING')) sourceTeam = 'UNDERWRITING';
+            }
+
+
+
 
             this.apiService.routePolicy(policy.id, 'RENEWER', null, sourceTeam).subscribe({
                 next: () => {

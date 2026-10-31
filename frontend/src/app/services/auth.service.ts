@@ -43,17 +43,22 @@ export class AuthService {
 
     isPosp(): boolean {
         const user = this.getCurrentUser();
-        return !!(user && user.role && user.role.toUpperCase() === 'POSP');
+        if (!user || !user.role) return false;
+        return user.role.toUpperCase().replace('ROLE_', '') === 'POSP';
     }
 
     isAdmin(): boolean {
         const user = this.getCurrentUser();
-        return user && user.role && user.role.toUpperCase() === 'ADMIN';
+        if (!user || !user.role) return false;
+        return user.role.toUpperCase().replace('ROLE_', '') === 'ADMIN';
     }
 
     hasRole(role: string): boolean {
         const user = this.getCurrentUser();
-        return user && user.role && user.role.toUpperCase() === role.toUpperCase();
+        if (!user || !user.role) return false;
+        const uRole = user.role.toUpperCase().replace('ROLE_', '');
+        const target = role.toUpperCase().replace('ROLE_', '');
+        return uRole === target;
     }
 
     getAuthHeaders(): HttpHeaders {
