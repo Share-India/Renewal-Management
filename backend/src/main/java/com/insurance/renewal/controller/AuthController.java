@@ -73,6 +73,9 @@ public class AuthController {
             user.setAssignedRm(payload.get("assignedRm"));
         } else if (role.contains("POSP")) {
             user.setAssignedPosp(payload.get("assignedPosp"));
+        } else if (role.contains("CLAIMS_MANAGER") || role.contains("UNDERWRITING_MANAGER")) {
+            user.setAssignedBranch(payload.get("assignedBranch"));
+            user.setAssignedProductType(payload.get("assignedProductType"));
         }
 
         return ResponseEntity.ok(userRepository.save(user));
@@ -126,6 +129,35 @@ public class AuthController {
         }
         
         return users;
+    }
+
+    @PutMapping("/admin/users/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
+    public ResponseEntity<?> updateUser(@PathVariable("id") Long id, @RequestBody Map<String, String> payload) {
+        return userRepository.findById(id).map(user -> {
+            if (payload.containsKey("password") && payload.get("password") != null && !payload.get("password").trim().isEmpty()) {
+                user.setPassword(passwordEncoder.encode(payload.get("password")));
+            }
+            if (payload.containsKey("assignedBranch")) {
+                user.setAssignedBranch(payload.get("assignedBranch"));
+            }
+            if (payload.containsKey("assignedProductType")) {
+                user.setAssignedProductType(payload.get("assignedProductType"));
+            }
+            if (payload.containsKey("assignedPremiumRange")) {
+                user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
+            }
+            if (payload.containsKey("assignedCustomers")) {
+                user.setAssignedCustomers(payload.get("assignedCustomers"));
+            }
+            if (payload.containsKey("assignedRm")) {
+                user.setAssignedRm(payload.get("assignedRm"));
+            }
+            if (payload.containsKey("assignedPosp")) {
+                user.setAssignedPosp(payload.get("assignedPosp"));
+            }
+            return ResponseEntity.ok(userRepository.save(user));
+        }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/admin/users/{id}")

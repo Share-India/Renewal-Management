@@ -56,7 +56,7 @@ import { ApiService } from '../../services/api.service';
               <label>Role</label>
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
-                <select [(ngModel)]="newUser.role" class="form-select">
+                <select [(ngModel)]="newUser.role" class="form-select" (change)="onRoleChange()">
                   <option value="RENEWER">Renewer (Agent)</option>
                   <option value="SERVICING">Policy Servicing</option>
                   <option value="MIS">MIS</option>
@@ -71,7 +71,7 @@ import { ApiService } from '../../services/api.service';
             </div>
 
             <!-- Optional Branch Filter for Agents & RM -->
-            <ng-container *ngIf="['RENEWER', 'SERVICING', 'MIS', 'RM'].includes(newUser.role)">
+            <ng-container *ngIf="['RENEWER', 'SERVICING', 'MIS', 'RM', 'CLAIMS_MANAGER', 'UNDERWRITING_MANAGER'].includes(newUser.role)">
               <div class="form-group">
                 <label>Assigned Branches</label>
                 <div class="product-types-container border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto; border-color: #ced4da;">
@@ -90,6 +90,35 @@ import { ApiService } from '../../services/api.service';
                     </label>
                   </div>
                 </div>
+              </div>
+            </ng-container>
+
+            <!-- Policy Type Selection for Claims Manager & Underwriting Manager -->
+            <ng-container *ngIf="newUser.role === 'CLAIMS_MANAGER' || newUser.role === 'UNDERWRITING_MANAGER'">
+              <div class="form-group mt-3">
+                <label class="fw-semibold">Assigned Policy Types</label>
+                <div class="product-types-container border rounded p-2 mt-1" style="max-height: 220px; overflow-y: auto; border-color: #ced4da; background: #fff;">
+                  <div class="mb-2">
+                    <input type="text" class="form-control form-control-sm" placeholder="Search policy types..." [(ngModel)]="productTypeSearchTerm" name="mgrProductTypeSearch">
+                  </div>
+                  <div class="form-check border-bottom pb-2 mb-2">
+                    <input class="form-check-input" type="checkbox" id="selectAllMgrProducts" 
+                           [checked]="allProductTypesSelected" (change)="toggleAllProductTypes($event)">
+                    <label class="form-check-label fw-bold" for="selectAllMgrProducts">
+                      All Policy Types
+                    </label>
+                  </div>
+                  <div class="form-check" *ngFor="let type of filteredProductTypes; let i = index">
+                    <input class="form-check-input" type="checkbox" [id]="'mgr_type_' + i" 
+                           [checked]="selectedProductTypes.includes(type)" (change)="toggleProductType(type, $event)">
+                    <label class="form-check-label" [for]="'mgr_type_' + i">
+                      {{ type }}
+                    </label>
+                  </div>
+                </div>
+                <small class="text-muted d-block mt-1">
+                  <i class="bi bi-info-circle"></i> Manager will only receive and see routed policies matching the selected policy types.
+                </small>
               </div>
             </ng-container>
 
@@ -346,6 +375,7 @@ import { ApiService } from '../../services/api.service';
               <tr>
                 <th>Username</th>
                 <th>Role</th>
+                <th>Assigned Details</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -358,12 +388,28 @@ import { ApiService } from '../../services/api.service';
                     {{ getRoleDisplay(user.role) }}
                   </span>
                 </td>
+                <td style="font-size: 0.85rem; max-width: 250px;">
+                  <div *ngIf="user.assignedProductType">
+                    <span class="badge bg-light text-primary border me-1 mb-1" *ngFor="let t of user.assignedProductType.split(',')">
+                      {{ t }}
+                    </span>
+                  </div>
+                  <div *ngIf="user.assignedBranch" class="text-muted small">
+                    <i class="bi bi-geo-alt"></i> {{ user.assignedBranch }}
+                  </div>
+                  <div *ngIf="!user.assignedProductType && !user.assignedBranch" class="text-muted small">
+                    All
+                  </div>
+                </td>
                 <td>
                   <span class="badge" [class.bg-success]="user.active" [class.bg-danger]="!user.active">
                     {{ user.active ? 'Active' : 'Inactive' }}
                   </span>
                 </td>
                 <td>
+                  <button class="btn btn-sm btn-outline-primary me-2" (click)="openEditUser(user)" title="Edit User">
+                    <i class="bi bi-pencil-fill"></i>
+                  </button>
                   <button class="btn btn-sm me-2" [class.btn-outline-danger]="user.active" [class.btn-outline-success]="!user.active" 
                           (click)="toggleUserStatus(user)" [title]="user.active ? 'Deactivate' : 'Activate'">
                     <i class="bi" [class.bi-person-dash-fill]="user.active" [class.bi-person-check-fill]="!user.active"></i>
@@ -396,6 +442,80 @@ import { ApiService } from '../../services/api.service';
         <div class="modal-footer border-top-0 pt-0 gap-2">
           <button class="btn btn-light" (click)="cancelDeleteUser()">Cancel</button>
           <button class="btn btn-danger" (click)="confirmDeleteUser()">Yes, Delete User</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal-overlay" *ngIf="editingUser" style="z-index: 1055;" (click)="cancelEditUser()">
+      <div class="custom-modal-content" style="max-width: 550px; border-top: 5px solid #0d6efd;" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h5 class="text-primary mb-0"><i class="bi bi-pencil-square me-2"></i> Edit User: {{ editingUser.username }}</h5>
+          <button class="btn-close" (click)="cancelEditUser()"></button>
+        </div>
+        <div class="modal-body py-3" style="max-height: 70vh; overflow-y: auto;">
+          <div class="mb-3 d-flex align-items-center justify-content-between">
+            <span class="text-muted">Role:</span>
+            <span class="badge" [ngClass]="getRoleBadgeClass(editingUser.role)">{{ getRoleDisplay(editingUser.role) }}</span>
+          </div>
+
+          <!-- Branch Filter for Agents, RM, Managers -->
+          <div class="form-group mb-3" *ngIf="['RENEWER', 'SERVICING', 'MIS', 'RM', 'CLAIMS_MANAGER', 'UNDERWRITING_MANAGER'].includes(getCleanRole(editingUser.role))">
+            <label class="fw-semibold">Assigned Branches</label>
+            <div class="product-types-container border rounded p-2 mt-1" style="max-height: 150px; overflow-y: auto; background: #fff;">
+              <div class="form-check border-bottom pb-2 mb-2">
+                <input class="form-check-input" type="checkbox" id="editSelectAllBranches" 
+                       [checked]="editAllBranchesSelected" (change)="toggleEditAllBranches($event)">
+                <label class="form-check-label fw-bold" for="editSelectAllBranches">
+                  All Branches Globally
+                </label>
+              </div>
+              <div class="form-check" *ngFor="let b of availableBranches; let i = index">
+                <input class="form-check-input" type="checkbox" [id]="'edit_branch_' + i" 
+                       [checked]="editSelectedBranches.includes(b)" (change)="toggleEditBranch(b, $event)">
+                <label class="form-check-label" [for]="'edit_branch_' + i">
+                  {{ b }}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Policy Type Selection for Managers & Renewer -->
+          <div class="form-group mb-3" *ngIf="['CLAIMS_MANAGER', 'UNDERWRITING_MANAGER', 'RENEWER'].includes(getCleanRole(editingUser.role))">
+            <label class="fw-semibold">Assigned Policy Types</label>
+            <div class="product-types-container border rounded p-2 mt-1" style="max-height: 180px; overflow-y: auto; background: #fff;">
+              <div class="mb-2">
+                <input type="text" class="form-control form-control-sm" placeholder="Search policy types..." [(ngModel)]="editProductTypeSearchTerm">
+              </div>
+              <div class="form-check border-bottom pb-2 mb-2">
+                <input class="form-check-input" type="checkbox" id="editSelectAllMgrProducts" 
+                       [checked]="editAllProductTypesSelected" (change)="toggleEditAllProductTypes($event)">
+                <label class="form-check-label fw-bold" for="editSelectAllMgrProducts">
+                  All Policy Types
+                </label>
+              </div>
+              <div class="form-check" *ngFor="let type of editFilteredProductTypes; let i = index">
+                <input class="form-check-input" type="checkbox" [id]="'edit_mgr_type_' + i" 
+                       [checked]="editSelectedProductTypes.includes(type)" (change)="toggleEditProductType(type, $event)">
+                <label class="form-check-label" [for]="'edit_mgr_type_' + i">
+                  {{ type }}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Reset (Optional) -->
+          <div class="form-group mb-2">
+            <label class="fw-semibold">New Password <span class="text-muted fw-normal">(optional - leave blank to keep unchanged)</span></label>
+            <input type="password" class="form-control" [(ngModel)]="editNewPassword" placeholder="••••••••">
+          </div>
+        </div>
+        <div class="modal-footer border-top-0 pt-0 gap-2">
+          <button class="btn btn-light" (click)="cancelEditUser()">Cancel</button>
+          <button class="btn btn-primary" (click)="saveEditUser()" [disabled]="editSaving">
+            <span *ngIf="!editSaving"><i class="bi bi-check-lg me-1"></i> Save Changes</span>
+            <span *ngIf="editSaving" class="spinner-border spinner-border-sm"></span>
+          </button>
         </div>
       </div>
     </div>
@@ -555,6 +675,22 @@ export class UserManagementComponent implements OnInit {
     'Workmen Compensation'
   ];
   selectedProductTypes: string[] = [];
+  productTypeSearchTerm = '';
+
+  get filteredProductTypes(): string[] {
+    if (!this.productTypeSearchTerm.trim()) return this.availableProductTypes;
+    return this.availableProductTypes.filter(t => t.toLowerCase().includes(this.productTypeSearchTerm.toLowerCase().trim()));
+  }
+
+  onRoleChange() {
+    this.selectedProductTypes = [];
+    this.selectedBranches = [];
+    this.selectedPremiumRanges = [];
+    this.selectedCustomers = [];
+    this.selectedRms = [];
+    this.selectedPosps = [];
+    this.productTypeSearchTerm = '';
+  }
 
   get allProductTypesSelected(): boolean {
     return this.selectedProductTypes.length === this.availableProductTypes.length;
@@ -868,6 +1004,105 @@ export class UserManagementComponent implements OnInit {
     this.loadUsers();
   }
 
+  editingUser: any = null;
+  editSelectedBranches: string[] = [];
+  editSelectedProductTypes: string[] = [];
+  editProductTypeSearchTerm: string = '';
+  editNewPassword: string = '';
+  editSaving: boolean = false;
+
+  getCleanRole(role: string): string {
+    if (!role) return '';
+    return role.replace('ROLE_', '');
+  }
+
+  get editFilteredProductTypes(): string[] {
+    if (!this.editProductTypeSearchTerm.trim()) return this.availableProductTypes;
+    return this.availableProductTypes.filter(t => t.toLowerCase().includes(this.editProductTypeSearchTerm.toLowerCase().trim()));
+  }
+
+  get editAllBranchesSelected(): boolean {
+    return this.editSelectedBranches.length === this.availableBranches.length;
+  }
+
+  toggleEditBranch(branch: string, event: any) {
+    if (event.target.checked) {
+      if (!this.editSelectedBranches.includes(branch)) this.editSelectedBranches.push(branch);
+    } else {
+      this.editSelectedBranches = this.editSelectedBranches.filter(b => b !== branch);
+    }
+  }
+
+  toggleEditAllBranches(event: any) {
+    if (event.target.checked) {
+      this.editSelectedBranches = [...this.availableBranches];
+    } else {
+      this.editSelectedBranches = [];
+    }
+  }
+
+  get editAllProductTypesSelected(): boolean {
+    return this.editSelectedProductTypes.length === this.availableProductTypes.length;
+  }
+
+  toggleEditProductType(type: string, event: any) {
+    if (event.target.checked) {
+      if (!this.editSelectedProductTypes.includes(type)) this.editSelectedProductTypes.push(type);
+    } else {
+      this.editSelectedProductTypes = this.editSelectedProductTypes.filter(t => t !== type);
+    }
+  }
+
+  toggleEditAllProductTypes(event: any) {
+    if (event.target.checked) {
+      this.editSelectedProductTypes = [...this.availableProductTypes];
+    } else {
+      this.editSelectedProductTypes = [];
+    }
+  }
+
+  openEditUser(user: any) {
+    this.editingUser = user;
+    this.editSelectedBranches = user.assignedBranch ? user.assignedBranch.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0) : [];
+    this.editSelectedProductTypes = user.assignedProductType ? user.assignedProductType.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0) : [];
+    this.editProductTypeSearchTerm = '';
+    this.editNewPassword = '';
+    this.editSaving = false;
+  }
+
+  cancelEditUser() {
+    this.editingUser = null;
+  }
+
+  saveEditUser() {
+    if (!this.editingUser) return;
+    this.editSaving = true;
+    const payload: any = {
+      assignedBranch: this.editSelectedBranches.join(','),
+      assignedProductType: this.editSelectedProductTypes.join(',')
+    };
+    if (this.editNewPassword && this.editNewPassword.trim().length >= 4) {
+      payload.password = this.editNewPassword.trim();
+    }
+    this.authService.updateUser(this.editingUser.id, payload).subscribe({
+      next: () => {
+        this.notificationService.showSuccessToast('User updated successfully!');
+        if (this.editingUser) {
+          this.editingUser.assignedBranch = payload.assignedBranch;
+          this.editingUser.assignedProductType = payload.assignedProductType;
+        }
+        this.editingUser = null;
+        this.editSaving = false;
+        this.loadUsers();
+      },
+      error: (err: any) => {
+        console.error('Error updating user:', err);
+        this.notificationService.showErrorModal('Failed to update user.');
+        this.editSaving = false;
+      }
+    });
+  }
+
   loadUsers() {
     this.loadingUsers = true;
     this.authService.getUsers().subscribe({
@@ -915,6 +1150,12 @@ export class UserManagementComponent implements OnInit {
         this.newUser.assignedCustomers = this.selectedCustomers.join(',');
         this.newUser.assignedProductType = '';
       }
+    } else if (this.newUser.role === 'CLAIMS_MANAGER' || this.newUser.role === 'UNDERWRITING_MANAGER') {
+      this.newUser.assignedProductType = this.selectedProductTypes.join(',');
+      this.newUser.assignedPremiumRange = '';
+      this.newUser.assignedCustomers = '';
+      this.newUser.assignedRm = '';
+      this.newUser.assignedPosp = '';
     } else if (this.newUser.role === 'POSP') {
       this.newUser.assignedPosp = this.selectedPosps.join(',');
       this.newUser.assignedRm = '';

@@ -78,4 +78,8 @@ export class AuthService {
     hardDeleteUser(id: number): Observable<any> {
         return this.http.delete(`${this.baseUrl}/admin/users/${id}/hard`, { headers: this.getAuthHeaders() });
     }
+
+    updateUser(id: number, payload: any): Observable<any> {
+        return this.http.put(`${this.baseUrl}/admin/users/${id}`, payload, { headers: this.getAuthHeaders() });
+    }
 }

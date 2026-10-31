@@ -184,6 +184,18 @@ public class RenewalService {
                     }
                     if (!branchMatch) return false;
                 }
+                if (effectiveUser.getAssignedProductType() != null && !effectiveUser.getAssignedProductType().trim().isEmpty() && !effectiveUser.getAssignedProductType().equals("null")) {
+                    if (p.getType() == null) return false;
+                    String[] allowedTypes = effectiveUser.getAssignedProductType().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String t : allowedTypes) {
+                        if (t.equalsIgnoreCase(p.getType().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) return false;
+                }
                 return true;
             }).collect(java.util.stream.Collectors.toList());
         }
@@ -235,6 +247,18 @@ public class RenewalService {
                     }
                     if (!branchMatch) return false;
                 }
+                if (effectiveUser.getAssignedProductType() != null && !effectiveUser.getAssignedProductType().trim().isEmpty() && !effectiveUser.getAssignedProductType().equals("null")) {
+                    if (p.getType() == null) return false;
+                    String[] allowedTypes = effectiveUser.getAssignedProductType().split("\\s*,\\s*");
+                    boolean match = false;
+                    for (String t : allowedTypes) {
+                        if (t.equalsIgnoreCase(p.getType().trim())) {
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (!match) return false;
+                }
                 return true;
             }).collect(java.util.stream.Collectors.toList());
         }
@@ -248,9 +272,34 @@ public class RenewalService {
             String role = user.getRole();
             if (role != null) {
                 if (role.equals("ROLE_CLAIMS_MANAGER")) {
-                    if ("CLAIMS".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
-                    return false;
+                    boolean teamMatch = "CLAIMS".equals(p.getTargetTeam()) || 
+                                        (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
+                    if (!teamMatch) return false;
+                    if (user.getAssignedBranch() != null && !user.getAssignedBranch().trim().isEmpty() && !user.getAssignedBranch().equals("null")) {
+                        if (p.getBranch() == null) return false;
+                        String[] assignedBranches = user.getAssignedBranch().split("\\s*,\\s*");
+                        boolean branchMatch = false;
+                        for (String b : assignedBranches) {
+                            if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                                branchMatch = true;
+                                break;
+                            }
+                        }
+                        if (!branchMatch) return false;
+                    }
+                    if (user.getAssignedProductType() != null && !user.getAssignedProductType().trim().isEmpty() && !user.getAssignedProductType().equals("null")) {
+                        if (p.getType() == null) return false;
+                        String[] allowedTypes = user.getAssignedProductType().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String t : allowedTypes) {
+                            if (t.equalsIgnoreCase(p.getType().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return true;
                 }
                 if (role.equals("ROLE_SALES_MANAGER")) {
                     if (!"SALES".equals(p.getTargetTeam()) || "RENEWER".equalsIgnoreCase(p.getTargetTeam())) {
@@ -271,9 +320,34 @@ public class RenewalService {
                     return true;
                 }
                 if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
-                    if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
-                    return false;
+                    boolean teamMatch = "UNDERWRITING".equals(p.getTargetTeam()) || 
+                                        (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
+                    if (!teamMatch) return false;
+                    if (user.getAssignedBranch() != null && !user.getAssignedBranch().trim().isEmpty() && !user.getAssignedBranch().equals("null")) {
+                        if (p.getBranch() == null) return false;
+                        String[] assignedBranches = user.getAssignedBranch().split("\\s*,\\s*");
+                        boolean branchMatch = false;
+                        for (String b : assignedBranches) {
+                            if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                                branchMatch = true;
+                                break;
+                            }
+                        }
+                        if (!branchMatch) return false;
+                    }
+                    if (user.getAssignedProductType() != null && !user.getAssignedProductType().trim().isEmpty() && !user.getAssignedProductType().equals("null")) {
+                        if (p.getType() == null) return false;
+                        String[] allowedTypes = user.getAssignedProductType().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String t : allowedTypes) {
+                            if (t.equalsIgnoreCase(p.getType().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return true;
                 }
                 if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_CLAIMS_MEMBER") || role.equals("ROLE_UNDERWRITING") || role.equals("ROLE_UNDERWRITING_MEMBER")) {
                     if (user.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
@@ -467,9 +541,34 @@ public class RenewalService {
             String role = effectiveUser.getRole();
             if (role != null) {
                 if (role.equals("ROLE_CLAIMS_MANAGER")) {
-                    if ("CLAIMS".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
-                    return false;
+                    boolean teamMatch = "CLAIMS".equals(p.getTargetTeam()) || 
+                                        (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
+                    if (!teamMatch) return false;
+                    if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().trim().isEmpty() && !effectiveUser.getAssignedBranch().equals("null")) {
+                        if (p.getBranch() == null) return false;
+                        String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                        boolean branchMatch = false;
+                        for (String b : assignedBranches) {
+                            if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                                branchMatch = true;
+                                break;
+                            }
+                        }
+                        if (!branchMatch) return false;
+                    }
+                    if (effectiveUser.getAssignedProductType() != null && !effectiveUser.getAssignedProductType().trim().isEmpty() && !effectiveUser.getAssignedProductType().equals("null")) {
+                        if (p.getType() == null) return false;
+                        String[] allowedTypes = effectiveUser.getAssignedProductType().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String t : allowedTypes) {
+                            if (t.equalsIgnoreCase(p.getType().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return true;
                 }
                 if (role.equals("ROLE_SALES_MANAGER")) {
                     if (!"SALES".equals(p.getTargetTeam()) || "RENEWER".equalsIgnoreCase(p.getTargetTeam())) {
@@ -490,9 +589,34 @@ public class RenewalService {
                     return true;
                 }
                 if (role.equals("ROLE_UNDERWRITING_MANAGER")) {
-                    if ("UNDERWRITING".equals(p.getTargetTeam())) return true;
-                    if (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
-                    return false;
+                    boolean teamMatch = "UNDERWRITING".equals(p.getTargetTeam()) || 
+                                        (Boolean.TRUE.equals(p.getIsHotSale()) && "SALES".equals(p.getHotSaleSource()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam()));
+                    if (!teamMatch) return false;
+                    if (effectiveUser.getAssignedBranch() != null && !effectiveUser.getAssignedBranch().trim().isEmpty() && !effectiveUser.getAssignedBranch().equals("null")) {
+                        if (p.getBranch() == null) return false;
+                        String[] assignedBranches = effectiveUser.getAssignedBranch().split("\\s*,\\s*");
+                        boolean branchMatch = false;
+                        for (String b : assignedBranches) {
+                            if (b.equalsIgnoreCase(p.getBranch().trim())) {
+                                branchMatch = true;
+                                break;
+                            }
+                        }
+                        if (!branchMatch) return false;
+                    }
+                    if (effectiveUser.getAssignedProductType() != null && !effectiveUser.getAssignedProductType().trim().isEmpty() && !effectiveUser.getAssignedProductType().equals("null")) {
+                        if (p.getType() == null) return false;
+                        String[] allowedTypes = effectiveUser.getAssignedProductType().split("\\s*,\\s*");
+                        boolean match = false;
+                        for (String t : allowedTypes) {
+                            if (t.equalsIgnoreCase(p.getType().trim())) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (!match) return false;
+                    }
+                    return true;
                 }
                 if (role.equals("ROLE_CLAIMS") || role.equals("ROLE_CLAIMS_MEMBER") || role.equals("ROLE_UNDERWRITING") || role.equals("ROLE_UNDERWRITING_MEMBER")) {
                     if (effectiveUser.getUsername().equals(p.getCurrentAssignee()) && !"RENEWER".equalsIgnoreCase(p.getTargetTeam())) return true;
