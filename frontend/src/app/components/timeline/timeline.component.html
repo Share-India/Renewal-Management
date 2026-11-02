@@ -10,7 +10,7 @@
                 class="btn btn-sm d-flex align-items-center gap-2 timeline-date-btn shadow-sm" 
                 [class.active-date]="!!selectedDate"
                 (click)="openDatePicker(datePickerInput)"
-                title="Filter policies by Expiry Date">
+                title="Filter policies by Expiry Date (Allowed: Last month, current month, next month)">
           <i class="bi" [class.bi-calendar-check-fill]="!!selectedDate" [class.bi-calendar3]="!selectedDate"></i>
           <span class="date-btn-text">{{ selectedDate ? (selectedDate | date:'dd MMM yyyy') : 'Expiry Date' }}</span>
           <i class="bi bi-chevron-down text-muted small" *ngIf="!selectedDate"></i>
@@ -25,6 +25,8 @@
                type="date" 
                class="position-absolute" 
                style="opacity: 0; pointer-events: none; width: 1px; height: 1px; position: absolute; left: 0; bottom: 0;"
+               [min]="minDate"
+               [max]="maxDate"
                [value]="selectedDate" 
                (change)="onDateChange($event)">
       </div>

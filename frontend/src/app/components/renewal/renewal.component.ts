@@ -113,7 +113,7 @@ import { forkJoin, of } from 'rxjs';
         </div>
       </div>
 
-      <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" [selectedDate]="selectedDate" (daySelected)="onDaySelected($event)" (dateSelected)="onTimelineDateSelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam" [isManager]="isManager()"></app-timeline>
+      <app-timeline [counts]="timelineCounts" [selectedDay]="selectedDay" [selectedDate]="selectedDate" [minDate]="minSelectableDate" [maxDate]="maxSelectableDate" (daySelected)="onDaySelected($event)" (dateSelected)="onTimelineDateSelected($event)" [userRole]="getEffectiveRole()" [selectedSourceTeam]="selectedSourceTeam" [isManager]="isManager()"></app-timeline>
       
       <!-- Daily Records Calendar / Date Picker Bar (Restricted to ±2 Months, only on Renewals Dashboard) -->
       <div class="card shadow-sm border-0 mb-4 mt-3" style="border-radius: 12px; background: #ffffff;" *ngIf="showDatePicker()">
@@ -139,7 +139,7 @@ import { forkJoin, of } from 'rxjs';
                    [max]="maxSelectableDate" 
                    [(ngModel)]="selectedDate" 
                    (change)="onDateChange()"
-                   title="Select date within current month ± 2 months">
+                   title="Select date within 3-month window: last month, current month, or next month">
             <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" 
                     *ngIf="selectedDate" 
                     (click)="clearDateSelection()" 
@@ -1125,14 +1125,15 @@ export class RenewalComponent implements OnInit {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth();
 
-    // Min: 1st day of (currentMonth - 2)
-    const minDateObj = new Date(currentYear, currentMonth - 2, 1);
+    // 3 months only: Last month, current month, next month
+    // Min: 1st day of last month (currentMonth - 1)
+    const minDateObj = new Date(currentYear, currentMonth - 1, 1);
     const minY = minDateObj.getFullYear();
     const minM = String(minDateObj.getMonth() + 1).padStart(2, '0');
     this.minSelectableDate = `${minY}-${minM}-01`;
 
-    // Max: Last day of (currentMonth + 2)
-    const maxDateObj = new Date(currentYear, currentMonth + 3, 0);
+    // Max: Last day of next month (currentMonth + 1)
+    const maxDateObj = new Date(currentYear, currentMonth + 2, 0);
     const maxY = maxDateObj.getFullYear();
     const maxM = String(maxDateObj.getMonth() + 1).padStart(2, '0');
     const maxD = String(maxDateObj.getDate()).padStart(2, '0');
@@ -1140,6 +1141,14 @@ export class RenewalComponent implements OnInit {
   }
 
   onTimelineDateSelected(date: string) {
+    if (date && (date < this.minSelectableDate || date > this.maxSelectableDate)) {
+      this.notificationService.showErrorModal(
+        `Selection restricted: Please pick a date between ${this.minSelectableDate} and ${this.maxSelectableDate} (3 months only: Last month, current month, or next month).`
+      );
+      this.selectedDate = '';
+      this.selectedDay = null;
+      return;
+    }
     this.selectedDate = date;
     if (date) {
       this.selectedDay = 'custom-date';
@@ -1155,9 +1164,9 @@ export class RenewalComponent implements OnInit {
       return;
     }
 
-    if (!this.isTeamRole() && (this.selectedDate < this.minSelectableDate || this.selectedDate > this.maxSelectableDate)) {
+    if (this.selectedDate < this.minSelectableDate || this.selectedDate > this.maxSelectableDate) {
       this.notificationService.showErrorModal(
-        `Selection restricted: Please pick a date between ${this.minSelectableDate} and ${this.maxSelectableDate} (Current month ± 2 months).`
+        `Selection restricted: Please pick a date between ${this.minSelectableDate} and ${this.maxSelectableDate} (3 months only: Last month, current month, or next month).`
       );
       this.selectedDate = '';
       return;
