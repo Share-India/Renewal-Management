@@ -80,7 +80,7 @@
           </li>
         </ul>
         <div class="nav-actions">
-          <ng-container *ngIf="authService.hasRole('RENEWER') || authService.isAdmin()">
+          <ng-container *ngIf="authService.hasRole('RENEWER')">
             <button class="nav-link border-0 mx-1" 
                     style="cursor:pointer; background: transparent; padding: 6px 16px; border-radius: 999px; transition: all 0.2s ease;"
                     [ngClass]="{'active text-primary bg-white fw-bold shadow-sm': selectedSourceTeam === 'CLAIMS'}" 
