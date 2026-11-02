@@ -3,12 +3,28 @@ package com.insurance.renewal.config;
 import com.insurance.renewal.entity.User;
 import com.insurance.renewal.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DataInitializer {
+
+    @Bean
+    public CommandLineRunner alterUserColumns(JdbcTemplate jdbcTemplate) {
+        return args -> {
+            try {
+                jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN assigned_product_type TEXT");
+                jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN assigned_branch TEXT");
+                jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN assigned_premium_range TEXT");
+                jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN assigned_posp TEXT");
+                System.out.println("Migrated user assignment columns to TEXT.");
+            } catch (Exception e) {
+                System.err.println("Column migration note: " + e.getMessage());
+            }
+        };
+    }
 
     @Bean
     public CommandLineRunner resetPasswords(UserRepository userRepository, PasswordEncoder passwordEncoder) {

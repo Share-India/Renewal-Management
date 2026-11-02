@@ -471,6 +471,10 @@ import { ApiService } from '../../services/api.service';
                         <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
                         <span class="fw-medium text-dark">{{ user.assignedBranch }}</span>
                       </div>
+                      <div *ngIf="!user.assignedBranch && (user.role?.includes('RENEWER') || user.role?.includes('MANAGER'))" class="d-flex align-items-center gap-1 text-muted small">
+                        <i class="bi bi-globe text-primary"></i>
+                        <span>All Branches</span>
+                      </div>
 
                       <!-- Product Types -->
                       <div *ngIf="user.assignedProductType" class="d-flex flex-wrap gap-1 align-items-center">
@@ -487,6 +491,9 @@ import { ApiService } from '../../services/api.service';
                             +{{ user.assignedProductType.split(',').length - 2 }} more
                           </span>
                         </ng-container>
+                      </div>
+                      <div *ngIf="!user.assignedProductType && (user.role?.includes('RENEWER') || user.role?.includes('MANAGER'))" class="d-flex align-items-center gap-1 text-muted small">
+                        <span class="badge bg-light text-secondary border">All Policy Types</span>
                       </div>
 
                       <!-- Premium Range -->
@@ -1281,8 +1288,16 @@ export class UserManagementComponent implements OnInit {
 
   openEditUser(user: any) {
     this.editingUser = user;
-    this.editSelectedBranches = user.assignedBranch ? user.assignedBranch.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0) : [];
-    this.editSelectedProductTypes = user.assignedProductType ? user.assignedProductType.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0) : [];
+    if (user.assignedBranch && user.assignedBranch.trim()) {
+      this.editSelectedBranches = user.assignedBranch.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    } else {
+      this.editSelectedBranches = [...this.availableBranches];
+    }
+    if (user.assignedProductType && user.assignedProductType.trim()) {
+      this.editSelectedProductTypes = user.assignedProductType.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    } else {
+      this.editSelectedProductTypes = [...this.availableProductTypes];
+    }
     this.editProductTypeSearchTerm = '';
     this.editNewPassword = '';
     this.editSaving = false;
@@ -1296,8 +1311,8 @@ export class UserManagementComponent implements OnInit {
     if (!this.editingUser) return;
     this.editSaving = true;
     const payload: any = {
-      assignedBranch: this.editSelectedBranches.join(','),
-      assignedProductType: this.editSelectedProductTypes.join(',')
+      assignedBranch: this.editAllBranchesSelected ? '' : this.editSelectedBranches.join(','),
+      assignedProductType: this.editAllProductTypesSelected ? '' : this.editSelectedProductTypes.join(',')
     };
     if (this.editNewPassword && this.editNewPassword.trim().length >= 4) {
       payload.password = this.editNewPassword.trim();
@@ -1357,19 +1372,19 @@ export class UserManagementComponent implements OnInit {
       return;
     }
 
-    this.newUser.assignedBranch = this.selectedBranches.join(',');
+    this.newUser.assignedBranch = this.allBranchesSelected ? '' : this.selectedBranches.join(',');
 
     if (this.newUser.role === 'RENEWER') {
       this.newUser.assignedPremiumRange = this.selectedPremiumRanges.join(',');
       if (this.assignmentMode === 'product') {
-        this.newUser.assignedProductType = this.selectedProductTypes.join(',');
+        this.newUser.assignedProductType = this.allProductTypesSelected ? '' : this.selectedProductTypes.join(',');
         this.newUser.assignedCustomers = '';
       } else {
         this.newUser.assignedCustomers = this.selectedCustomers.join(',');
         this.newUser.assignedProductType = '';
       }
     } else if (this.newUser.role === 'CLAIMS_MANAGER' || this.newUser.role === 'UNDERWRITING_MANAGER') {
-      this.newUser.assignedProductType = this.selectedProductTypes.join(',');
+      this.newUser.assignedProductType = this.allProductTypesSelected ? '' : this.selectedProductTypes.join(',');
       this.newUser.assignedPremiumRange = '';
       this.newUser.assignedCustomers = '';
       this.newUser.assignedRm = '';

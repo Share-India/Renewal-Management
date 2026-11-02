@@ -26,6 +26,25 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    private void ensureColumnsAreText() {
+        String[] alterStatements = new String[] {
+            "ALTER TABLE users MODIFY COLUMN assigned_product_type TEXT",
+            "ALTER TABLE users MODIFY COLUMN assigned_branch TEXT",
+            "ALTER TABLE users MODIFY COLUMN assigned_premium_range TEXT",
+            "ALTER TABLE users MODIFY COLUMN assigned_customers TEXT",
+            "ALTER TABLE users MODIFY COLUMN assigned_rm TEXT",
+            "ALTER TABLE users MODIFY COLUMN assigned_posp TEXT"
+        };
+        for (String sql : alterStatements) {
+            try {
+                jdbcTemplate.execute(sql);
+            } catch (Exception ignored) {}
+        }
+    }
+
     @GetMapping("/auth/login")
     public ResponseEntity<Map<String, String>> login() {
         // If we reach here, Basic Auth has already succeeded
@@ -59,29 +78,38 @@ public class AuthController {
         }
 
         try {
-            User user = new User();
-            user.setUsername(username);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setRole(role.startsWith("ROLE_") ? role : "ROLE_" + role);
+            ensureColumnsAreText();
+        } catch (Exception ignored) {}
 
-            if (role.contains("RENEWER")) {
-                user.setAssignedBranch(payload.get("assignedBranch"));
-                user.setAssignedProductType(payload.get("assignedProductType"));
-                user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
-                user.setAssignedCustomers(payload.get("assignedCustomers"));
-            } else if (role.contains("RM")) {
-                user.setAssignedBranch(payload.get("assignedBranch"));
-                user.setAssignedRm(payload.get("assignedRm"));
-            } else if (role.contains("POSP")) {
-                user.setAssignedPosp(payload.get("assignedPosp"));
-            } else if (role.contains("CLAIMS_MANAGER") || role.contains("UNDERWRITING_MANAGER")) {
-                user.setAssignedBranch(payload.get("assignedBranch"));
-                user.setAssignedProductType(payload.get("assignedProductType"));
-            }
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole(role.startsWith("ROLE_") ? role : "ROLE_" + role);
 
+        if (role.contains("RENEWER")) {
+            user.setAssignedBranch(payload.get("assignedBranch"));
+            user.setAssignedProductType(payload.get("assignedProductType"));
+            user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
+            user.setAssignedCustomers(payload.get("assignedCustomers"));
+        } else if (role.contains("RM")) {
+            user.setAssignedBranch(payload.get("assignedBranch"));
+            user.setAssignedRm(payload.get("assignedRm"));
+        } else if (role.contains("POSP")) {
+            user.setAssignedPosp(payload.get("assignedPosp"));
+        } else if (role.contains("CLAIMS_MANAGER") || role.contains("UNDERWRITING_MANAGER")) {
+            user.setAssignedBranch(payload.get("assignedBranch"));
+            user.setAssignedProductType(payload.get("assignedProductType"));
+        }
+
+        try {
             return ResponseEntity.ok(userRepository.save(user));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Failed to create user"));
+            try {
+                ensureColumnsAreText();
+                return ResponseEntity.ok(userRepository.save(user));
+            } catch (Exception retryEx) {
+                return ResponseEntity.badRequest().body(Map.of("message", retryEx.getMessage() != null ? retryEx.getMessage() : "Failed to create user"));
+            }
         }
     }
 
@@ -138,6 +166,9 @@ public class AuthController {
     @PutMapping("/admin/users/{id}")
     @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> updateUser(@PathVariable("id") Long id, @RequestBody Map<String, String> payload) {
+        try {
+            ensureColumnsAreText();
+        } catch (Exception ignored) {}
         return userRepository.findById(id).map(user -> {
             if (payload.containsKey("password") && payload.get("password") != null && !payload.get("password").trim().isEmpty()) {
                 user.setPassword(passwordEncoder.encode(payload.get("password")));
