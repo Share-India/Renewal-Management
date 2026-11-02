@@ -361,70 +361,205 @@ import { ApiService } from '../../services/api.service';
 
     <!-- Users List Modal -->
     <div class="modal-overlay" *ngIf="showUserList" (click)="closeUserList()">
-      <div class="custom-modal-content" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>System Users</h3>
-          <button class="btn-close" (click)="closeUserList()"></button>
-        </div>
-        <div class="modal-body">
-          <div *ngIf="loadingUsers" class="text-center py-3">
-            <div class="spinner-border text-primary" role="status"></div>
+      <div class="custom-modal-content users-list-modal" (click)="$event.stopPropagation()">
+        
+        <!-- Modal Header -->
+        <div class="modal-header d-flex align-items-center justify-content-between px-4 py-3 bg-white border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <div class="modal-icon-circle bg-primary-subtle text-primary">
+              <i class="bi bi-people-fill fs-5"></i>
+            </div>
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <h4 class="mb-0 fw-bold text-dark">System Users</h4>
+                <span class="badge rounded-pill bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1">
+                  {{ users.length }} users
+                </span>
+              </div>
+              <small class="text-muted">Manage system users, assigned branches, roles and permissions</small>
+            </div>
           </div>
-          <table *ngIf="!loadingUsers" class="table table-hover">
-            <thead>
-              <tr>
-                <th>Username</th>
-                <th>Role</th>
-                <th>Assigned Details</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let user of users">
-                <td>{{ user.username }}</td>
-                <td>
-                  <span class="badge" [ngClass]="getRoleBadgeClass(user.role)">
-                    {{ getRoleDisplay(user.role) }}
-                  </span>
-                </td>
-                <td style="font-size: 0.85rem; max-width: 250px;">
-                  <div *ngIf="user.assignedProductType">
-                    <span class="badge bg-light text-primary border me-1 mb-1" *ngFor="let t of user.assignedProductType.split(',')">
-                      {{ t }}
+          <button type="button" class="btn-close shadow-none" (click)="closeUserList()"></button>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="px-4 py-2.5 bg-light border-bottom d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div class="position-relative flex-grow-1" style="max-width: 360px;">
+            <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+            <input type="text" class="form-control form-control-sm ps-5 pe-4 rounded-pill border-secondary-subtle"
+                   placeholder="Search username, branch, product..."
+                   [(ngModel)]="userSearchTerm">
+            <button *ngIf="userSearchTerm" (click)="userSearchTerm = ''"
+                    class="btn btn-sm btn-link position-absolute top-50 end-0 translate-middle-y text-muted p-0 me-2"
+                    style="line-height: 1; border: none; background: transparent;">
+              <i class="bi bi-x-circle-fill"></i>
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <label class="small text-muted fw-semibold mb-0 text-nowrap">Filter Role:</label>
+            <select class="form-select form-select-sm rounded-pill border-secondary-subtle" 
+                    style="width: 175px;"
+                    [(ngModel)]="userRoleFilter">
+              <option value="">All Roles</option>
+              <option value="ADMIN">Admin</option>
+              <option value="RENEWER">Renewer</option>
+              <option value="CLAIMS_MANAGER">Claims Manager</option>
+              <option value="UNDERWRITING_MANAGER">Underwriting Manager</option>
+              <option value="SALES_MANAGER">Sales Manager</option>
+              <option value="SERVICING">Servicing</option>
+              <option value="MIS">MIS</option>
+              <option value="RM">RM</option>
+              <option value="POSP">POSP</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Modal Body (Table) -->
+        <div class="modal-body p-0" style="overflow-y: auto; max-height: calc(85vh - 190px);">
+          <div *ngIf="loadingUsers" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted small mt-2">Loading system users...</p>
+          </div>
+
+          <div *ngIf="!loadingUsers && filteredUsers.length === 0" class="text-center py-5 text-muted">
+            <i class="bi bi-person-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
+            <h6 class="fw-semibold">No users found</h6>
+            <p class="small text-muted mb-0">Try adjusting your search query or filter.</p>
+          </div>
+
+          <div class="table-responsive m-0" *ngIf="!loadingUsers && filteredUsers.length > 0">
+            <table class="table table-hover align-middle mb-0 user-modern-table">
+              <thead>
+                <tr>
+                  <th class="ps-4" style="min-width: 170px;">Username</th>
+                  <th style="min-width: 130px;">Role</th>
+                  <th style="min-width: 280px;">Assigned Details</th>
+                  <th style="min-width: 100px;">Status</th>
+                  <th class="text-end pe-4" style="min-width: 130px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of filteredUsers">
+                  <!-- Username with Avatar -->
+                  <td class="ps-4">
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="user-avatar-circle" [ngClass]="user.active ? 'bg-primary text-white' : 'bg-secondary text-white'">
+                        {{ (user.username || 'U').substring(0, 1).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="fw-bold text-dark user-select-all">{{ user.username }}</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">ID #{{ user.id }}</div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Role Badge -->
+                  <td>
+                    <span class="badge rounded-pill fw-semibold px-2.5 py-1" [ngClass]="getRoleBadgeClass(user.role)">
+                      {{ getRoleDisplay(user.role) }}
                     </span>
-                  </div>
-                  <div *ngIf="user.assignedBranch" class="text-muted small">
-                    <i class="bi bi-geo-alt"></i> {{ user.assignedBranch }}
-                  </div>
-                  <div *ngIf="!user.assignedProductType && !user.assignedBranch" class="text-muted small">
-                    All
-                  </div>
-                </td>
-                <td>
-                  <span class="badge" [class.bg-success]="user.active" [class.bg-danger]="!user.active">
-                    {{ user.active ? 'Active' : 'Inactive' }}
-                  </span>
-                </td>
-                <td>
-                  <button class="btn btn-sm btn-outline-primary me-2" (click)="openEditUser(user)" title="Edit User">
-                    <i class="bi bi-pencil-fill"></i>
-                  </button>
-                  <button class="btn btn-sm me-2" [class.btn-outline-danger]="user.active" [class.btn-outline-success]="!user.active" 
-                          (click)="toggleUserStatus(user)" [title]="user.active ? 'Deactivate' : 'Activate'">
-                    <i class="bi" [class.bi-person-dash-fill]="user.active" [class.bi-person-check-fill]="!user.active"></i>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger" (click)="hardDeleteUser(user)" title="Delete User">
-                    <i class="bi bi-trash-fill"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+
+                  <!-- Assigned Details -->
+                  <td>
+                    <div class="d-flex flex-column gap-1" style="font-size: 0.825rem;">
+                      <!-- Branch -->
+                      <div *ngIf="user.assignedBranch" class="d-flex align-items-center gap-1 text-secondary">
+                        <i class="bi bi-geo-alt-fill text-danger flex-shrink-0"></i>
+                        <span class="fw-medium text-dark">{{ user.assignedBranch }}</span>
+                      </div>
+
+                      <!-- Product Types -->
+                      <div *ngIf="user.assignedProductType" class="d-flex flex-wrap gap-1 align-items-center">
+                        <ng-container *ngIf="user.assignedProductType.split(',').length <= 3">
+                          <span class="badge bg-light text-primary border" *ngFor="let t of user.assignedProductType.split(',')">
+                            {{ t }}
+                          </span>
+                        </ng-container>
+                        <ng-container *ngIf="user.assignedProductType.split(',').length > 3">
+                          <span class="badge bg-light text-primary border" *ngFor="let t of user.assignedProductType.split(',').slice(0, 2)">
+                            {{ t }}
+                          </span>
+                          <span class="badge bg-primary-subtle text-primary border border-primary-subtle" [title]="user.assignedProductType" style="cursor: help;">
+                            +{{ user.assignedProductType.split(',').length - 2 }} more
+                          </span>
+                        </ng-container>
+                      </div>
+
+                      <!-- Premium Range -->
+                      <div *ngIf="user.assignedPremiumRange" class="d-flex align-items-center gap-1 text-muted small">
+                        <i class="bi bi-currency-rupee text-success"></i>
+                        <span>{{ user.assignedPremiumRange }}</span>
+                      </div>
+
+                      <!-- RM / POSP -->
+                      <div *ngIf="user.assignedRm" class="d-flex align-items-center gap-1 text-muted small">
+                        <i class="bi bi-person-badge"></i>
+                        <span>RM: {{ user.assignedRm }}</span>
+                      </div>
+                      <div *ngIf="user.assignedPosp" class="d-flex align-items-center gap-1 text-muted small">
+                        <i class="bi bi-person-vcard"></i>
+                        <span>POSP: {{ user.assignedPosp }}</span>
+                      </div>
+
+                      <!-- All Access Fallback -->
+                      <div *ngIf="!user.assignedProductType && !user.assignedBranch && !user.assignedPremiumRange && !user.assignedRm && !user.assignedPosp" class="text-muted fst-italic">
+                        <span class="badge bg-light text-secondary border">All (Unrestricted)</span>
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Status -->
+                  <td>
+                    <span class="badge rounded-pill px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1.5"
+                          [ngClass]="user.active ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'">
+                      <span class="status-indicator-dot" [ngClass]="user.active ? 'bg-success' : 'bg-danger'"></span>
+                      {{ user.active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+
+                  <!-- Action Buttons -->
+                  <td class="text-end pe-4 text-nowrap">
+                    <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
+                      <button class="btn btn-sm btn-action btn-action-edit" 
+                              (click)="openEditUser(user)" 
+                              title="Edit User">
+                        <i class="bi bi-pencil-square"></i>
+                      </button>
+
+                      <button class="btn btn-sm btn-action" 
+                              [ngClass]="user.active ? 'btn-action-deactivate' : 'btn-action-activate'"
+                              (click)="toggleUserStatus(user)" 
+                              [title]="user.active ? 'Deactivate User' : 'Activate User'">
+                        <i class="bi" [class.bi-person-slash]="user.active" [class.bi-person-check-fill]="!user.active"></i>
+                      </button>
+
+                      <button class="btn btn-sm btn-action btn-action-delete" 
+                              (click)="hardDeleteUser(user)" 
+                              title="Delete User">
+                        <i class="bi bi-trash3-fill"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" (click)="closeUserList()">Close</button>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer d-flex align-items-center justify-content-between px-4 py-2.5 bg-light border-top">
+          <small class="text-muted">
+            Showing <strong class="text-dark">{{ filteredUsers.length }}</strong> of {{ users.length }} users
+          </small>
+          <button class="btn btn-secondary px-4 py-1.5 rounded-pill fw-medium" (click)="closeUserList()">
+            Close
+          </button>
         </div>
+
       </div>
     </div>
 
@@ -635,6 +770,66 @@ import { ApiService } from '../../services/api.service';
     .modern-submit-btn { background-color: #4f46e5; border: none; color: white; border-radius: 10px; padding: 0.75rem; font-weight: 600; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2); transition: all 0.2s; }
     .modern-submit-btn:hover:not(:disabled) { background-color: #4338ca; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3); transform: translateY(-1px); }
     .cursor-pointer { cursor: pointer; }
+
+    /* Modern System Users Modal */
+    .users-list-modal {
+      width: 95vw !important;
+      max-width: 980px !important;
+      max-height: 88vh !important;
+      border-radius: 16px !important;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+      border: 1px solid #e2e8f0;
+    }
+    .modal-icon-circle {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .user-avatar-circle {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
+    }
+    .status-indicator-dot {
+      width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+    }
+    .user-modern-table thead th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 16px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .user-modern-table tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    .user-modern-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+    .btn-action {
+      width: 32px; height: 32px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff;
+      transition: all 0.15s ease-in-out; font-size: 0.9rem;
+    }
+    .btn-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    }
+    .btn-action-edit { color: #2563eb; border-color: #bfdbfe; }
+    .btn-action-edit:hover { background-color: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+    .btn-action-deactivate { color: #d97706; border-color: #fde68a; }
+    .btn-action-deactivate:hover { background-color: #fffbeb; border-color: #f59e0b; color: #b45309; }
+    .btn-action-activate { color: #16a34a; border-color: #bbf7d0; }
+    .btn-action-activate:hover { background-color: #f0fdf4; border-color: #22c55e; color: #15803d; }
+    .btn-action-delete { color: #dc2626; border-color: #fecaca; }
+    .btn-action-delete:hover { background-color: #fef2f2; border-color: #ef4444; color: #b91c1c; }
+
   `]
 })
 export class UserManagementComponent implements OnInit {
@@ -918,7 +1113,28 @@ export class UserManagementComponent implements OnInit {
   showUserList = false;
   users: any[] = [];
   loadingUsers = false;
-  selectedRoleFilter: string = '';
+  userSearchTerm: string = '';
+  userRoleFilter: string = '';
+
+  get filteredUsers(): any[] {
+    if (!this.users) return [];
+    return this.users.filter(u => {
+      if (this.userRoleFilter && !u.role.toUpperCase().includes(this.userRoleFilter.toUpperCase())) {
+        return false;
+      }
+      if (this.userSearchTerm && this.userSearchTerm.trim()) {
+        const q = this.userSearchTerm.toLowerCase().trim();
+        const usernameMatch = (u.username || '').toLowerCase().includes(q);
+        const roleMatch = (u.role || '').toLowerCase().includes(q);
+        const branchMatch = (u.assignedBranch || '').toLowerCase().includes(q);
+        const productMatch = (u.assignedProductType || '').toLowerCase().includes(q);
+        const pospMatch = (u.assignedPosp || '').toLowerCase().includes(q);
+        const rmMatch = (u.assignedRm || '').toLowerCase().includes(q);
+        return usernameMatch || roleMatch || branchMatch || productMatch || pospMatch || rmMatch;
+      }
+      return true;
+    });
+  }
 
   // Tabs
   activeTab: 'add-user' | 'bulk-assign' = 'add-user';
@@ -1000,6 +1216,8 @@ export class UserManagementComponent implements OnInit {
   }
 
   openUserList() {
+    this.userSearchTerm = '';
+    this.userRoleFilter = '';
     this.showUserList = true;
     this.loadUsers();
   }
