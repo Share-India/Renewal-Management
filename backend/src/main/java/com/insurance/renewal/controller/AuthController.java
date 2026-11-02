@@ -49,36 +49,40 @@ public class AuthController {
     }
 
     @PostMapping("/admin/users")
-    public ResponseEntity<User> createUser(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> createUser(@RequestBody Map<String, String> payload) {
         String username = payload.get("username");
         String password = payload.get("password");
         String role = payload.get("role"); // ADMIN or RENEWER
 
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            return ResponseEntity.badRequest().body(Map.of("message", "Username already exists"));
         }
 
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setRole(role.startsWith("ROLE_") ? role : "ROLE_" + role);
+        try {
+            User user = new User();
+            user.setUsername(username);
+            user.setPassword(passwordEncoder.encode(password));
+            user.setRole(role.startsWith("ROLE_") ? role : "ROLE_" + role);
 
-        if (role.contains("RENEWER")) {
-            user.setAssignedBranch(payload.get("assignedBranch"));
-            user.setAssignedProductType(payload.get("assignedProductType"));
-            user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
-            user.setAssignedCustomers(payload.get("assignedCustomers"));
-        } else if (role.contains("RM")) {
-            user.setAssignedBranch(payload.get("assignedBranch"));
-            user.setAssignedRm(payload.get("assignedRm"));
-        } else if (role.contains("POSP")) {
-            user.setAssignedPosp(payload.get("assignedPosp"));
-        } else if (role.contains("CLAIMS_MANAGER") || role.contains("UNDERWRITING_MANAGER")) {
-            user.setAssignedBranch(payload.get("assignedBranch"));
-            user.setAssignedProductType(payload.get("assignedProductType"));
+            if (role.contains("RENEWER")) {
+                user.setAssignedBranch(payload.get("assignedBranch"));
+                user.setAssignedProductType(payload.get("assignedProductType"));
+                user.setAssignedPremiumRange(payload.get("assignedPremiumRange"));
+                user.setAssignedCustomers(payload.get("assignedCustomers"));
+            } else if (role.contains("RM")) {
+                user.setAssignedBranch(payload.get("assignedBranch"));
+                user.setAssignedRm(payload.get("assignedRm"));
+            } else if (role.contains("POSP")) {
+                user.setAssignedPosp(payload.get("assignedPosp"));
+            } else if (role.contains("CLAIMS_MANAGER") || role.contains("UNDERWRITING_MANAGER")) {
+                user.setAssignedBranch(payload.get("assignedBranch"));
+                user.setAssignedProductType(payload.get("assignedProductType"));
+            }
+
+            return ResponseEntity.ok(userRepository.save(user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Failed to create user"));
         }
-
-        return ResponseEntity.ok(userRepository.save(user));
     }
 
     @GetMapping("/admin/customers-by-branch")

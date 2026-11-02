@@ -1194,8 +1194,15 @@ export class UserManagementComponent implements OnInit {
         this.loadUsers();
       },
       error: (err) => {
-        console.error(err);
-        this.message = 'Failed to create user. Username might be taken.';
+        console.error('Error creating user:', err);
+        const errMsg = err?.error?.message || err?.error?.error || err?.message;
+        if (errMsg && typeof errMsg === 'string' && errMsg.toLowerCase().includes('already exists')) {
+          this.message = 'Username is already taken. Please choose a different username.';
+        } else if (errMsg && typeof errMsg === 'string') {
+          this.message = `Failed to create user: ${errMsg}`;
+        } else {
+          this.message = 'Failed to create user. Please check all fields and try again.';
+        }
         this.success = false;
         this.loading = false;
       }

@@ -23,13 +23,13 @@ public class User {
     @Column(nullable = false)
     private boolean active = true; // Default to active
 
-    @Column(name = "assigned_branch")
+    @Column(name = "assigned_branch", columnDefinition = "TEXT")
     private String assignedBranch;
 
-    @Column(name = "assigned_product_type")
+    @Column(name = "assigned_product_type", columnDefinition = "TEXT")
     private String assignedProductType;
 
-    @Column(name = "assigned_premium_range")
+    @Column(name = "assigned_premium_range", columnDefinition = "TEXT")
     private String assignedPremiumRange;
 
     @Column(name = "assigned_customers", columnDefinition = "TEXT")
@@ -38,6 +38,6 @@ public class User {
     @Column(name = "assigned_rm", columnDefinition = "TEXT")
     private String assignedRm;
 
-    @Column(name = "assigned_posp")
+    @Column(name = "assigned_posp", columnDefinition = "TEXT")
     private String assignedPosp;
 }
