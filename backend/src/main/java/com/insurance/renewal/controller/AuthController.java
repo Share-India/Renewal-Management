@@ -77,10 +77,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body(Map.of("message", "Username already exists"));
         }
 
-        try {
-            ensureColumnsAreText();
-        } catch (Exception ignored) {}
-
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
@@ -166,9 +162,6 @@ public class AuthController {
     @PutMapping("/admin/users/{id}")
     @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
     public ResponseEntity<?> updateUser(@PathVariable("id") Long id, @RequestBody Map<String, String> payload) {
-        try {
-            ensureColumnsAreText();
-        } catch (Exception ignored) {}
         return userRepository.findById(id).map(user -> {
             if (payload.containsKey("password") && payload.get("password") != null && !payload.get("password").trim().isEmpty()) {
                 user.setPassword(passwordEncoder.encode(payload.get("password")));
