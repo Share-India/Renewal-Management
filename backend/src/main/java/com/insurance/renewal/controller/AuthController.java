@@ -136,8 +136,11 @@ public class AuthController {
     }
 
     @GetMapping("/admin/posp-names")
-    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
-    public ResponseEntity<java.util.List<String>> getPospNames() {
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ResponseEntity<java.util.List<String>> getPospNames(@RequestParam(value = "branch", required = false) String branch) {
+        if (branch != null && !branch.trim().isEmpty() && !branch.equals("null")) {
+            return ResponseEntity.ok(policyRepository.findDistinctAssociateNames(branch));
+        }
         return ResponseEntity.ok(policyRepository.findDistinctAssociateNames());
     }
 

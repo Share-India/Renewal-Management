@@ -1637,6 +1637,13 @@ public class RenewalService {
         return applyRenewerFilters(policyRepository.searchPolicies(query, branch));
     }
 
+    public List<Policy> getPoliciesByPosp(String posp, String branch) {
+        if (posp == null || posp.trim().isEmpty() || posp.equalsIgnoreCase("all")) {
+            return java.util.Collections.emptyList();
+        }
+        return applyRenewerFilters(policyRepository.findByAssociateName(posp.trim(), branch));
+    }
+
     public List<Policy> getLateRenewals() {
         return applyRenewerFilters(policyRepository.findByLateRenewalTrue());
     }

@@ -97,6 +97,25 @@ import * as XLSX from 'xlsx';
         <div class="card-header">
           <h3>📅 Daily Records View</h3>
           <div class="date-picker-wrapper d-flex gap-3 align-items-center">
+            <!-- POSP Filter Dropdown: Only shown for RM / Sales / Admin role -->
+            <div class="posp-filter-group" *ngIf="isRmRole() || isAdmin()">
+              <div class="input-group">
+                <span class="input-group-text bg-white border-secondary-subtle text-primary fw-semibold">
+                  <i class="bi bi-person-vcard-fill me-1"></i> POSP
+                </span>
+                <select class="form-select border-secondary-subtle fw-semibold" 
+                        [(ngModel)]="selectedPospFilter" 
+                        (change)="onPospFilterChange()" 
+                        style="min-width: 170px; max-width: 230px; cursor: pointer;">
+                  <option value="">-- All POSP --</option>
+                  <option *ngFor="let posp of availablePospNames" [value]="posp">{{ posp }}</option>
+                </select>
+                <button class="btn btn-outline-secondary" type="button" *ngIf="selectedPospFilter" (click)="clearPospFilter()" title="Clear POSP Filter">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+
             <div class="search-group">
                 <div class="input-group">
                     <input type="text" class="form-control" placeholder="Search Policy # or Name" 
@@ -114,24 +133,25 @@ import * as XLSX from 'xlsx';
         </div>
 
         <div class="card-body">
-          <div *ngIf="!selectedDate && !isSearchMode && selectedDay !== 'todays-work' && selectedDay !== 600" class="text-center py-5">
+          <div *ngIf="!selectedDate && !isSearchMode && !isPospFilterActive && selectedDay !== 'todays-work' && selectedDay !== 600" class="text-center py-5">
             <i class="bi bi-calendar-date display-4 text-muted mb-3"></i>
-            <p class="text-muted lead">Please select a date to view scheduled tasks and expiring policies.</p>
+            <p class="text-muted lead">Please select a date or POSP to view scheduled tasks and expiring policies.</p>
           </div>
 
-          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work' || selectedDay === 600) && loading" class="text-center py-5">
+          <div *ngIf="(selectedDate || isSearchMode || isPospFilterActive || selectedDay === 'todays-work' || selectedDay === 600) && loading" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
           </div>
 
-          <div *ngIf="(selectedDate || isSearchMode || selectedDay === 'todays-work' || selectedDay === 600) && !loading" class="records-content">
+          <div *ngIf="(selectedDate || isSearchMode || isPospFilterActive || selectedDay === 'todays-work' || selectedDay === 600) && !loading" class="records-content">
             <!-- Expiring Policies -->
             <div class="record-section">
               <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
                 <div class="d-flex flex-column gap-2">
                   <h4 class="section-header text-primary mb-0">
-                    <span *ngIf="!isSearchMode && selectedDay !== 'todays-work' && selectedDay !== 600">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
+                    <span *ngIf="isPospFilterActive">All Policies for POSP: "{{ selectedPospFilter }}"</span>
+                    <span *ngIf="!isPospFilterActive && !isSearchMode && selectedDay !== 'todays-work' && selectedDay !== 600">Policies Expiring on {{ selectedDate | date:'mediumDate' }}</span>
                     <span *ngIf="selectedDay === 600">All Policies in Next 60 Days</span>
                     <span *ngIf="isSearchMode">Search Results for "{{ adminSearchTerm }}"</span>
                     <span *ngIf="selectedDay === 'todays-work' && todaysWorkTab === 'expiring'">Today's Work <span class="badge bg-primary ms-2 fs-6 fw-normal">Calls To be made Today: {{ todaysExpiring.length }}</span></span>
@@ -218,8 +238,8 @@ import * as XLSX from 'xlsx';
             
             <hr class="divider">
 
-            <!-- Scheduled Follow-ups (Hide in Search Mode or Todays Work mode) -->
-            <div class="record-section" *ngIf="(!isSearchMode && selectedDay !== 'todays-work') && selectedDateRecords.scheduledFollowUps.length > 0">
+            <!-- Scheduled Follow-ups (Hide in Search Mode or Todays Work mode or POSP Filter mode) -->
+            <div class="record-section" *ngIf="(!isSearchMode && !isPospFilterActive && selectedDay !== 'todays-work') && selectedDateRecords.scheduledFollowUps.length > 0">
               <h4 class="section-header text-warning">
                 <span *ngIf="selectedDay !== 600">Follow-ups Scheduled for {{ selectedDate | date:'mediumDate' }}</span>
                 <span *ngIf="selectedDay === 600">All Scheduled Follow-ups in Next 60 Days</span>
@@ -1218,8 +1238,9 @@ import * as XLSX from 'xlsx';
     
     .search-group { min-width: 400px; }
     
-    /* Ensure search input matches date input height */
-    .search-group .form-control, .search-group .btn {
+    /* Ensure search input and posp dropdown match date input height */
+    .search-group .form-control, .search-group .btn,
+    .posp-filter-group .form-select, .posp-filter-group .input-group-text, .posp-filter-group .btn {
       padding: 10px 15px;
     }
   `]
@@ -1237,6 +1258,12 @@ export class AdminDashboardComponent implements OnInit {
   selectedAdminBranch: string = ''; // Supports "All Branches"
   selectedMonthForReport: string = new Date().toISOString().slice(0, 7); // For YYYY-MM input
   availableBranches: string[] = [];
+
+  // POSP Filter
+  availablePospNames: string[] = [];
+  selectedPospFilter: string = '';
+  isPospFilterActive: boolean = false;
+  allPospPolicies: any[] = [];
 
   // Top 10 High Value Policies
   topHighValuePolicies: any[] = [];
@@ -1279,6 +1306,7 @@ export class AdminDashboardComponent implements OnInit {
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
     this.loadInitialData();
+    this.loadPospNames();
     if (!this.isRmRole() && !this.isPospRole()) {
       this.loadRenewerStats();
     }
@@ -1409,11 +1437,14 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onBranchChange() {
+    this.loadPospNames();
     this.loadStats();
     this.refreshTimelineCounts();
     this.loadRenewerRecords();
     this.fetchTopHighValuePolicies();
-    if (this.selectedDate) {
+    if (this.isPospFilterActive) {
+      this.onPospFilterChange();
+    } else if (this.selectedDate) {
       this.onDateChange();
     } else if (this.selectedDay === 'todays-work') {
       this.openTodaysWork();
@@ -1541,6 +1572,57 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  loadPospNames() {
+    this.apiService.getPospNames(this.selectedAdminBranch).subscribe({
+      next: (names) => {
+        this.availablePospNames = names || [];
+      },
+      error: (err) => console.error('Error fetching POSP names:', err)
+    });
+  }
+
+  onPospFilterChange() {
+    if (!this.selectedPospFilter || this.selectedPospFilter.trim() === '') {
+      this.clearPospFilter();
+      return;
+    }
+
+    this.isPospFilterActive = true;
+    this.isSearchMode = false;
+    this.adminSearchTerm = '';
+    this.selectedDate = '';
+    this.selectedDay = null;
+    this.loading = true;
+
+    this.apiService.getPoliciesByPosp(this.selectedPospFilter, this.selectedAdminBranch)
+      .pipe(finalize(() => this.loading = false))
+      .subscribe({
+        next: (policies) => {
+          this.allPospPolicies = policies || [];
+          this.selectedDateRecords = {
+            expiringPolicies: [...this.allPospPolicies],
+            scheduledFollowUps: [],
+            workedOnPolicies: []
+          };
+          this.applyPremiumFilter();
+        },
+        error: (err) => {
+          console.error('Error fetching policies by POSP:', err);
+          this.allPospPolicies = [];
+          this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
+        }
+      });
+  }
+
+  clearPospFilter() {
+    this.selectedPospFilter = '';
+    this.isPospFilterActive = false;
+    this.allPospPolicies = [];
+    if (this.selectedDay !== 'todays-work') {
+      this.onDateChange();
+    }
+  }
+
   searchAdminDailyRecords() {
     if (!this.adminSearchTerm.trim()) return;
 
@@ -1548,6 +1630,9 @@ export class AdminDashboardComponent implements OnInit {
     this.isSearchMode = true;
     this.selectedDate = ''; // Clear date selection
     this.selectedDay = null; // Clear todays-work mode
+    this.selectedPospFilter = '';
+    this.isPospFilterActive = false;
+    this.allPospPolicies = [];
 
     this.apiService.searchPolicies(this.adminSearchTerm, this.selectedAdminBranch)
       .pipe(finalize(() => this.loading = false))
@@ -1578,8 +1663,16 @@ export class AdminDashboardComponent implements OnInit {
 
 
   onDateChange() {
+    if (this.selectedDate) {
+      this.selectedPospFilter = '';
+      this.isPospFilterActive = false;
+      this.allPospPolicies = [];
+    }
     if (!this.selectedDate) {
       this.selectedDay = null;
+      if (!this.isPospFilterActive && !this.isSearchMode) {
+        this.selectedDateRecords = { expiringPolicies: [], scheduledFollowUps: [], workedOnPolicies: [] };
+      }
       return;
     }
 
@@ -1624,6 +1717,10 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   onDaySelected(day: number) {
+    this.selectedPospFilter = '';
+    this.isPospFilterActive = false;
+    this.allPospPolicies = [];
+
     if (day === 600) {
       this.load60DaysWorkload();
       return;
@@ -1650,6 +1747,9 @@ export class AdminDashboardComponent implements OnInit {
     this.isSearchMode = false;
     this.adminSearchTerm = '';
     this.selectedDay = 600;
+    this.selectedPospFilter = '';
+    this.isPospFilterActive = false;
+    this.allPospPolicies = [];
 
     this.loading = true;
     this.apiService.getRecordsForNext60Days(this.selectedAdminBranch)
@@ -1766,6 +1866,31 @@ export class AdminDashboardComponent implements OnInit {
   availableRmNames: string[] = [];
 
   applyPremiumFilter() {
+    if (this.isPospFilterActive) {
+      const filterFn = (p: any) => {
+        let isPremiumMatch = true;
+        if (this.selectedPremiumRange !== 'all') {
+          const amt = p.amount || 0;
+          if (this.selectedPremiumRange === '0-1') isPremiumMatch = amt >= 0 && amt <= 100000;
+          else if (this.selectedPremiumRange === '1-3') isPremiumMatch = amt > 100000 && amt <= 300000;
+          else if (this.selectedPremiumRange === '3-5') isPremiumMatch = amt > 300000 && amt <= 500000;
+          else if (this.selectedPremiumRange === '5+') isPremiumMatch = amt > 500000;
+        }
+
+        let isTypeMatch = true;
+        if (this.selectedPolicyType !== 'all') {
+          isTypeMatch = p.type === this.selectedPolicyType;
+        }
+
+        return isPremiumMatch && isTypeMatch;
+      };
+
+      if (this.selectedDateRecords) {
+        this.selectedDateRecords.expiringPolicies = this.allPospPolicies.filter(filterFn);
+      }
+      return;
+    }
+
     const filterFn = (p: any) => {
       let isPremiumMatch = true;
       if (this.selectedPremiumRange !== 'all') {
@@ -1871,6 +1996,9 @@ export class AdminDashboardComponent implements OnInit {
     this.isSearchMode = false;
     this.adminSearchTerm = '';
     this.selectedDay = 'todays-work';
+    this.selectedPospFilter = '';
+    this.isPospFilterActive = false;
+    this.allPospPolicies = [];
 
     this.loading = true;
     this.apiService.getTodaysWork(this.selectedAdminBranch).subscribe({

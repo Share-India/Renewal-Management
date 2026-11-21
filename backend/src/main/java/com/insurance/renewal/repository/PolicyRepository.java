@@ -54,9 +54,13 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT p FROM Policy p WHERE " +
                         "(LOWER(p.policyNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(p.customer.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
-                        "LOWER(p.customer.lastName) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+                        "LOWER(p.customer.lastName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+                        "LOWER(p.associateName) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
                         "(:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> searchPolicies(@Param("query") String query, @Param("branch") String branch);
+
+        @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE LOWER(p.associateName) = LOWER(:posp) AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) ORDER BY p.expiryDate ASC")
+        List<Policy> findByAssociateName(@Param("posp") String posp, @Param("branch") String branch);
 
         @Query("SELECT p FROM Policy p WHERE p.isHotSale = true AND p.hotSaleSource = :source AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> findHotSalesBySource(@Param("source") String source, @Param("branch") String branch);
@@ -84,6 +88,9 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         @Query("SELECT DISTINCT p.associateName FROM Policy p WHERE p.associateName IS NOT NULL AND p.associateName != '' ORDER BY p.associateName ASC")
         List<String> findDistinctAssociateNames();
+
+        @Query("SELECT DISTINCT p.associateName FROM Policy p WHERE p.associateName IS NOT NULL AND p.associateName != '' AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) ORDER BY p.associateName ASC")
+        List<String> findDistinctAssociateNames(@Param("branch") String branch);
 
         // Team routing queries
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE p.routedAt = :routedAt")

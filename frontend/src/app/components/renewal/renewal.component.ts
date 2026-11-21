@@ -8,7 +8,7 @@ import { WorkProgressComponent } from '../work-progress/work-progress.component'
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, finalize } from 'rxjs';
 
 @Component({
   selector: 'app-renewal',
@@ -197,14 +197,26 @@ import { forkJoin, of } from 'rxjs';
                 </div>
               </div>
 
+              <!-- POSP Filter (Sales Team only) -->
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="isSalesManager() || isSalesUser()" style="min-width: 180px;">
+                <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                  <i class="bi bi-person-vcard-fill me-1"></i> POSP
+                </span>
+                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" [(ngModel)]="selectedPospFilter" (change)="onPospFilterChange()" style="cursor: pointer; font-size: 0.9rem;">
+                  <option value="">All POSP</option>
+                  <option *ngFor="let posp of availablePospNames" [value]="posp">{{ posp }}</option>
+                </select>
+              </div>
+
               <!-- Search Bar -->
               <div class="input-group shadow-sm" style="width: 330px;">
                 <select class="form-select border-secondary-subtle text-muted" style="max-width: 150px; background-color: #f8f9fa; font-size: 0.9rem;" [(ngModel)]="searchBy" (change)="applyFilters()">
                   <option value="customer">Customer/Policy</option>
                   <option value="rm">RM Name</option>
+                  <option value="posp">POSP Name</option>
                 </select>
                 <input type="text" class="form-control border-secondary-subtle ps-2" style="font-size: 0.9rem;"
-                       [placeholder]="searchBy === 'customer' ? 'Search customer or policy #...' : 'Search by RM Name...'" 
+                       [placeholder]="searchBy === 'customer' ? 'Search customer or policy #...' : (searchBy === 'rm' ? 'Search by RM Name...' : 'Search by POSP Name...')" 
                        [(ngModel)]="listSearchTerm" (input)="applyFilters()">
               </div>
 
@@ -559,6 +571,10 @@ export class RenewalComponent implements OnInit {
   availableBranches: string[] = [];
   selectedBranch: string = '';
 
+  // POSP Filter (Sales)
+  availablePospNames: string[] = [];
+  selectedPospFilter: string = '';
+
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
   adminViewAs: string = '';
@@ -601,6 +617,42 @@ export class RenewalComponent implements OnInit {
     return this.getEffectiveRole() === 'SALES_MANAGER';
   }
 
+  loadPospNames() {
+    this.apiService.getPospNames(this.selectedBranch).subscribe({
+      next: (names) => {
+        this.availablePospNames = names || [];
+      },
+      error: (err) => console.error('Error fetching POSP names:', err)
+    });
+  }
+
+  onPospFilterChange() {
+    if (this.selectedPospFilter && !this.selectedDay && !this.selectedDate) {
+      this.loading = true;
+      this.apiService.getPoliciesByPosp(this.selectedPospFilter, this.selectedBranch)
+        .pipe(finalize(() => this.loading = false))
+        .subscribe({
+          next: (policies: any[]) => {
+            this.basePolicies = policies || [];
+            this.baseFollowUps = [];
+            this.applyFilters();
+          },
+          error: (err) => {
+            console.error('Error fetching policies by POSP:', err);
+            this.basePolicies = [];
+            this.applyFilters();
+          }
+        });
+    } else {
+      this.applyFilters();
+    }
+  }
+
+  clearPospFilter() {
+    this.selectedPospFilter = '';
+    this.applyFilters();
+  }
+
 
 
   showAddMemberModal = false;
@@ -640,6 +692,7 @@ export class RenewalComponent implements OnInit {
 
   ngOnInit() {
     this.calculateDateRange();
+    this.loadPospNames();
 
     const user = this.authService.getCurrentUser();
     if (user && user.assignedBranch && user.assignedBranch !== 'null') {
@@ -687,6 +740,7 @@ export class RenewalComponent implements OnInit {
   }
 
   onBranchChange() {
+    this.loadPospNames();
     this.refreshTimelineCounts();
     this.fetchTopHighValuePolicies();
     if (this.selectedDay === 600) {
@@ -790,7 +844,7 @@ export class RenewalComponent implements OnInit {
   allTodaysExpiring: any[] = [];
   allTodaysFollowUps: any[] = [];
   listSearchTerm: string = '';
-  searchBy: 'customer' | 'rm' = 'customer';
+  searchBy: 'customer' | 'rm' | 'posp' = 'customer';
   basePolicies: any[] = [];
   baseFollowUps: any[] = [];
   selectedPremiumRange: string = 'all';
@@ -918,12 +972,20 @@ export class RenewalComponent implements OnInit {
       if (!term) return true;
       if (this.searchBy === 'rm') {
         return p.rmName && p.rmName.toLowerCase().includes(term);
+      } else if (this.searchBy === 'posp') {
+        return p.associateName && p.associateName.toLowerCase().includes(term);
       } else {
         const policyMatch = p.policyNumber && p.policyNumber.toLowerCase().includes(term);
         const firstMatch = p.customer && p.customer.firstName && p.customer.firstName.toLowerCase().includes(term);
         const lastMatch = p.customer && p.customer.lastName && p.customer.lastName.toLowerCase().includes(term);
-        return policyMatch || firstMatch || lastMatch;
+        const pospMatch = p.associateName && p.associateName.toLowerCase().includes(term);
+        return policyMatch || firstMatch || lastMatch || pospMatch;
       }
+    };
+
+    const pospFilterFn = (p: any) => {
+      if (!this.selectedPospFilter || this.selectedPospFilter.trim() === '') return true;
+      return p.associateName && p.associateName.trim().toLowerCase() === this.selectedPospFilter.trim().toLowerCase();
     };
 
     const assignmentFilterFn = (p: any) => {
@@ -1023,13 +1085,13 @@ export class RenewalComponent implements OnInit {
     };
 
     if (this.selectedDay === 'todays-work') {
-      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && targetTeamFilterFn(p) && assignmentFilterFn(p);
+      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p);
       this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
       this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
       this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     } else {
-      this.policies = this.basePolicies.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false) && targetTeamFilterFn(p) && assignmentFilterFn(p));
-      this.followUps = this.baseFollowUps.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true) && targetTeamFilterFn(p) && assignmentFilterFn(p));
+      this.policies = this.basePolicies.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p));
+      this.followUps = this.baseFollowUps.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p));
     }
   }
 
