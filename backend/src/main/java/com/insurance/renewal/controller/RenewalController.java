@@ -314,6 +314,15 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.getPoliciesByPosp(posp, branch));
     }
 
+    @GetMapping("/posp-names")
+    public ResponseEntity<List<String>> getPospNames(
+            @RequestParam(value = "branch", required = false) String branch) {
+        if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("null") && !branch.equalsIgnoreCase("all")) {
+            return ResponseEntity.ok(policyRepository.findDistinctAssociateNames(branch.trim()));
+        }
+        return ResponseEntity.ok(policyRepository.findDistinctAssociateNames());
+    }
+
     @GetMapping("/late-renewals")
     public ResponseEntity<List<Policy>> getLateRenewals() {
         return ResponseEntity.ok(renewalService.getLateRenewals());

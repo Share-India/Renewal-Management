@@ -294,7 +294,7 @@ export class ApiService {
     }
 
     getPospNames(branch?: string): Observable<string[]> {
-        let url = `${this.baseUrl}/admin/posp-names`;
+        let url = `${this.baseUrl}/renewals/posp-names`;
         if (branch) url += `?branch=${encodeURIComponent(branch)}`;
         return this.http.get<string[]>(url, { headers: this.getHeaders() });
     }

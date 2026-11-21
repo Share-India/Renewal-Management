@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/admin/posp-names").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // OPEN ACCESS FOR DEBUGGING DATA VISIBILITY
                         .requestMatchers("/api/renewals/timeline/**").permitAll()

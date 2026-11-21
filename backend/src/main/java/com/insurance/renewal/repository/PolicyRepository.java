@@ -86,10 +86,10 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
         @Query("SELECT DISTINCT p.branch FROM Policy p WHERE p.branch IS NOT NULL")
         List<String> findDistinctBranches();
 
-        @Query("SELECT DISTINCT p.associateName FROM Policy p WHERE p.associateName IS NOT NULL AND p.associateName != '' ORDER BY p.associateName ASC")
+        @Query("SELECT DISTINCT p.associateName FROM Policy p WHERE p.associateName IS NOT NULL AND TRIM(p.associateName) != '' AND TRIM(p.associateName) != '-' ORDER BY p.associateName ASC")
         List<String> findDistinctAssociateNames();
 
-        @Query("SELECT DISTINCT p.associateName FROM Policy p WHERE p.associateName IS NOT NULL AND p.associateName != '' AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) ORDER BY p.associateName ASC")
+        @Query("SELECT DISTINCT p.associateName FROM Policy p WHERE p.associateName IS NOT NULL AND TRIM(p.associateName) != '' AND TRIM(p.associateName) != '-' AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) ORDER BY p.associateName ASC")
         List<String> findDistinctAssociateNames(@Param("branch") String branch);
 
         // Team routing queries

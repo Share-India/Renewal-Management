@@ -620,7 +620,7 @@ export class RenewalComponent implements OnInit {
   loadPospNames() {
     this.apiService.getPospNames(this.selectedBranch).subscribe({
       next: (names) => {
-        this.availablePospNames = names || [];
+        this.availablePospNames = (names || []).filter(n => n && n.trim() !== '' && n.trim() !== '-');
       },
       error: (err) => console.error('Error fetching POSP names:', err)
     });

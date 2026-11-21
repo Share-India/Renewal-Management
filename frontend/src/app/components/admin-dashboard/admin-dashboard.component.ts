@@ -94,23 +94,23 @@ import * as XLSX from 'xlsx';
 
       <!-- Date Picker Section -->
       <div class="date-view-card mt-5">
-        <div class="card-header">
-          <h3>📅 Daily Records View</h3>
-          <div class="date-picker-wrapper d-flex gap-3 align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+          <h3 class="mb-0">📅 Daily Records View</h3>
+          <div class="date-picker-wrapper d-flex gap-2 align-items-center flex-wrap">
             <!-- POSP Filter Dropdown: Only shown for RM / Sales / Admin role -->
             <div class="posp-filter-group" *ngIf="isRmRole() || isAdmin()">
-              <div class="input-group">
-                <span class="input-group-text bg-white border-secondary-subtle text-primary fw-semibold">
+              <div class="input-group flex-nowrap shadow-sm" style="min-width: 210px; max-width: 250px;">
+                <span class="input-group-text bg-light border-secondary-subtle text-primary fw-bold px-2" style="font-size: 0.85rem;">
                   <i class="bi bi-person-vcard-fill me-1"></i> POSP
                 </span>
                 <select class="form-select border-secondary-subtle fw-semibold" 
                         [(ngModel)]="selectedPospFilter" 
                         (change)="onPospFilterChange()" 
-                        style="min-width: 170px; max-width: 230px; cursor: pointer;">
+                        style="cursor: pointer; font-size: 0.9rem; padding: 10px 12px;">
                   <option value="">-- All POSP --</option>
                   <option *ngFor="let posp of availablePospNames" [value]="posp">{{ posp }}</option>
                 </select>
-                <button class="btn btn-outline-secondary" type="button" *ngIf="selectedPospFilter" (click)="clearPospFilter()" title="Clear POSP Filter">
+                <button class="btn btn-outline-secondary border-secondary-subtle px-2" type="button" *ngIf="selectedPospFilter" (click)="clearPospFilter()" title="Clear POSP Filter">
                   <i class="bi bi-x-lg"></i>
                 </button>
               </div>
@@ -1236,11 +1236,10 @@ import * as XLSX from 'xlsx';
     .search-item:hover { background-color: #f8f9fa; }
     .search-item:last-child { border-bottom: none; }
     
-    .search-group { min-width: 400px; }
+    .search-group { min-width: 260px; max-width: 320px; }
     
-    /* Ensure search input and posp dropdown match date input height */
-    .search-group .form-control, .search-group .btn,
-    .posp-filter-group .form-select, .posp-filter-group .input-group-text, .posp-filter-group .btn {
+    /* Ensure search input matches date input height */
+    .search-group .form-control, .search-group .btn {
       padding: 10px 15px;
     }
   `]
@@ -1575,7 +1574,7 @@ export class AdminDashboardComponent implements OnInit {
   loadPospNames() {
     this.apiService.getPospNames(this.selectedAdminBranch).subscribe({
       next: (names) => {
-        this.availablePospNames = names || [];
+        this.availablePospNames = (names || []).filter(n => n && n.trim() !== '' && n.trim() !== '-');
       },
       error: (err) => console.error('Error fetching POSP names:', err)
     });
