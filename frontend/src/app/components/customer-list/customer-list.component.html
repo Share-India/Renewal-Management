@@ -18,7 +18,7 @@
                 <i class="bi bi-check2-all me-1"></i> {{ selectedPolicyIds.size }} Policies Selected
             </span>
             <span class="small text-white-50 d-none d-lg-inline ms-1">
-                <i class="bi bi-info-circle me-1"></i>Tip: Hold <kbd class="bg-dark text-white border-0 px-1 py-0 rounded">Shift</kbd> to select a range
+                <i class="bi bi-keyboard me-1"></i>Tip: Hold <kbd class="bg-dark text-white border-0 px-1 py-0 rounded">Shift</kbd> + <kbd class="bg-dark text-white border-0 px-1 py-0 rounded">↑</kbd>/<kbd class="bg-dark text-white border-0 px-1 py-0 rounded">↓</kbd> or click & drag to select
             </span>
             <button *ngIf="policies.length > pagedPolicies.length && selectedPolicyIds.size < policies.length" 
                     class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 ms-2" 
@@ -61,11 +61,16 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of pagedPolicies; let i = index; trackBy: trackByPolicyNumber" 
-                    [class.selected-policy-row]="isPolicySelected(policy)"
-                    [class.hot-sale-row]="!isPolicySelected(policy) && isPolicyHotSale(policy)"
-                    [class.case-will-work-row]="!isPolicySelected(policy) && shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_WORK'"
-                    [class.case-will-not-work-row]="!isPolicySelected(policy) && shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_NOT_WORK'">
+                <tr [id]="'policy-row-' + i" 
+                    *ngFor="let policy of pagedPolicies; let i = index; trackBy: trackByPolicyNumber" 
+                    [class.focused-row]="isRowFocused(i)" 
+                    [class.selected-policy-row]="isPolicySelected(policy)" 
+                    [class.hot-sale-row]="!isPolicySelected(policy) && isPolicyHotSale(policy)" 
+                    [class.case-will-work-row]="!isPolicySelected(policy) && shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_WORK'" 
+                    [class.case-will-not-work-row]="!isPolicySelected(policy) && shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_NOT_WORK'" 
+                    (click)="onRowClick($event, policy, i)" 
+                    (mousedown)="onRowMouseDown($event, policy, i)" 
+                    (mouseenter)="onRowMouseEnter(i)">
                     <td *ngIf="canAssign" class="text-center select-cell" (click)="onCheckboxCellClick($event, policy, i)" style="cursor: pointer;">
                         <input type="checkbox" class="form-check-input shadow-none" 
                                [checked]="isPolicySelected(policy)" 

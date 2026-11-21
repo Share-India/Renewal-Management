@@ -465,3 +465,16 @@
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
     transition: all 0.2s ease;
 }
+
+/* Focused Row Indicator (Excel cursor style) */
+tr.focused-row {
+    outline: 2px solid #2563eb !important;
+    outline-offset: -2px;
+    position: relative;
+    z-index: 2;
+}
+
+tr.selected-policy-row.focused-row {
+    outline: 2px solid #1d4ed8 !important;
+    outline-offset: -2px;
+}

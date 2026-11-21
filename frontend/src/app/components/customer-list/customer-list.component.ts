@@ -1,5 +1,5 @@
 import { forkJoin } from 'rxjs';
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -78,9 +78,12 @@ export class CustomerListComponent implements OnChanges {
         }
     }
 
-    // Bulk selection state
+    // Bulk & Excel Keyboard/Mouse Selection State
     selectedPolicyIds: Set<number> = new Set<number>();
-    lastClickedIndex: number = -1;
+    focusedRowIndex: number = -1;
+    selectionAnchorIndex: number = -1;
+    selectedBeforeShift: Set<number> = new Set<number>();
+    isMouseDown: boolean = false;
     showBulkAssignModal: boolean = false;
     bulkAssigning: boolean = false;
 
@@ -92,38 +95,85 @@ export class CustomerListComponent implements OnChanges {
         return policy && policy.id ? this.selectedPolicyIds.has(policy.id) : false;
     }
 
+    isRowFocused(index: number): boolean {
+        return this.focusedRowIndex === index;
+    }
+
+    onRowClick(event: MouseEvent, policy: any, index: number) {
+        if (!this.canAssign || !policy || !policy.id) return;
+        const target = event.target as HTMLElement;
+        if (target.closest('button') || target.closest('a') || target.closest('select') || target.closest('input')) {
+            return;
+        }
+
+        this.focusedRowIndex = index;
+
+        if (event.shiftKey) {
+            this.applyShiftSelection(index);
+        } else if (event.ctrlKey || event.metaKey) {
+            this.togglePolicySelection(policy, index);
+            this.selectionAnchorIndex = index;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+        } else {
+            this.selectionAnchorIndex = index;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+        }
+    }
+
+    onRowMouseDown(event: MouseEvent, policy: any, index: number) {
+        if (!this.canAssign || !policy || !policy.id) return;
+        const target = event.target as HTMLElement;
+        if (target.closest('button') || target.closest('a') || target.closest('select')) {
+            return;
+        }
+
+        this.isMouseDown = true;
+        this.focusedRowIndex = index;
+
+        if (event.shiftKey) {
+            this.applyShiftSelection(index);
+        } else if (!event.ctrlKey && !event.metaKey && !target.closest('input[type="checkbox"]')) {
+            this.selectionAnchorIndex = index;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+        }
+    }
+
+    onRowMouseEnter(index: number) {
+        if (!this.canAssign || !this.isMouseDown || this.selectionAnchorIndex === -1) return;
+
+        window.getSelection()?.removeAllRanges();
+        this.focusedRowIndex = index;
+
+        this.selectedPolicyIds = new Set(this.selectedBeforeShift);
+        const start = Math.min(this.selectionAnchorIndex, index);
+        const end = Math.max(this.selectionAnchorIndex, index);
+
+        for (let i = start; i <= end; i++) {
+            const p = this.pagedPolicies[i];
+            if (p && p.id) {
+                this.selectedPolicyIds.add(p.id);
+            }
+        }
+    }
+
+    @HostListener('window:mouseup')
+    onWindowMouseUp() {
+        this.isMouseDown = false;
+    }
+
     onCheckboxClick(event: MouseEvent, policy: any, index: number) {
         event.stopPropagation();
         if (!policy || !policy.id) return;
-        const id = policy.id;
 
-        if (event.shiftKey && this.lastClickedIndex !== -1 && this.lastClickedIndex !== index) {
-            window.getSelection()?.removeAllRanges();
+        this.focusedRowIndex = index;
 
-            const start = Math.min(this.lastClickedIndex, index);
-            const end = Math.max(this.lastClickedIndex, index);
-
-            const anchorPolicy = this.pagedPolicies[this.lastClickedIndex];
-            const shouldSelect = anchorPolicy ? this.selectedPolicyIds.has(anchorPolicy.id) : true;
-
-            for (let i = start; i <= end; i++) {
-                const p = this.pagedPolicies[i];
-                if (p && p.id) {
-                    if (shouldSelect) {
-                        this.selectedPolicyIds.add(p.id);
-                    } else {
-                        this.selectedPolicyIds.delete(p.id);
-                    }
-                }
-            }
+        if (event.shiftKey) {
+            this.applyShiftSelection(index);
         } else {
-            if (this.selectedPolicyIds.has(id)) {
-                this.selectedPolicyIds.delete(id);
-            } else {
-                this.selectedPolicyIds.add(id);
-            }
+            this.togglePolicySelection(policy, index);
+            this.selectionAnchorIndex = index;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
         }
-        this.lastClickedIndex = index;
     }
 
     onCheckboxCellClick(event: MouseEvent, policy: any, index: number) {
@@ -131,6 +181,144 @@ export class CustomerListComponent implements OnChanges {
             return;
         }
         this.onCheckboxClick(event, policy, index);
+    }
+
+    togglePolicySelection(policy: any, index: number) {
+        if (!policy || !policy.id) return;
+        if (this.selectedPolicyIds.has(policy.id)) {
+            this.selectedPolicyIds.delete(policy.id);
+        } else {
+            this.selectedPolicyIds.add(policy.id);
+        }
+    }
+
+    applyShiftSelection(index: number) {
+        window.getSelection()?.removeAllRanges();
+
+        if (this.selectionAnchorIndex === -1) {
+            this.selectionAnchorIndex = index;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+        }
+
+        this.focusedRowIndex = index;
+
+        this.selectedPolicyIds = new Set(this.selectedBeforeShift);
+        const start = Math.min(this.selectionAnchorIndex, index);
+        const end = Math.max(this.selectionAnchorIndex, index);
+
+        for (let i = start; i <= end; i++) {
+            const p = this.pagedPolicies[i];
+            if (p && p.id) {
+                this.selectedPolicyIds.add(p.id);
+            }
+        }
+    }
+
+    @HostListener('window:keydown', ['$event'])
+    handleKeyboardEvent(event: KeyboardEvent) {
+        if (!this.canAssign || !this.pagedPolicies || this.pagedPolicies.length === 0) return;
+
+        // Do not intercept if user is typing in form controls or modals
+        if (this.showBulkAssignModal || this.showAssignModal || this.showLogCallModal || 
+            this.showDetailsModal || this.showRouteModal || this.showClaimsUploadModal || 
+            this.showUnderwritingModal || this.showSalesModal || this.showCaseDecisionModal || 
+            this.showRmUpdateModal || this.showRenewerUploadModal) {
+            return;
+        }
+
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+            return;
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            this.handleArrowKey(1, event.shiftKey);
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            this.handleArrowKey(-1, event.shiftKey);
+        } else if (event.key === ' ' || event.code === 'Space') {
+            event.preventDefault();
+            if (this.focusedRowIndex >= 0 && this.focusedRowIndex < this.pagedPolicies.length) {
+                const policy = this.pagedPolicies[this.focusedRowIndex];
+                this.togglePolicySelection(policy, this.focusedRowIndex);
+                this.selectionAnchorIndex = this.focusedRowIndex;
+                this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+            }
+        } else if ((event.ctrlKey || event.metaKey) && (event.key === 'a' || event.key === 'A')) {
+            event.preventDefault();
+            this.pagedPolicies.forEach(p => {
+                if (p && p.id) this.selectedPolicyIds.add(p.id);
+            });
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+        } else if (event.key === 'Escape') {
+            if (this.selectedPolicyIds.size > 0) {
+                this.clearSelection();
+            }
+        }
+    }
+
+    handleArrowKey(delta: number, isShift: boolean) {
+        if (this.pagedPolicies.length === 0) return;
+
+        if (this.focusedRowIndex === -1) {
+            this.focusedRowIndex = delta > 0 ? 0 : this.pagedPolicies.length - 1;
+            this.selectionAnchorIndex = this.focusedRowIndex;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+
+            if (isShift) {
+                const currentPolicy = this.pagedPolicies[this.focusedRowIndex];
+                if (currentPolicy && currentPolicy.id) {
+                    this.selectedPolicyIds.add(currentPolicy.id);
+                }
+            }
+            this.scrollToFocusedRow();
+            return;
+        }
+
+        const nextIndex = this.focusedRowIndex + delta;
+        if (nextIndex < 0 || nextIndex >= this.pagedPolicies.length) {
+            return;
+        }
+
+        if (isShift) {
+            if (this.selectionAnchorIndex === -1) {
+                this.selectionAnchorIndex = this.focusedRowIndex;
+                this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+                const anchorPolicy = this.pagedPolicies[this.selectionAnchorIndex];
+                if (anchorPolicy && anchorPolicy.id) {
+                    this.selectedPolicyIds.add(anchorPolicy.id);
+                }
+            }
+
+            this.focusedRowIndex = nextIndex;
+
+            this.selectedPolicyIds = new Set(this.selectedBeforeShift);
+            const start = Math.min(this.selectionAnchorIndex, this.focusedRowIndex);
+            const end = Math.max(this.selectionAnchorIndex, this.focusedRowIndex);
+
+            for (let i = start; i <= end; i++) {
+                const p = this.pagedPolicies[i];
+                if (p && p.id) {
+                    this.selectedPolicyIds.add(p.id);
+                }
+            }
+        } else {
+            this.focusedRowIndex = nextIndex;
+            this.selectionAnchorIndex = nextIndex;
+            this.selectedBeforeShift = new Set(this.selectedPolicyIds);
+        }
+
+        this.scrollToFocusedRow();
+    }
+
+    scrollToFocusedRow() {
+        setTimeout(() => {
+            const el = document.getElementById('policy-row-' + this.focusedRowIndex);
+            if (el) {
+                el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }, 10);
     }
 
     isAllPageSelected(): boolean {
@@ -155,6 +343,7 @@ export class CustomerListComponent implements OnChanges {
                 if (p && p.id) this.selectedPolicyIds.delete(p.id);
             });
         }
+        this.selectedBeforeShift = new Set(this.selectedPolicyIds);
     }
 
     selectAllPolicies() {
@@ -162,11 +351,14 @@ export class CustomerListComponent implements OnChanges {
         this.policies.forEach(p => {
             if (p && p.id) this.selectedPolicyIds.add(p.id);
         });
+        this.selectedBeforeShift = new Set(this.selectedPolicyIds);
     }
 
     clearSelection() {
         this.selectedPolicyIds.clear();
-        this.lastClickedIndex = -1;
+        this.focusedRowIndex = -1;
+        this.selectionAnchorIndex = -1;
+        this.selectedBeforeShift.clear();
     }
 
     openBulkAssignModal() {
