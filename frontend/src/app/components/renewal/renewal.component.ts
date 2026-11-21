@@ -170,7 +170,7 @@ import { forkJoin, of, finalize } from 'rxjs';
             <!-- Right Side: Search Bar and Day Filter (Aligned to Right) -->
             <div class="d-flex flex-wrap gap-2 align-items-center ms-auto justify-content-end">
               <!-- Type Filter -->
-              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 170px;" #typeDropdown>
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-visible" style="min-width: 170px; height: 38px;" #typeDropdown>
                 <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
                   <i class="bi bi-tags-fill me-1"></i> Type
                 </span>
@@ -198,14 +198,42 @@ import { forkJoin, of, finalize } from 'rxjs';
               </div>
 
               <!-- POSP Filter (Sales Team only) -->
-              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="isSalesManager() || isSalesUser()" style="min-width: 180px;">
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="isSalesManager() || isSalesUser()" style="min-width: 180px; height: 38px;">
                 <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
-                  <i class="bi bi-person-vcard-fill me-1"></i> POSP
+                  <i class="bi bi-person-vcard-fill me-1 text-primary"></i> POSP
                 </span>
-                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" [(ngModel)]="selectedPospFilter" (change)="onPospFilterChange()" style="cursor: pointer; font-size: 0.9rem;">
+                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" [(ngModel)]="selectedPospFilter" (change)="onPospFilterChange()" style="cursor: pointer; font-size: 0.9rem; height: 100%;">
                   <option value="">All POSP</option>
                   <option *ngFor="let posp of availablePospNames" [value]="posp">{{ posp }}</option>
                 </select>
+                <button class="btn btn-sm btn-link text-muted pe-2 text-decoration-none border-0" 
+                        type="button" 
+                        *ngIf="selectedPospFilter" 
+                        (click)="clearPospFilter()" 
+                        title="Clear POSP Filter">
+                  <i class="bi bi-x-circle-fill text-danger"></i>
+                </button>
+              </div>
+
+              <!-- RM Filter (Claims, Sales, Underwriting Managers only) -->
+              <div class="d-flex align-items-center bg-white border rounded shadow-sm overflow-hidden" *ngIf="isManager()" style="min-width: 180px; height: 38px;">
+                <span class="px-2 py-2 text-muted small fw-bold bg-light border-end d-flex align-items-center h-100">
+                  <i class="bi bi-person-badge-fill me-1 text-primary"></i> RM
+                </span>
+                <select class="form-select border-0 shadow-none text-secondary fw-bold rounded-0 bg-white px-2" 
+                        [(ngModel)]="selectedRmFilter" 
+                        (change)="onRmFilterChange()" 
+                        style="cursor: pointer; font-size: 0.9rem; height: 100%;">
+                  <option value="">All RMs</option>
+                  <option *ngFor="let rm of availableRmNames" [value]="rm">{{ rm }}</option>
+                </select>
+                <button class="btn btn-sm btn-link text-muted pe-2 text-decoration-none border-0" 
+                        type="button" 
+                        *ngIf="selectedRmFilter" 
+                        (click)="clearRmFilter()" 
+                        title="Clear RM Filter">
+                  <i class="bi bi-x-circle-fill text-danger"></i>
+                </button>
               </div>
 
               <!-- Search Bar -->
@@ -575,6 +603,10 @@ export class RenewalComponent implements OnInit {
   availablePospNames: string[] = [];
   selectedPospFilter: string = '';
 
+  // RM Filter (Claims, Sales, Underwriting Managers)
+  availableRmNames: string[] = [];
+  selectedRmFilter: string = '';
+
   @ViewChild(WorkProgressComponent) workProgressComponent!: WorkProgressComponent;
 
   adminViewAs: string = '';
@@ -651,6 +683,93 @@ export class RenewalComponent implements OnInit {
   clearPospFilter() {
     this.selectedPospFilter = '';
     this.applyFilters();
+  }
+
+  onRmFilterChange() {
+    this.applyFilters();
+  }
+
+  clearRmFilter() {
+    this.selectedRmFilter = '';
+    this.applyFilters();
+  }
+
+  updateAvailableRmNames() {
+    if (!this.isManager()) {
+      this.availableRmNames = [];
+      return;
+    }
+
+    const rmSet = new Set<string>();
+
+    const source = this.selectedDay === 'todays-work' 
+      ? [...this.allTodaysExpiring, ...this.allTodaysFollowUps] 
+      : [...this.basePolicies, ...this.baseFollowUps];
+
+    source.forEach(p => {
+      if (this.isPolicyMatchingManagerScope(p)) {
+        if (p.rmName && typeof p.rmName === 'string') {
+          const trimmed = p.rmName.trim();
+          if (trimmed !== '' && trimmed !== '-' && trimmed.toLowerCase() !== 'null') {
+            rmSet.add(trimmed);
+          }
+        }
+      }
+    });
+
+    this.availableRmNames = Array.from(rmSet).sort((a, b) => a.localeCompare(b));
+
+    if (this.selectedRmFilter && !rmSet.has(this.selectedRmFilter)) {
+      this.selectedRmFilter = '';
+    }
+  }
+
+  isPolicyMatchingManagerScope(p: any): boolean {
+    if (!this.isManager()) return true;
+
+    if (this.selectedDate) {
+      return true;
+    }
+
+    if (this.selectedSourceTeam && this.selectedSourceTeam.trim() !== '' && this.selectedSourceTeam !== 'null') {
+      return true;
+    }
+
+    if (this.selectedDay === 'returned-to-renewer') return true;
+
+    const role = this.getEffectiveRole();
+    if (this.adminViewAs === 'claims' || role === 'CLAIMS_MANAGER') {
+      if (!((p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER')) {
+        return false;
+      }
+    } else if (this.adminViewAs === 'sales' || role === 'SALES_MANAGER') {
+      if (!(p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER')) {
+        return false;
+      }
+    } else if (this.adminViewAs === 'underwriting' || role === 'UNDERWRITING_MANAGER') {
+      if (!((p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER')) {
+        return false;
+      }
+    }
+
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      const normalizedRole = (user.role || '').replace('ROLE_', '');
+      if (normalizedRole === 'CLAIMS_MANAGER' || normalizedRole === 'UNDERWRITING_MANAGER') {
+        if (user.assignedProductType && user.assignedProductType.trim() !== '' && user.assignedProductType !== 'null') {
+          if (!p.type) return false;
+          const allowedTypes = user.assignedProductType.split(',').map((s: string) => s.trim().toLowerCase());
+          if (!allowedTypes.includes(p.type.trim().toLowerCase())) return false;
+        }
+        if (user.assignedBranch && user.assignedBranch.trim() !== '' && user.assignedBranch !== 'null') {
+          if (!p.branch) return false;
+          const allowedBranches = user.assignedBranch.split(',').map((s: string) => s.trim().toLowerCase());
+          if (!allowedBranches.includes(p.branch.trim().toLowerCase())) return false;
+        }
+      }
+    }
+
+    return true;
   }
 
 
@@ -802,6 +921,7 @@ export class RenewalComponent implements OnInit {
           });
           this.availablePolicyTypes = Array.from(typesSet).sort();
 
+          this.updateAvailableRmNames();
           this.applyFilters();
           this.loading = false;
         },
@@ -827,6 +947,7 @@ export class RenewalComponent implements OnInit {
         });
         this.availablePolicyTypes = Array.from(typesSet).sort();
 
+        this.updateAvailableRmNames();
         this.applyFilters();
         this.loading = false;
       },
@@ -988,6 +1109,11 @@ export class RenewalComponent implements OnInit {
       return p.associateName && p.associateName.trim().toLowerCase() === this.selectedPospFilter.trim().toLowerCase();
     };
 
+    const rmFilterFn = (p: any) => {
+      if (!this.selectedRmFilter || this.selectedRmFilter.trim() === '') return true;
+      return p.rmName && p.rmName.trim().toLowerCase() === this.selectedRmFilter.trim().toLowerCase();
+    };
+
     const assignmentFilterFn = (p: any) => {
       const user = this.authService.getCurrentUser();
       if (!user) return true;
@@ -1085,13 +1211,13 @@ export class RenewalComponent implements OnInit {
     };
 
     if (this.selectedDay === 'todays-work') {
-      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p);
+      const filterFn = (p: any) => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p) && rmFilterFn(p);
       this.todaysExpiring = this.allTodaysExpiring.filter(filterFn);
       this.todaysFollowUps = this.allTodaysFollowUps.filter(filterFn);
       this.policies = this.todaysWorkTab === 'expiring' ? this.todaysExpiring : this.todaysFollowUps;
     } else {
-      this.policies = this.basePolicies.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p));
-      this.followUps = this.baseFollowUps.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p));
+      this.policies = this.basePolicies.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, false) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p) && rmFilterFn(p));
+      this.followUps = this.baseFollowUps.filter(p => searchFilterFn(p) && premiumFilterFn(p) && typeFilterFn(p) && dayFilterFn(p, true) && targetTeamFilterFn(p) && assignmentFilterFn(p) && pospFilterFn(p) && rmFilterFn(p));
     }
   }
 
@@ -1122,6 +1248,7 @@ export class RenewalComponent implements OnInit {
         });
         this.availablePolicyTypes = Array.from(typesSet).sort();
 
+        this.updateAvailableRmNames();
         this.applyFilters();
         this.loading = false;
       },
@@ -1165,6 +1292,7 @@ export class RenewalComponent implements OnInit {
         });
         this.availablePolicyTypes = Array.from(typesSet).sort();
 
+        this.updateAvailableRmNames();
         // Apply filter initially
         this.applyFilters();
 
@@ -1262,6 +1390,7 @@ export class RenewalComponent implements OnInit {
         });
         this.availablePolicyTypes = Array.from(typesSet).sort();
 
+        this.updateAvailableRmNames();
         this.applyFilters();
         this.loading = false;
       },
@@ -1284,6 +1413,8 @@ export class RenewalComponent implements OnInit {
     this.followUps = [];
     this.availablePolicyTypes = [];
     this.selectedPolicyTypes = [];
+    this.availableRmNames = [];
+    this.selectedRmFilter = '';
     this.listSearchTerm = '';
   }
 
