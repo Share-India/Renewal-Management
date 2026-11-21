@@ -1644,6 +1644,70 @@ public class RenewalService {
         return applyRenewerFilters(policyRepository.findByAssociateName(posp.trim(), branch));
     }
 
+    public List<String> getDistinctPospNamesForCurrentUser(String branch) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return java.util.Collections.emptyList();
+        }
+
+        String username = auth.getName();
+        com.insurance.renewal.entity.User user = userRepository.findByUsername(username).orElse(null);
+        com.insurance.renewal.entity.User effectiveUser = getEffectiveUser(user);
+
+        if (effectiveUser == null || effectiveUser.getRole() == null || effectiveUser.getRole().contains("ADMIN")) {
+            if (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("null") && !branch.equalsIgnoreCase("all")) {
+                return policyRepository.findDistinctAssociateNames(branch.trim());
+            }
+            return policyRepository.findDistinctAssociateNames();
+        }
+
+        String role = effectiveUser.getRole();
+
+        // If user has assigned POSP explicitly
+        if (effectiveUser.getAssignedPosp() != null && !effectiveUser.getAssignedPosp().trim().isEmpty() && !effectiveUser.getAssignedPosp().equalsIgnoreCase("null")) {
+            return java.util.Arrays.stream(effectiveUser.getAssignedPosp().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty() && !s.equals("-"))
+                    .distinct()
+                    .sorted()
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        // For RM or Sales (Sales Manager, Sales User, RM)
+        if (role.contains("RM") || role.contains("SALES")) {
+            String effectiveBranch = branch;
+            if (effectiveBranch == null || effectiveBranch.trim().isEmpty() || effectiveBranch.equalsIgnoreCase("null") || effectiveBranch.equalsIgnoreCase("all")) {
+                effectiveBranch = effectiveUser.getAssignedBranch();
+            }
+
+            if (effectiveUser.getAssignedRm() != null && !effectiveUser.getAssignedRm().trim().isEmpty() && !effectiveUser.getAssignedRm().equalsIgnoreCase("null")) {
+                List<String> allowedRms = java.util.Arrays.stream(effectiveUser.getAssignedRm().split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(String::toLowerCase)
+                        .collect(java.util.stream.Collectors.toList());
+
+                if (!allowedRms.isEmpty()) {
+                    return policyRepository.findDistinctAssociateNamesByRmNames(allowedRms, effectiveBranch);
+                }
+            }
+
+            if (effectiveBranch != null && !effectiveBranch.trim().isEmpty() && !effectiveBranch.equalsIgnoreCase("null") && !effectiveBranch.equalsIgnoreCase("all")) {
+                return policyRepository.findDistinctAssociateNames(effectiveBranch.trim());
+            }
+            return policyRepository.findDistinctAssociateNames();
+        }
+
+        // For other roles (e.g. Renewer):
+        String effectiveBranch = (branch != null && !branch.trim().isEmpty() && !branch.equalsIgnoreCase("null") && !branch.equalsIgnoreCase("all"))
+                ? branch.trim() : effectiveUser.getAssignedBranch();
+        if (effectiveBranch != null && !effectiveBranch.trim().isEmpty() && !effectiveBranch.equalsIgnoreCase("null") && !effectiveBranch.equalsIgnoreCase("all")) {
+            return policyRepository.findDistinctAssociateNames(effectiveBranch);
+        }
+        return policyRepository.findDistinctAssociateNames();
+    }
+
     public List<Policy> getLateRenewals() {
         return applyRenewerFilters(policyRepository.findByLateRenewalTrue());
     }

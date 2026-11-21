@@ -94,41 +94,41 @@ import * as XLSX from 'xlsx';
 
       <!-- Date Picker Section -->
       <div class="date-view-card mt-5">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
-          <h3 class="mb-0">📅 Daily Records View</h3>
-          <div class="date-picker-wrapper d-flex gap-2 align-items-center flex-wrap">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h3 class="mb-0 text-nowrap">📅 Daily Records View</h3>
+          <div class="date-picker-wrapper d-flex gap-2 align-items-center flex-nowrap">
             <!-- POSP Filter Dropdown: Only shown for RM / Sales / Admin role -->
-            <div class="posp-filter-group" *ngIf="isRmRole() || isAdmin()">
-              <div class="input-group flex-nowrap shadow-sm" style="min-width: 210px; max-width: 250px;">
-                <span class="input-group-text bg-light border-secondary-subtle text-primary fw-bold px-2" style="font-size: 0.85rem;">
+            <div class="posp-filter-group" *ngIf="isRmRole() || isAdmin()" style="width: 210px; min-width: 180px;">
+              <div class="input-group flex-nowrap shadow-sm">
+                <span class="input-group-text bg-light border-secondary-subtle text-primary fw-bold px-2" style="font-size: 0.82rem; height: 38px;">
                   <i class="bi bi-person-vcard-fill me-1"></i> POSP
                 </span>
-                <select class="form-select border-secondary-subtle fw-semibold" 
+                <select class="form-select border-secondary-subtle fw-semibold px-2" 
                         [(ngModel)]="selectedPospFilter" 
                         (change)="onPospFilterChange()" 
-                        style="cursor: pointer; font-size: 0.9rem; padding: 10px 12px;">
+                        style="cursor: pointer; font-size: 0.88rem; height: 38px;">
                   <option value="">-- All POSP --</option>
                   <option *ngFor="let posp of availablePospNames" [value]="posp">{{ posp }}</option>
                 </select>
-                <button class="btn btn-outline-secondary border-secondary-subtle px-2" type="button" *ngIf="selectedPospFilter" (click)="clearPospFilter()" title="Clear POSP Filter">
+                <button class="btn btn-outline-secondary border-secondary-subtle px-2" type="button" *ngIf="selectedPospFilter" (click)="clearPospFilter()" title="Clear POSP Filter" style="height: 38px;">
                   <i class="bi bi-x-lg"></i>
                 </button>
               </div>
             </div>
 
             <div class="search-group">
-                <div class="input-group">
-                    <input type="text" class="form-control" placeholder="Search Policy # or Name" 
+                <div class="input-group flex-nowrap shadow-sm">
+                    <input type="text" class="form-control border-secondary-subtle" placeholder="Search Policy # or Name" 
                            [(ngModel)]="adminSearchTerm" (keyup.enter)="searchAdminDailyRecords()">
-                    <button class="btn btn-outline-primary" type="button" (click)="searchAdminDailyRecords()" title="Search">
+                    <button class="btn btn-outline-primary border-secondary-subtle px-2" type="button" (click)="searchAdminDailyRecords()" title="Search">
                         <i class="bi bi-search"></i>
                     </button>
-                    <button class="btn btn-outline-secondary" type="button" *ngIf="adminSearchTerm" (click)="clearSearch()" title="Clear">
+                    <button class="btn btn-outline-secondary border-secondary-subtle px-2" type="button" *ngIf="adminSearchTerm" (click)="clearSearch()" title="Clear">
                         <i class="bi bi-x-lg"></i>
                     </button>
                 </div>
             </div>
-            <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="form-control date-input">
+            <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="form-control date-input shadow-sm">
           </div>
         </div>
 
@@ -1137,11 +1137,12 @@ import * as XLSX from 'xlsx';
     .card-body { padding: 30px; }
     
     .date-input { 
-      padding: 10px 15px; 
-      border-radius: 8px; 
+      padding: 7px 10px; 
+      border-radius: 6px; 
       border: 1px solid #ced4da; 
-      font-size: 1rem;
-      min-width: 200px;
+      font-size: 0.88rem;
+      width: 145px;
+      height: 38px;
     }
 
     .section-header { 
@@ -1236,11 +1237,13 @@ import * as XLSX from 'xlsx';
     .search-item:hover { background-color: #f8f9fa; }
     .search-item:last-child { border-bottom: none; }
     
-    .search-group { min-width: 260px; max-width: 320px; }
+    .search-group { width: 220px; min-width: 180px; }
     
     /* Ensure search input matches date input height */
     .search-group .form-control, .search-group .btn {
-      padding: 10px 15px;
+      padding: 7px 12px;
+      font-size: 0.88rem;
+      height: 38px;
     }
   `]
 })

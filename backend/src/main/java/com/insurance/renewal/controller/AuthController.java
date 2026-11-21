@@ -27,6 +27,9 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private com.insurance.renewal.service.RenewalService renewalService;
+
+    @Autowired
     private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private void ensureColumnsAreText() {
@@ -138,10 +141,7 @@ public class AuthController {
     @GetMapping("/admin/posp-names")
     @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
     public ResponseEntity<java.util.List<String>> getPospNames(@RequestParam(value = "branch", required = false) String branch) {
-        if (branch != null && !branch.trim().isEmpty() && !branch.equals("null")) {
-            return ResponseEntity.ok(policyRepository.findDistinctAssociateNames(branch));
-        }
-        return ResponseEntity.ok(policyRepository.findDistinctAssociateNames());
+        return ResponseEntity.ok(renewalService.getDistinctPospNamesForCurrentUser(branch));
     }
 
     @GetMapping("/admin/users")
