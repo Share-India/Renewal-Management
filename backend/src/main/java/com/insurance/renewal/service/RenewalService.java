@@ -1528,7 +1528,7 @@ public class RenewalService {
         LocalDate endBase = today.plusDays(60);
 
         // 1. ALL Policies expiring in next 60 days (ignoring followUps / updates)
-        List<Policy> expiring = applyRenewerFilters(policyRepository.findAllPoliciesForTargetDateRange(today, endBase, branch));
+        List<Policy> expiring = applyRenewerFiltersForDateRecords(policyRepository.findAllPoliciesForTargetDateRange(today, endBase, branch));
         System.out.println("DEBUG: Found " + expiring.size() + " expiring policies for next 60 days");
 
         records.put("expiringPolicies", expiring);
