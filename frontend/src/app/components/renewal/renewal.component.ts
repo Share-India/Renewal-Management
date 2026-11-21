@@ -737,18 +737,21 @@ export class RenewalComponent implements OnInit {
 
     if (this.selectedDay === 'returned-to-renewer') return true;
 
-    const role = this.getEffectiveRole();
-    if (this.adminViewAs === 'claims' || role === 'CLAIMS_MANAGER') {
-      if (!((p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER')) {
-        return false;
-      }
-    } else if (this.adminViewAs === 'sales' || role === 'SALES_MANAGER') {
-      if (!(p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER')) {
-        return false;
-      }
-    } else if (this.adminViewAs === 'underwriting' || role === 'UNDERWRITING_MANAGER') {
-      if (!((p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER')) {
-        return false;
+    // In 60 Days View, managers can view all policies in that 60-day period
+    if (this.selectedDay !== 600) {
+      const role = this.getEffectiveRole();
+      if (this.adminViewAs === 'claims' || role === 'CLAIMS_MANAGER') {
+        if (!((p.targetTeam === 'CLAIMS' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER')) {
+          return false;
+        }
+      } else if (this.adminViewAs === 'sales' || role === 'SALES_MANAGER') {
+        if (!(p.targetTeam === 'SALES' && p.targetTeam !== 'RENEWER')) {
+          return false;
+        }
+      } else if (this.adminViewAs === 'underwriting' || role === 'UNDERWRITING_MANAGER') {
+        if (!((p.targetTeam === 'UNDERWRITING' || (p.isHotSale && p.hotSaleSource === 'SALES')) && p.targetTeam !== 'RENEWER')) {
+          return false;
+        }
       }
     }
 
@@ -1188,6 +1191,10 @@ export class RenewalComponent implements OnInit {
             if (this.isManager()) {
                 return true;
             }
+        }
+        if (this.selectedDay === 600) {
+            // When viewing next 60 days, show all policies expiring in that period
+            return true;
         }
 
         if (!this.adminViewAs) {
