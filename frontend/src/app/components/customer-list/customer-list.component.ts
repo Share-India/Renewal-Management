@@ -1,3 +1,4 @@
+import { forkJoin } from 'rxjs';
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -64,7 +65,195 @@ export class CustomerListComponent implements OnChanges {
     ngOnChanges(changes: SimpleChanges) {
         if (changes['policies']) {
             this.currentPage = 1;
+            if (this.selectedPolicyIds.size > 0 && this.policies) {
+                const currentIds = new Set(this.policies.map(p => p.id));
+                const toRemove: number[] = [];
+                this.selectedPolicyIds.forEach(id => {
+                    if (!currentIds.has(id)) toRemove.push(id);
+                });
+                toRemove.forEach(id => this.selectedPolicyIds.delete(id));
+            } else if (!this.policies || this.policies.length === 0) {
+                this.selectedPolicyIds.clear();
+            }
         }
+    }
+
+    // Bulk selection state
+    selectedPolicyIds: Set<number> = new Set<number>();
+    lastClickedIndex: number = -1;
+    showBulkAssignModal: boolean = false;
+    bulkAssigning: boolean = false;
+
+    get canAssign(): boolean {
+        return this.isClaimsManager || this.isSalesManager || this.isUnderwritingManager;
+    }
+
+    isPolicySelected(policy: any): boolean {
+        return policy && policy.id ? this.selectedPolicyIds.has(policy.id) : false;
+    }
+
+    onCheckboxClick(event: MouseEvent, policy: any, index: number) {
+        event.stopPropagation();
+        if (!policy || !policy.id) return;
+        const id = policy.id;
+
+        if (event.shiftKey && this.lastClickedIndex !== -1 && this.lastClickedIndex !== index) {
+            window.getSelection()?.removeAllRanges();
+
+            const start = Math.min(this.lastClickedIndex, index);
+            const end = Math.max(this.lastClickedIndex, index);
+
+            const anchorPolicy = this.pagedPolicies[this.lastClickedIndex];
+            const shouldSelect = anchorPolicy ? this.selectedPolicyIds.has(anchorPolicy.id) : true;
+
+            for (let i = start; i <= end; i++) {
+                const p = this.pagedPolicies[i];
+                if (p && p.id) {
+                    if (shouldSelect) {
+                        this.selectedPolicyIds.add(p.id);
+                    } else {
+                        this.selectedPolicyIds.delete(p.id);
+                    }
+                }
+            }
+        } else {
+            if (this.selectedPolicyIds.has(id)) {
+                this.selectedPolicyIds.delete(id);
+            } else {
+                this.selectedPolicyIds.add(id);
+            }
+        }
+        this.lastClickedIndex = index;
+    }
+
+    onCheckboxCellClick(event: MouseEvent, policy: any, index: number) {
+        if ((event.target as HTMLElement).tagName.toLowerCase() === 'input') {
+            return;
+        }
+        this.onCheckboxClick(event, policy, index);
+    }
+
+    isAllPageSelected(): boolean {
+        if (!this.pagedPolicies || this.pagedPolicies.length === 0) return false;
+        return this.pagedPolicies.every(p => this.selectedPolicyIds.has(p.id));
+    }
+
+    isPartiallySelected(): boolean {
+        if (!this.pagedPolicies || this.pagedPolicies.length === 0) return false;
+        const count = this.pagedPolicies.filter(p => this.selectedPolicyIds.has(p.id)).length;
+        return count > 0 && count < this.pagedPolicies.length;
+    }
+
+    toggleSelectAllPage(event: any) {
+        const checked = event.target.checked;
+        if (checked) {
+            this.pagedPolicies.forEach(p => {
+                if (p && p.id) this.selectedPolicyIds.add(p.id);
+            });
+        } else {
+            this.pagedPolicies.forEach(p => {
+                if (p && p.id) this.selectedPolicyIds.delete(p.id);
+            });
+        }
+    }
+
+    selectAllPolicies() {
+        if (!this.policies) return;
+        this.policies.forEach(p => {
+            if (p && p.id) this.selectedPolicyIds.add(p.id);
+        });
+    }
+
+    clearSelection() {
+        this.selectedPolicyIds.clear();
+        this.lastClickedIndex = -1;
+    }
+
+    openBulkAssignModal() {
+        if (this.selectedPolicyIds.size === 0) return;
+        this.showBulkAssignModal = true;
+        this.selectedAssignUser = '';
+        this.loadAvailableUsersForTeam();
+    }
+
+    closeBulkAssignModal() {
+        this.showBulkAssignModal = false;
+        this.selectedAssignUser = '';
+        this.bulkAssigning = false;
+    }
+
+    loadAvailableUsersForTeam() {
+        let roleToFetch = '';
+        if (this.isClaimsManager) roleToFetch = 'CLAIMS';
+        else if (this.isSalesManager) roleToFetch = 'SALES';
+        else if (this.isUnderwritingManager) roleToFetch = 'UNDERWRITING';
+
+        this.apiService.getUsers().subscribe({
+            next: (users) => {
+                this.availableUsersForTeam = users.filter((u: any) => {
+                    const role = (u.role || '').toUpperCase();
+                    return role.includes(roleToFetch) && !role.includes('MANAGER');
+                });
+            },
+            error: (err) => console.error('Error fetching team users:', err)
+        });
+    }
+
+    submitBulkAssign() {
+        if (!this.selectedAssignUser || this.selectedPolicyIds.size === 0) return;
+
+        let team = '';
+        if (this.isClaimsManager) team = 'CLAIMS';
+        else if (this.isSalesManager) team = 'SALES';
+        else if (this.isUnderwritingManager) team = 'UNDERWRITING';
+
+        this.bulkAssigning = true;
+        const policyIds = Array.from(this.selectedPolicyIds);
+
+        this.apiService.bulkRoutePolicies(policyIds, team, this.selectedAssignUser).subscribe({
+            next: (res: any) => {
+                this.bulkAssigning = false;
+                const count = res.count || policyIds.length;
+                const isUnassign = this.selectedAssignUser === '__UNASSIGN__';
+                const assignedName = isUnassign ? 'Unassigned' : this.selectedAssignUser;
+                this.notificationService.showSuccessToast(
+                    `${count} policies ${isUnassign ? 'unassigned' : 'assigned to ' + assignedName} successfully.`
+                );
+                this.closeBulkAssignModal();
+                this.clearSelection();
+                this.dataUpdated.emit();
+            },
+            error: (err: any) => {
+                if (err.status === 404) {
+                    // Fallback to parallel single routes if backend hasn't reloaded the bulk endpoint yet
+                    const userToAssign = this.selectedAssignUser === '__UNASSIGN__' ? null : this.selectedAssignUser;
+                    const requests = policyIds.map(id => this.apiService.routePolicy(id, team, userToAssign));
+                    forkJoin(requests).subscribe({
+                        next: () => {
+                            this.bulkAssigning = false;
+                            const isUnassign = this.selectedAssignUser === '__UNASSIGN__';
+                            const assignedName = isUnassign ? 'Unassigned' : this.selectedAssignUser;
+                            this.notificationService.showSuccessToast(
+                                `${policyIds.length} policies ${isUnassign ? 'unassigned' : 'assigned to ' + assignedName} successfully.`
+                            );
+                            this.closeBulkAssignModal();
+                            this.clearSelection();
+                            this.dataUpdated.emit();
+                        },
+                        error: (fallbackErr: any) => {
+                            this.bulkAssigning = false;
+                            console.error('Error assigning policies in fallback:', fallbackErr);
+                            this.notificationService.showErrorModal('Error assigning policies.');
+                        }
+                    });
+                    return;
+                }
+                this.bulkAssigning = false;
+                console.error('Error bulk assigning policies:', err);
+                const msg = err.error?.message || err.message || 'Error bulk assigning policies';
+                this.notificationService.showErrorModal(msg);
+            }
+        });
     }
 
     selectedPolicy: any = null;
@@ -954,15 +1143,8 @@ Renewal Due Date : ${endDate}`;
     openAssignModal(policy: any) {
         this.selectedPolicy = policy;
         this.showAssignModal = true;
-        // Fetch users for this manager's team
-        let roleToFetch = '';
-        if (this.isClaimsManager) roleToFetch = 'CLAIMS';
-        if (this.isSalesManager) roleToFetch = 'SALES';
-        if (this.isUnderwritingManager) roleToFetch = 'UNDERWRITING';
-        
-        this.apiService.getUsers().subscribe(users => {
-            this.availableUsersForTeam = users.filter((u: any) => u.role === 'ROLE_' + roleToFetch);
-        });
+        this.selectedAssignUser = '';
+        this.loadAvailableUsersForTeam();
     }
     closeAssignModal() {
         this.showAssignModal = false;
@@ -976,9 +1158,13 @@ Renewal Due Date : ${endDate}`;
         if (this.isSalesManager) team = 'SALES';
         if (this.isUnderwritingManager) team = 'UNDERWRITING';
 
-        this.apiService.routePolicy(this.selectedPolicy.id, team, this.selectedAssignUser).subscribe({
+        const userToAssign = this.selectedAssignUser === '__UNASSIGN__' ? null : this.selectedAssignUser;
+        this.apiService.routePolicy(this.selectedPolicy.id, team, userToAssign).subscribe({
             next: () => {
-                this.notificationService.showSuccessToast(`Policy assigned to ${this.selectedAssignUser}.`);
+                const isUnassign = this.selectedAssignUser === '__UNASSIGN__';
+                this.notificationService.showSuccessToast(
+                    `Policy ${isUnassign ? 'unassigned' : 'assigned to ' + this.selectedAssignUser}.`
+                );
                 this.closeAssignModal();
                 this.dataUpdated.emit();
             },

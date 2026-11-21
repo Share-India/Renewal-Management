@@ -566,6 +566,81 @@ public class RoutingController {
         return fileStorageService.serveFile(file, doc.getFileName());
     }
 
+    @PostMapping("/bulk-assign")
+    public ResponseEntity<?> bulkAssign(@RequestBody Map<String, Object> payload) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<?> policyIdsRaw = (List<?>) payload.get("policyIds");
+            if (policyIdsRaw == null || policyIdsRaw.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "No policies provided"));
+            }
+            String targetTeam = (String) payload.get("targetTeam");
+            String assignedUser = (String) payload.get("assignedUser");
+            if (assignedUser == null || assignedUser.trim().isEmpty() || "null".equalsIgnoreCase(assignedUser)) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Assigned user is required"));
+            }
+
+            boolean isUnassign = "__UNASSIGN__".equalsIgnoreCase(assignedUser.trim());
+
+            List<Long> policyIds = policyIdsRaw.stream()
+                    .map(id -> Long.valueOf(id.toString()))
+                    .collect(Collectors.toList());
+
+            List<Policy> policies = policyRepository.findAllById(policyIds);
+            if (policies.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("message", "No matching policies found"));
+            }
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String currentUsername = auth != null && auth.isAuthenticated() ? auth.getName() : "System";
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+
+            List<com.insurance.renewal.entity.CallHistory> histories = new java.util.ArrayList<>();
+
+            for (Policy policy : policies) {
+                if (targetTeam != null && !targetTeam.trim().isEmpty() && !"null".equalsIgnoreCase(targetTeam)) {
+                    policy.setTargetTeam(targetTeam.toUpperCase());
+                    policy.setRoutedAt(today);
+                }
+
+                if (isUnassign) {
+                    policy.setCurrentAssignee(null);
+                    com.insurance.renewal.entity.CallHistory history = new com.insurance.renewal.entity.CallHistory();
+                    history.setPolicy(policy);
+                    history.setAgentName(currentUsername);
+                    history.setCallOutcome("Unassigned");
+                    history.setCallDate(now);
+                    histories.add(history);
+                } else {
+                    policy.setCurrentAssignee(assignedUser);
+                    com.insurance.renewal.entity.CallHistory history = new com.insurance.renewal.entity.CallHistory();
+                    history.setPolicy(policy);
+                    history.setAgentName(currentUsername);
+                    history.setCallOutcome("Assigned to " + assignedUser);
+                    history.setCallDate(now);
+                    histories.add(history);
+                }
+            }
+
+            policyRepository.saveAll(policies);
+            try {
+                callHistoryRepository.saveAll(histories);
+            } catch (Exception logEx) {
+                System.err.println("Warning: Could not log call histories for bulk assign: " + logEx.getMessage());
+            }
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "count", policies.size(),
+                    "assignedUser", isUnassign ? "Unassigned" : assignedUser
+            ));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("message", e.getMessage() != null ? e.getMessage() : "Error bulk assigning policies"));
+        }
+    }
+
     private String saveFile(MultipartFile file) {
         return fileStorageService.saveFile(file);
     }

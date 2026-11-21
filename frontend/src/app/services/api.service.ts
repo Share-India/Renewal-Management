@@ -345,6 +345,15 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/routing/${policyId}/route`, payload, { headers: this.getHeaders() });
   }
 
+  bulkRoutePolicies(policyIds: number[], targetTeam: string, assignedUser: string): Observable<any> {
+    const payload = {
+      policyIds,
+      targetTeam,
+      assignedUser
+    };
+    return this.http.post(`${this.baseUrl}/routing/bulk-assign`, payload, { headers: this.getHeaders() });
+  }
+
   uploadClaimsFiles(policyId: number, excelFiles?: File | null, pdfFiles?: File | null, note?: string): Observable<any> {
     const formData = new FormData();
     if (excelFiles) formData.append('excelFiles', excelFiles);

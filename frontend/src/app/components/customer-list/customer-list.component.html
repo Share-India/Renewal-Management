@@ -9,10 +9,46 @@
         <p class="text-muted">No policies found for this timeline.</p>
     </div>
 
+    <!-- Bulk Assign Bar for Team Managers -->
+    <div *ngIf="canAssign && selectedPolicyIds.size > 0 && !loading" 
+         class="bulk-assign-bar shadow-sm d-flex flex-wrap align-items-center justify-content-between px-3 py-2 mb-3 rounded-3" 
+         style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); color: white;">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="badge bg-white text-primary px-3 py-2 fw-bold rounded-pill" style="font-size: 0.9rem;">
+                <i class="bi bi-check2-all me-1"></i> {{ selectedPolicyIds.size }} Policies Selected
+            </span>
+            <span class="small text-white-50 d-none d-lg-inline ms-1">
+                <i class="bi bi-info-circle me-1"></i>Tip: Hold <kbd class="bg-dark text-white border-0 px-1 py-0 rounded">Shift</kbd> to select a range
+            </span>
+            <button *ngIf="policies.length > pagedPolicies.length && selectedPolicyIds.size < policies.length" 
+                    class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 ms-2" 
+                    (click)="selectAllPolicies()">
+                <i class="bi bi-check-square me-1"></i> Select all {{ policies.length }} policies
+            </button>
+            <button class="btn btn-sm btn-link text-white-50 text-decoration-none px-2" 
+                    (click)="clearSelection()">
+                <i class="bi bi-x-circle me-1"></i> Deselect all
+            </button>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
+            <button class="btn btn-warning fw-bold text-dark px-4 py-2 rounded-pill shadow d-flex align-items-center gap-2" 
+                    (click)="openBulkAssignModal()">
+                <i class="bi bi-person-check-fill fs-5"></i> Assign Selected ({{ selectedPolicyIds.size }})
+            </button>
+        </div>
+    </div>
+
     <div *ngIf="!loading && policies.length > 0" class="table-responsive">
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
+                    <th *ngIf="canAssign" style="width: 45px;" class="text-center">
+                        <input type="checkbox" class="form-check-input shadow-none" 
+                               [checked]="isAllPageSelected()" 
+                               [indeterminate]="isPartiallySelected()" 
+                               (change)="toggleSelectAllPage($event)" 
+                               title="Select all on this page">
+                    </th>
                     <th style="width: 20%;">Policy #</th>
                     <th style="width: 20%;">Customer</th>
                     <th style="width: 15%;">Phone</th>
@@ -25,10 +61,16 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of pagedPolicies; trackBy: trackByPolicyNumber" 
-                    [class.hot-sale-row]="isPolicyHotSale(policy)"
-                    [class.case-will-work-row]="shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_WORK'"
-                    [class.case-will-not-work-row]="shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_NOT_WORK'">
+                <tr *ngFor="let policy of pagedPolicies; let i = index; trackBy: trackByPolicyNumber" 
+                    [class.selected-policy-row]="isPolicySelected(policy)"
+                    [class.hot-sale-row]="!isPolicySelected(policy) && isPolicyHotSale(policy)"
+                    [class.case-will-work-row]="!isPolicySelected(policy) && shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_WORK'"
+                    [class.case-will-not-work-row]="!isPolicySelected(policy) && shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_NOT_WORK'">
+                    <td *ngIf="canAssign" class="text-center select-cell" (click)="onCheckboxCellClick($event, policy, i)" style="cursor: pointer;">
+                        <input type="checkbox" class="form-check-input shadow-none" 
+                               [checked]="isPolicySelected(policy)" 
+                               (click)="onCheckboxClick($event, policy, i)">
+                    </td>
                     <td style="word-break: break-all; min-width: 140px;">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="fw-bold">{{ policy.policyNumber }}</span>
@@ -1218,6 +1260,7 @@
             <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">Select User in Team</label>
             <select class="form-select form-select-lg shadow-none border-secondary-subtle focus-ring" [(ngModel)]="selectedAssignUser" style="border-radius: 0.75rem; font-size: 0.95rem;">
                 <option value="">-- Select User --</option>
+                <option value="__UNASSIGN__">-- Unassign (Clear Assignee) --</option>
                 <option *ngFor="let u of availableUsersForTeam" [value]="u.username">{{ u.username }}</option>
             </select>
             <div *ngIf="availableUsersForTeam.length === 0" class="text-danger small mt-2 d-flex align-items-center gap-1">
@@ -1228,6 +1271,56 @@
             <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" (click)="closeAssignModal()">Cancel</button>
             <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" (click)="submitAssign()" [disabled]="!selectedAssignUser">
                 Assign <i class="bi bi-person-check-fill"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Assign Policy Modal -->
+<div class="modal-overlay" *ngIf="showBulkAssignModal" (click)="closeBulkAssignModal()">
+    <div class="custom-modal-content" (click)="$event.stopPropagation()" style="width: 440px; max-width: 95%;">
+        <div class="modal-header p-4 pb-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-people-fill fs-5"></i>
+                </div>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark" style="font-size: 1.15rem;">Assign Multiple Policies</h5>
+                    <span class="text-muted small">{{ selectedPolicyIds.size }} policies selected</span>
+                </div>
+            </div>
+            <button type="button" class="btn-close shadow-none" (click)="closeBulkAssignModal()"></button>
+        </div>
+        <div class="modal-body px-4 py-3">
+            <div class="alert alert-info py-2 px-3 small d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-info-circle-fill fs-5"></i>
+                <div>All <strong>{{ selectedPolicyIds.size }}</strong> selected policies will be assigned to the chosen team member.</div>
+            </div>
+
+            <label class="form-label text-muted fw-semibold text-uppercase mb-2" style="font-size: 0.75rem; letter-spacing: 0.5px;">
+                Select Team Member
+            </label>
+            <select class="form-select form-select-lg shadow-none border-secondary-subtle focus-ring" 
+                    [(ngModel)]="selectedAssignUser" style="border-radius: 0.75rem; font-size: 0.95rem;">
+                <option value="">-- Select Team Member --</option>
+                <option value="__UNASSIGN__">-- Unassign (Clear Assignee) --</option>
+                <option *ngFor="let u of availableUsersForTeam" [value]="u.username">{{ u.username }}</option>
+            </select>
+
+            <div *ngIf="availableUsersForTeam.length === 0" class="text-danger small mt-2 d-flex align-items-center gap-1">
+                <i class="bi bi-exclamation-circle-fill"></i> No users found in your team.
+            </div>
+        </div>
+        <div class="modal-footer border-top-0 p-4 pt-2 d-flex justify-content-end gap-2">
+            <button class="btn btn-light border px-4 fw-medium text-dark rounded-pill shadow-sm" 
+                    [disabled]="bulkAssigning" 
+                    (click)="closeBulkAssignModal()">Cancel</button>
+            <button class="btn btn-primary px-4 fw-medium text-white rounded-pill shadow-sm d-flex align-items-center gap-2" 
+                    (click)="submitBulkAssign()" 
+                    [disabled]="!selectedAssignUser || bulkAssigning">
+                <span *ngIf="bulkAssigning" class="spinner-border spinner-border-sm"></span>
+                <i *ngIf="!bulkAssigning" class="bi bi-person-check-fill"></i>
+                {{ bulkAssigning ? 'Assigning...' : 'Assign ' + selectedPolicyIds.size + ' Policies' }}
             </button>
         </div>
     </div>
