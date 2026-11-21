@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -12,12 +12,60 @@ import { NotificationService } from '../../services/notification.service';
     templateUrl: './customer-list.component.html',
     styleUrls: ['./customer-list.component.css']
 })
-export class CustomerListComponent {
+export class CustomerListComponent implements OnChanges {
     @Input() policies: any[] = [];
     @Input() loading: boolean = false;
     @Input() isAdmin: boolean = false;
     @Input() adminViewAs: string = '';
     @Output() dataUpdated = new EventEmitter<void>();
+
+    currentPage: number = 1;
+    pageSize: number = 50;
+    pageSizeOptions: number[] = [25, 50, 100, 200];
+
+    get totalPages(): number {
+        if (!this.policies || this.policies.length === 0) return 1;
+        return Math.ceil(this.policies.length / this.pageSize);
+    }
+
+    get pagedPolicies(): any[] {
+        if (!this.policies || this.policies.length === 0) return [];
+        if (this.policies.length <= this.pageSize) {
+            return this.policies;
+        }
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        return this.policies.slice(startIndex, startIndex + this.pageSize);
+    }
+
+    get startIndex(): number {
+        if (!this.policies || this.policies.length === 0) return 0;
+        return (this.currentPage - 1) * this.pageSize + 1;
+    }
+
+    get endIndex(): number {
+        if (!this.policies || this.policies.length === 0) return 0;
+        return Math.min(this.currentPage * this.pageSize, this.policies.length);
+    }
+
+    goToPage(page: number) {
+        if (page < 1) page = 1;
+        if (page > this.totalPages) page = this.totalPages;
+        this.currentPage = page;
+    }
+
+    onPageSizeChange() {
+        this.currentPage = 1;
+    }
+
+    trackByPolicyNumber(index: number, policy: any): any {
+        return policy?.policyNumber || policy?.id || index;
+    }
+
+    ngOnChanges(changes: SimpleChanges) {
+        if (changes['policies']) {
+            this.currentPage = 1;
+        }
+    }
 
     selectedPolicy: any = null;
     selectedPolicyDetails: any = null;

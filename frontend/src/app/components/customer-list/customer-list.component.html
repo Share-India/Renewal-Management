@@ -25,7 +25,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr *ngFor="let policy of policies" 
+                <tr *ngFor="let policy of pagedPolicies; trackBy: trackByPolicyNumber" 
                     [class.hot-sale-row]="isPolicyHotSale(policy)"
                     [class.case-will-work-row]="shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_WORK'"
                     [class.case-will-not-work-row]="shouldShowCaseDecision(policy) && policy.caseWorkDecision === 'WILL_NOT_WORK'">
@@ -253,6 +253,33 @@
                 </tr>
             </tbody>
         </table>
+
+        <!-- Pagination Controls -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top gap-2" *ngIf="policies.length > pageSize">
+            <div class="d-flex align-items-center gap-2 text-muted small">
+                <span>Showing <strong>{{ startIndex }}</strong> to <strong>{{ endIndex }}</strong> of <strong>{{ policies.length }}</strong> policies</span>
+                <span class="ms-2">|</span>
+                <label class="mb-0 ms-1">Per page:</label>
+                <select class="form-select form-select-sm d-inline-block w-auto" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+                    <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
+                </select>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <button class="btn btn-sm btn-outline-secondary" [disabled]="currentPage === 1" (click)="goToPage(1)" title="First Page">
+                    <i class="bi bi-chevron-double-left"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" title="Previous Page">
+                    <i class="bi bi-chevron-left"></i> Prev
+                </button>
+                <span class="px-2 small text-muted fw-bold">Page {{ currentPage }} of {{ totalPages }}</span>
+                <button class="btn btn-sm btn-outline-secondary" [disabled]="currentPage === totalPages" (click)="goToPage(currentPage + 1)" title="Next Page">
+                    Next <i class="bi bi-chevron-right"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" [disabled]="currentPage === totalPages" (click)="goToPage(totalPages)" title="Last Page">
+                    <i class="bi bi-chevron-double-right"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 

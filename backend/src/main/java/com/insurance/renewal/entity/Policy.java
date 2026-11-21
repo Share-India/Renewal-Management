@@ -201,7 +201,8 @@ public class Policy {
     @Column(name = "case_decision_note", columnDefinition = "TEXT")
     private String caseDecisionNote;
 
-    @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "policy", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private java.util.List<PolicyDocument> teamDocuments = new java.util.ArrayList<>();
 
     @PrePersist
