@@ -203,6 +203,9 @@ import { ApiService } from '../../services/api.service';
                     <button class='btn btn-outline-warning btn-sm ms-1' (click)='openNoteModal(policy)' title='Servicing Note'>
                         <i class='bi bi-journal-text'></i> Note
                     </button>
+                    <button class='btn btn-outline-primary btn-sm ms-1' (click)='openIssueModal(policy)' title='Edit Serviced Policy'>
+                        <i class='bi bi-pencil-square'></i> Edit
+                    </button>
                 </td>
                 </tr>
             </tbody>
@@ -839,25 +842,27 @@ export class PolicyServicingComponent implements OnInit {
     this.selectedPolicy = policy;
 
     // Auto-calculate new term (Next Year)
-    const oldEndDate = new Date(policy.policyEndDate);
-    const newStartDate = new Date(oldEndDate);
-    newStartDate.setDate(oldEndDate.getDate() + 1); // Start = End + 1 Day
+    const refDate = policy.policyEndDate ? new Date(policy.policyEndDate) : (policy.expiryDate ? new Date(policy.expiryDate) : new Date());
+    const newStartDate = new Date(refDate);
+    newStartDate.setDate(refDate.getDate() + 1); // Start = End + 1 Day
 
     const newExpiryDate = new Date(newStartDate);
     newExpiryDate.setFullYear(newStartDate.getFullYear() + 1);
     newExpiryDate.setDate(newExpiryDate.getDate() - 1); // End = Start + 1 Year - 1 Day
 
-    // Pre-fill form with NEW dates
+    const isAlreadyServiced = !!policy.policyIssueDate;
+
+    // Pre-fill form: if already serviced, retain policy number; otherwise leave blank for user entry
     this.issueForm = {
-      policyNumber: '', // Blank for user to enter new policy number
-      insuranceName: policy.insuranceName,
+      policyNumber: isAlreadyServiced ? (policy.policyNumber || '') : '',
+      insuranceName: policy.insuranceName || '',
       productName: policy.productName || '',
-      previousPolicyNumber: policy.policyNumber || '', // Current policy becomes previous
-      policyIssueDate: new Date().toISOString().split('T')[0], // Today
-      policyStartDate: newStartDate.toISOString().split('T')[0],
-      expiryDate: newExpiryDate.toISOString().split('T')[0],
-      netPremium: policy.amount,
-      sumInsured: ''
+      previousPolicyNumber: isAlreadyServiced ? (policy.previousPolicyNumber || policy.policyNumber || '') : (policy.policyNumber || ''),
+      policyIssueDate: policy.policyIssueDate ? policy.policyIssueDate : new Date().toISOString().split('T')[0],
+      policyStartDate: policy.policyStartDate ? policy.policyStartDate : newStartDate.toISOString().split('T')[0],
+      expiryDate: policy.expiryDate ? policy.expiryDate : newExpiryDate.toISOString().split('T')[0],
+      netPremium: policy.netPremium || policy.amount || '',
+      sumInsured: policy.sumInsured || ''
     };
     this.selectedFile = null;
     this.showIssueModal = true;
@@ -875,7 +880,7 @@ export class PolicyServicingComponent implements OnInit {
       return;
     }
 
-    if (!this.selectedFile) {
+    if (!this.selectedFile && !this.selectedPolicy?.policyDocumentPath) {
       this.notificationService.showErrorModal('Please upload the policy document (*)');
       return;
     }
@@ -905,7 +910,11 @@ export class PolicyServicingComponent implements OnInit {
         this.notificationService.showSuccessToast('Policy Issued Successfully!');
         this.isSubmitting = false;
         this.closeIssueModal();
-        this.loadPendingPolicies();
+        if (this.viewMode === 'history') {
+          this.loadHistory();
+        } else {
+          this.loadPendingPolicies();
+        }
       },
       error: (err) => {
         this.notificationService.showErrorModal('Failed to issue policy: ' + (err.error?.message || err.message));

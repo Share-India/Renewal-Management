@@ -395,7 +395,7 @@ public class RenewalController {
     }
 
     @PostMapping("/servicing/issue/{id}")
-    public ResponseEntity<Policy> issuePolicy(
+    public ResponseEntity<?> issuePolicy(
             @PathVariable("id") Long id,
             @RequestPart("policy") String policyJson,
             @RequestPart(value = "file", required = false) org.springframework.web.multipart.MultipartFile file) {
@@ -420,8 +420,19 @@ public class RenewalController {
             }
 
             return ResponseEntity.ok(renewalService.issuePolicy(id, policyDetails, documentPath, agentName));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            String rootMsg = e.getRootCause() != null ? e.getRootCause().getMessage() : e.getMessage();
+            if (rootMsg != null && rootMsg.contains("Duplicate entry") && rootMsg.contains("policy_number")) {
+                return ResponseEntity.badRequest().body(java.util.Map.of("message", "A policy with this policy number already exists in the system."));
+            }
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", "Database error: " + (rootMsg != null ? rootMsg : e.getMessage())));
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Error processing issuance request: " + e.getMessage());
+            return ResponseEntity.status(500).body(java.util.Map.of("message", "Error processing issuance file: " + e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(java.util.Map.of("message", e.getMessage() != null ? e.getMessage() : "Error issuing policy"));
         }
     }
 

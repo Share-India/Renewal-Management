@@ -1315,10 +1315,18 @@ public class RenewalService {
 
         java.util.Map<Long, Policy> merged = new java.util.LinkedHashMap<>();
         if (pending != null) {
-            for (Policy p : pending) merged.put(p.getId(), p);
+            for (Policy p : pending) {
+                if (p.getPolicyIssueDate() == null) {
+                    merged.put(p.getId(), p);
+                }
+            }
         }
         if (rmHotSales != null) {
-            for (Policy p : rmHotSales) merged.put(p.getId(), p);
+            for (Policy p : rmHotSales) {
+                if (p.getPolicyIssueDate() == null) {
+                    merged.put(p.getId(), p);
+                }
+            }
         }
         return new java.util.ArrayList<>(merged.values());
     }
@@ -1334,24 +1342,145 @@ public class RenewalService {
         Policy policy = policyRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Policy not found"));
 
-        if (!"PENDING_ISSUANCE".equals(policy.getStatus())) {
-            throw new IllegalStateException("Policy is not in pending issuance state");
+        String rawNewPolicyNumber = details.getPolicyNumber();
+        String newPolicyNumber = rawNewPolicyNumber != null ? rawNewPolicyNumber.trim() : null;
+
+        if (newPolicyNumber == null || newPolicyNumber.isEmpty()) {
+            throw new IllegalArgumentException("Policy number is required for policy issuance.");
         }
 
-        // Update fields
-        if (details.getPolicyNumber() != null)
-            policy.setPolicyNumber(details.getPolicyNumber());
-        if (details.getCustomer() != null && details.getCustomer().getId() != null) {
-            // Ideally we shouldn't change customer ID ref, but if it's just updating string
-            // fields:
-            // policy.setCustomer(...) - skipping for now, assuming customer relationship is
-            // stable
-            // But user asked for "Application No/Customer id*" update.
-            // If it's a string ID on customer, we might need to update Customer entity or
-            // Policy field.
-            // Assuming Customer ID is DB ID, we can't change it easily.
-            // If "Application No" is a field on Policy or Customer?
-            // Let's assume it's just 'Previous Policy No' or we update Policy Number.
+        // Handle case where another policy in the database already has this policy number
+        java.util.Optional<Policy> existingPolicyOpt = policyRepository.findByPolicyNumber(newPolicyNumber);
+        if (existingPolicyOpt.isPresent() && !existingPolicyOpt.get().getId().equals(id)) {
+            Policy existingPolicy = existingPolicyOpt.get();
+
+            // Determine if the existing policy belongs to the same customer/record
+            // (e.g. pre-imported shell row from annual Excel/SQL upload)
+            boolean isSameCustomer = false;
+            if (policy.getCustomer() != null && existingPolicy.getCustomer() != null) {
+                if (policy.getCustomer().getId() != null && policy.getCustomer().getId().equals(existingPolicy.getCustomer().getId())) {
+                    isSameCustomer = true;
+                } else if (policy.getCustomer().getEmail() != null && !policy.getCustomer().getEmail().trim().isEmpty()
+                        && policy.getCustomer().getEmail().equalsIgnoreCase(existingPolicy.getCustomer().getEmail())) {
+                    isSameCustomer = true;
+                }
+            }
+            if (!isSameCustomer && policy.getVehicleRegNo() != null && !policy.getVehicleRegNo().trim().isEmpty()
+                    && policy.getVehicleRegNo().equalsIgnoreCase(existingPolicy.getVehicleRegNo())) {
+                isSameCustomer = true;
+            }
+
+            if (isSameCustomer) {
+                System.out.println("DEBUG: issuePolicy - Merging into pre-existing policy record ID " + existingPolicy.getId() + " for policy number " + newPolicyNumber);
+                if (details.getInsuranceName() != null) existingPolicy.setInsuranceName(details.getInsuranceName());
+                if (details.getProductName() != null) existingPolicy.setProductName(details.getProductName());
+
+                if (details.getPolicyStartDate() != null) {
+                    existingPolicy.setPolicyStartDate(details.getPolicyStartDate());
+                } else if (existingPolicy.getPolicyStartDate() == null) {
+                    existingPolicy.setPolicyStartDate(policy.getExpiryDate() != null ? policy.getExpiryDate().plusDays(1) : LocalDate.now());
+                }
+
+                if (details.getExpiryDate() != null) {
+                    existingPolicy.setLastExpiryDate(policy.getExpiryDate());
+                    existingPolicy.setExpiryDate(details.getExpiryDate());
+                    existingPolicy.setPolicyEndDate(details.getExpiryDate());
+                }
+
+                if (details.getNetPremium() != null) {
+                    existingPolicy.setNetPremium(details.getNetPremium());
+                    existingPolicy.setAmount(details.getNetPremium());
+                    existingPolicy.setDuePremium(details.getNetPremium());
+                }
+
+                // Copy payment details
+                if (details.getPaymentMode() != null) existingPolicy.setPaymentMode(details.getPaymentMode());
+                else if (policy.getPaymentMode() != null) existingPolicy.setPaymentMode(policy.getPaymentMode());
+
+                if (details.getPaymentReference() != null) existingPolicy.setPaymentReference(details.getPaymentReference());
+                else if (policy.getPaymentReference() != null) existingPolicy.setPaymentReference(policy.getPaymentReference());
+
+                if (details.getPaymentBank() != null) existingPolicy.setPaymentBank(details.getPaymentBank());
+                else if (policy.getPaymentBank() != null) existingPolicy.setPaymentBank(policy.getPaymentBank());
+
+                if (details.getPaymentDate() != null) existingPolicy.setPaymentDate(details.getPaymentDate());
+                else if (policy.getPaymentDate() != null) existingPolicy.setPaymentDate(policy.getPaymentDate());
+
+                if (details.getPaymentAmount() != null) existingPolicy.setPaymentAmount(details.getPaymentAmount());
+                else if (policy.getPaymentAmount() != null) existingPolicy.setPaymentAmount(policy.getPaymentAmount());
+
+                if (policy.getPaymentDocumentPath() != null) {
+                    existingPolicy.setPaymentDocumentPath(policy.getPaymentDocumentPath());
+                }
+
+                if (details.getSumInsured() != null) existingPolicy.setSumInsured(details.getSumInsured());
+                existingPolicy.setPolicyIssueDate(details.getPolicyIssueDate() != null ? details.getPolicyIssueDate() : LocalDate.now());
+                existingPolicy.setPreviousPolicyNumber(policy.getPolicyNumber());
+
+                if (documentPath != null) {
+                    existingPolicy.setPolicyDocumentPath(documentPath);
+                } else if (policy.getPolicyDocumentPath() != null && existingPolicy.getPolicyDocumentPath() == null) {
+                    existingPolicy.setPolicyDocumentPath(policy.getPolicyDocumentPath());
+                }
+
+                existingPolicy.setStatus("ACTIVE");
+                existingPolicy.setIsHotSale(false);
+
+                // Mark the old pending policy as RENEWED so it leaves the pending queue and doesn't conflict
+                policy.setStatus("RENEWED");
+                policy.setPolicyIssueDate(existingPolicy.getPolicyIssueDate());
+                policy.setIsHotSale(false);
+                policyRepository.save(policy);
+
+                // Add call history to existingPolicy
+                CallHistory history = new CallHistory();
+                history.setPolicy(existingPolicy);
+                history.setCallDate(java.time.LocalDateTime.now());
+                history.setCallOutcome("Policy Issued");
+                String issueNotes = "Policy renewed and issued. Document: " + (existingPolicy.getPolicyDocumentPath() != null ? "Yes" : "No")
+                        + " (Previous Policy: " + policy.getPolicyNumber() + ")";
+                if (details.getNetPremium() != null) issueNotes += ". Net Premium: " + details.getNetPremium();
+                if (details.getSumInsured() != null) issueNotes += ". Sum Insured: " + details.getSumInsured();
+                history.setNotes(issueNotes);
+                history.setAgentName(agentName);
+                callHistoryRepository.save(history);
+
+                // Reset reminder on existingPolicy
+                Reminder reminder = existingPolicy.getReminder();
+                if (reminder == null) {
+                    reminder = new Reminder();
+                    reminder.setPolicy(existingPolicy);
+                }
+                reminder.setFollowUpDate(null);
+                reminder.setReminderStatus("Renewed");
+                reminder.setLastCallOutcome("Renewed");
+                reminder.setNotes(issueNotes);
+                reminder.setLastUpdatedBy(agentName);
+                reminder.setLastReminderSentAt(java.time.LocalDateTime.now());
+                reminderRepository.save(reminder);
+
+                // Close reminder on old policy
+                Reminder oldReminder = policy.getReminder();
+                if (oldReminder != null) {
+                    oldReminder.setFollowUpDate(null);
+                    oldReminder.setReminderStatus("Renewed");
+                    oldReminder.setLastCallOutcome("Renewed");
+                    reminderRepository.save(oldReminder);
+                }
+
+                return policyRepository.save(existingPolicy);
+            } else {
+                String customerName = existingPolicy.getCustomer() != null 
+                        ? (existingPolicy.getCustomer().getFirstName() + " " + existingPolicy.getCustomer().getLastName()).trim()
+                        : "ID: " + existingPolicy.getId();
+                throw new IllegalArgumentException("Policy number '" + newPolicyNumber + "' already belongs to another customer (" + customerName + "). Please verify the policy number.");
+            }
+        }
+
+        // Standard issuance: update policy in place
+        policy.setPolicyNumber(newPolicyNumber);
+        if (details.getPreviousPolicyNumber() != null && !details.getPreviousPolicyNumber().trim().isEmpty()) {
+            policy.setPreviousPolicyNumber(details.getPreviousPolicyNumber().trim());
         }
         if (details.getInsuranceName() != null)
             policy.setInsuranceName(details.getInsuranceName());
@@ -1380,17 +1509,14 @@ public class RenewalService {
             policy.setDuePremium(details.getNetPremium()); // Sync Due Premium (Display Field)
         }
         // Save Payment Details - Authentically Update to Current (Overwrite old data)
-        policy.setPaymentMode(details.getPaymentMode());
-        policy.setPaymentReference(details.getPaymentReference());
-        policy.setPaymentBank(details.getPaymentBank());
-        policy.setPaymentDate(details.getPaymentDate());
-        policy.setPaymentAmount(details.getPaymentAmount());
+        if (details.getPaymentMode() != null) policy.setPaymentMode(details.getPaymentMode());
+        if (details.getPaymentReference() != null) policy.setPaymentReference(details.getPaymentReference());
+        if (details.getPaymentBank() != null) policy.setPaymentBank(details.getPaymentBank());
+        if (details.getPaymentDate() != null) policy.setPaymentDate(details.getPaymentDate());
+        if (details.getPaymentAmount() != null) policy.setPaymentAmount(details.getPaymentAmount());
         if (details.getSumInsured() != null)
             policy.setSumInsured(details.getSumInsured());
-        if (details.getPolicyIssueDate() != null)
-            policy.setPolicyIssueDate(details.getPolicyIssueDate());
-        if (details.getPreviousPolicyNumber() != null)
-            policy.setPreviousPolicyNumber(details.getPreviousPolicyNumber());
+        policy.setPolicyIssueDate(details.getPolicyIssueDate() != null ? details.getPolicyIssueDate() : LocalDate.now());
         if (details.getProductName() != null)
             policy.setProductName(details.getProductName());
 
@@ -1399,13 +1525,14 @@ public class RenewalService {
         }
 
         policy.setStatus("ACTIVE");
+        policy.setIsHotSale(false); // Clear hot sale flag once issued
 
         // Update history to say 'Issued'
         CallHistory history = new CallHistory();
         history.setPolicy(policy);
         history.setCallDate(java.time.LocalDateTime.now());
         history.setCallOutcome("Policy Issued");
-        String issueNotes = "Policy issued. Document: " + (documentPath != null ? "Yes" : "No");
+        String issueNotes = "Policy issued. Document: " + (policy.getPolicyDocumentPath() != null ? "Yes" : "No");
         if (details.getNetPremium() != null)
             issueNotes += ". Net Premium: " + details.getNetPremium();
         if (details.getSumInsured() != null)
