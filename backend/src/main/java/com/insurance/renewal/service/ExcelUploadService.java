@@ -63,6 +63,9 @@ public class ExcelUploadService {
 
             java.util.Map<String, Policy> policiesToSaveMap = new java.util.HashMap<>();
             java.util.List<Policy> policiesToSave = new java.util.ArrayList<>();
+            java.util.Map<String, String> customerCodeCache = new java.util.HashMap<>();
+            Long initialMaxCode = customerRepository.findMaxCustomerCodeNumber();
+            long[] currentMaxCustomerCode = new long[] { (initialMaxCode != null) ? initialMaxCode : 0L };
             
             for (int i = headerRow.getRowNum() + 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -91,21 +94,26 @@ public class ExcelUploadService {
                 
                 Customer customer = null;
                 
-                // 1. Try to find by email first (since it has a unique constraint)
-                if (email != null && !email.trim().isEmpty() && !email.trim().equals("-")) {
+                // 1. If policy already exists and has customer, reuse that customer
+                if (policy.getCustomer() != null) {
+                    customer = policy.getCustomer();
+                }
+
+                // 2. Try to find by email first (since it has a unique constraint)
+                if (customer == null && email != null && !email.trim().isEmpty() && !email.trim().equals("-")) {
                     java.util.Optional<Customer> opt = customerRepository.findByEmail(email.trim());
                     if (opt.isPresent()) {
                         customer = opt.get();
                     }
                 }
                 
-                // 2. Try to find by phone if not found by email
+                // 3. Try to find by phone if not found by email
                 if (customer == null && contactNo != null && !contactNo.trim().isEmpty()) {
                     List<Customer> customers = customerRepository.findByPhone(contactNo.trim());
                     if (!customers.isEmpty()) customer = customers.get(0);
                 }
                 
-                // 3. Create new if still not found
+                // 4. Create new if still not found
                 if (customer == null) {
                     customer = new Customer();
                 }
@@ -145,14 +153,26 @@ public class ExcelUploadService {
                 customer.setBillingFrequency(getCellValue(row, headerMap, "billing frequency"));
 
                 // Assign customer code if missing (reuse for same customer name or generate next sequence)
+                String fullName = ((customer.getFirstName() != null ? customer.getFirstName() : "") + " " + (customer.getLastName() != null ? customer.getLastName() : "")).trim();
+                String normName = fullName.toLowerCase();
+
                 if (customer.getCustomerCode() == null || customer.getCustomerCode().trim().isEmpty()) {
-                    String fullName = ((customer.getFirstName() != null ? customer.getFirstName() : "") + " " + (customer.getLastName() != null ? customer.getLastName() : "")).trim();
-                    String existingCode = customerRepository.findCustomerCodeByName(fullName);
+                    String existingCode = customerCodeCache.get(normName);
+                    if (existingCode == null) {
+                        existingCode = customerRepository.findCustomerCodeByName(fullName);
+                    }
                     if (existingCode != null && !existingCode.trim().isEmpty()) {
                         customer.setCustomerCode(existingCode);
+                        customerCodeCache.put(normName, existingCode);
                     } else {
-                        Long max = customerRepository.findMaxCustomerCodeNumber();
-                        customer.setCustomerCode(String.format("SIIBPL%05d", (max != null ? max : 0) + 1));
+                        currentMaxCustomerCode[0]++;
+                        String newCode = String.format("SIIBPL%05d", currentMaxCustomerCode[0]);
+                        customer.setCustomerCode(newCode);
+                        customerCodeCache.put(normName, newCode);
+                    }
+                } else {
+                    if (!normName.isEmpty()) {
+                        customerCodeCache.put(normName, customer.getCustomerCode());
                     }
                 }
 
