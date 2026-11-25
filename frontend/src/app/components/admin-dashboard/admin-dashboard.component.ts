@@ -315,7 +315,7 @@ import * as XLSX from 'xlsx';
                 <tr *ngFor="let record of filteredRecords">
                   <td class="fw-bold">{{ record.policyNumber }}</td>
                   <td>
-                    <span class="badge bg-light text-primary border border-primary-subtle fw-bold font-monospace px-2 py-1">
+                    <span class="fw-bold text-dark" style="font-size: 0.88rem; letter-spacing: 0.2px;">
                       {{ record.customerCode || record.customer?.customerCode || '-' }}
                     </span>
                   </td>
