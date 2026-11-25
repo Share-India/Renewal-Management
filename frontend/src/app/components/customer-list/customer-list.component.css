@@ -351,10 +351,17 @@
     color: #495057;
 }
 
-.form-control,
-.form-select {
+.form-control {
     width: 100%;
     padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.form-select {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
     border: 1px solid #ced4da;
     border-radius: 4px;
     font-size: 0.95rem;

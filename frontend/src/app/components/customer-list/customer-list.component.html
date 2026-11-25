@@ -313,7 +313,10 @@
                 <span>Showing <strong>{{ startIndex }}</strong> to <strong>{{ endIndex }}</strong> of <strong>{{ policies.length }}</strong> policies</span>
                 <span class="ms-2">|</span>
                 <label class="mb-0 ms-1">Per page:</label>
-                <select class="form-select form-select-sm d-inline-block w-auto" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+                <select class="form-select form-select-sm d-inline-block shadow-sm" 
+                        style="width: 78px !important; min-width: 78px; padding: 4px 26px 4px 10px !important; font-size: 0.85rem; font-weight: 500; cursor: pointer; border-radius: 6px; background-position: right 0.6rem center;" 
+                        [(ngModel)]="pageSize" 
+                        (change)="onPageSizeChange()">
                     <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
                 </select>
             </div>
