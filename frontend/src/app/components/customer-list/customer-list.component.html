@@ -382,7 +382,14 @@
             <div class="detail-grid">
                 <!-- Customer Section -->
                 <div class="detail-card">
-                    <h4 class="section-title"><i class="bi bi-person"></i> Customer Info</h4>
+                    <h4 class="section-title d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-person"></i> Customer Info</span>
+                        <span *ngIf="selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode" 
+                              class="badge bg-light text-dark border px-2 py-1 fw-bold" 
+                              style="font-size: 0.84rem; background-color: #f8fafc !important; border-color: #cbd5e1 !important; color: #1e293b !important; letter-spacing: 0.3px;">
+                            {{ selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode }}
+                        </span>
+                    </h4>
                     <div class="info-row">
                         <label>Name:</label>
                         <span>{{ selectedPolicyDetails?.customer.firstName }} {{

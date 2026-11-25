@@ -396,8 +396,13 @@ import * as XLSX from 'xlsx';
             <!-- DETAILS VIEW -->
             <div class="row g-3" *ngIf="!viewHistoryMode">
                 <!-- Policy & Customer Details Section -->
-                <div class="col-12">
-                    <h5 class="border-bottom pb-2">Policy & Customer Details</h5>
+                <div class="col-12 d-flex justify-content-between align-items-center border-bottom pb-2">
+                    <h5 class="mb-0">Policy & Customer Details</h5>
+                    <span *ngIf="selectedViewPolicy.customerCode || selectedViewPolicy.customer?.customerCode" 
+                          class="badge bg-light text-dark border px-2 py-1 fw-bold" 
+                          style="font-size: 0.84rem; background-color: #f8fafc !important; border-color: #cbd5e1 !important; color: #1e293b !important; letter-spacing: 0.3px;">
+                        {{ selectedViewPolicy.customerCode || selectedViewPolicy.customer?.customerCode }}
+                    </span>
                 </div>
                 <div class="col-md-6">
                     <label class="fw-bold text-muted small">Customer Name</label>

@@ -252,8 +252,13 @@ import { ApiService } from '../../services/api.service';
                     <!-- Customer Info Card -->
                     <div class="col-md-6">
                         <div class="info-card h-100">
-                            <div class="card-header-clean">
-                                <i class="bi bi-person me-2"></i> Customer Info
+                            <div class="card-header-clean d-flex align-items-center justify-content-between">
+                                <div><i class="bi bi-person me-2"></i> Customer Info</div>
+                                <span *ngIf="selectedPolicy?.customerCode || selectedPolicy?.customer?.customerCode" 
+                                      class="badge bg-light text-dark border px-2 py-1 fw-bold" 
+                                      style="font-size: 0.82rem; background-color: #f8fafc !important; border-color: #cbd5e1 !important; color: #1e293b !important; letter-spacing: 0.3px;">
+                                    {{ selectedPolicy?.customerCode || selectedPolicy?.customer?.customerCode }}
+                                </span>
                             </div>
                             <div class="card-body-clean">
                                 <div class="info-row">
