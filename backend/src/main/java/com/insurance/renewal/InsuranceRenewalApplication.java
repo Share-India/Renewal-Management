@@ -73,16 +73,22 @@ public class InsuranceRenewalApplication {
 					jdbcTemplate.execute("CREATE INDEX idx_policy_customer_code ON policies(customer_code)");
 				} catch (Exception ignored) {}
 
-				// 3. Auto-populate customer_code for existing customers if any are missing
+				// Convert any previous CUST- format codes to SIIBPL
+				try {
+					jdbcTemplate.execute("UPDATE customers SET customer_code = REPLACE(customer_code, 'CUST-', 'SIIBPL') WHERE customer_code LIKE 'CUST-%'");
+					jdbcTemplate.execute("UPDATE policies SET customer_code = REPLACE(customer_code, 'CUST-', 'SIIBPL') WHERE customer_code LIKE 'CUST-%'");
+				} catch (Exception ignored) {}
+
+				// 3. Auto-populate customer_code for existing customers if any are missing or non-SIIBPL
 				Integer unassignedCustomers = jdbcTemplate.queryForObject(
-					"SELECT COUNT(*) FROM customers WHERE customer_code IS NULL OR customer_code = ''",
+					"SELECT COUNT(*) FROM customers WHERE customer_code IS NULL OR customer_code = '' OR customer_code NOT LIKE 'SIIBPL%'",
 					Integer.class
 				);
 				if (unassignedCustomers != null && unassignedCustomers > 0) {
-					logger.info("Found {} customers without customer_code. Auto-generating codes...", unassignedCustomers);
+					logger.info("Found {} customers without SIIBPL customer_code. Auto-generating codes...", unassignedCustomers);
 
 					Long existingMax = jdbcTemplate.queryForObject(
-						"SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 6) AS UNSIGNED)), 0) FROM customers WHERE customer_code LIKE 'CUST-%'",
+						"SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 7) AS UNSIGNED)), 0) FROM customers WHERE customer_code LIKE 'SIIBPL%'",
 						Long.class
 					);
 					final long baseNumber = (existingMax != null) ? existingMax : 0L;
@@ -94,30 +100,30 @@ public class InsuranceRenewalApplication {
 							"    SELECT LOWER(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) as norm_name, " +
 							"           MIN(customer_code) as existing_code " +
 							"    FROM customers " +
-							"    WHERE customer_code IS NOT NULL AND customer_code != '' " +
+							"    WHERE customer_code IS NOT NULL AND customer_code != '' AND customer_code LIKE 'SIIBPL%' " +
 							"    GROUP BY norm_name " +
 							") existing ON LOWER(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')))) = existing.norm_name " +
 							"SET c.customer_code = existing.existing_code " +
-							"WHERE c.customer_code IS NULL OR c.customer_code = ''"
+							"WHERE c.customer_code IS NULL OR c.customer_code = '' OR c.customer_code NOT LIKE 'SIIBPL%'"
 						);
 					}
 
 					jdbcTemplate.execute(
 						"UPDATE customers c " +
 						"JOIN ( " +
-						"    SELECT id, CONCAT('CUST-', LPAD(" + baseNumber + " + DENSE_RANK() OVER (ORDER BY LOWER(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))))), 5, '0')) as code " +
+						"    SELECT id, CONCAT('SIIBPL', LPAD(" + baseNumber + " + DENSE_RANK() OVER (ORDER BY LOWER(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))))), 5, '0')) as code " +
 						"    FROM customers " +
-						"    WHERE customer_code IS NULL OR customer_code = '' " +
+						"    WHERE customer_code IS NULL OR customer_code = '' OR customer_code NOT LIKE 'SIIBPL%' " +
 						") ranked ON c.id = ranked.id " +
 						"SET c.customer_code = ranked.code " +
-						"WHERE c.customer_code IS NULL OR c.customer_code = ''"
+						"WHERE c.customer_code IS NULL OR c.customer_code = '' OR c.customer_code NOT LIKE 'SIIBPL%'"
 					);
 					logger.info("Successfully assigned customer_code to all customers.");
 				}
 
 				// 4. Ensure policies have the matching customer_code from their customer
 				Integer unassignedPolicies = jdbcTemplate.queryForObject(
-					"SELECT COUNT(*) FROM policies WHERE customer_code IS NULL OR customer_code = ''",
+					"SELECT COUNT(*) FROM policies WHERE customer_code IS NULL OR customer_code = '' OR customer_code NOT LIKE 'SIIBPL%'",
 					Integer.class
 				);
 				if (unassignedPolicies != null && unassignedPolicies > 0) {

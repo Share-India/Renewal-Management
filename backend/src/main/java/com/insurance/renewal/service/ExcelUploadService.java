@@ -152,7 +152,7 @@ public class ExcelUploadService {
                         customer.setCustomerCode(existingCode);
                     } else {
                         Long max = customerRepository.findMaxCustomerCodeNumber();
-                        customer.setCustomerCode(String.format("CUST-%05d", (max != null ? max : 0) + 1));
+                        customer.setCustomerCode(String.format("SIIBPL%05d", (max != null ? max : 0) + 1));
                     }
                 }
 

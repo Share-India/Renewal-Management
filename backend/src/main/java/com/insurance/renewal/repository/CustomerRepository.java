@@ -25,7 +25,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
             "LIMIT 1", nativeQuery = true)
     String findCustomerCodeByName(@Param("fullName") String fullName);
 
-    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 6) AS UNSIGNED)), 0) " +
-            "FROM customers WHERE customer_code LIKE 'CUST-%'", nativeQuery = true)
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 7) AS UNSIGNED)), 0) " +
+            "FROM customers WHERE customer_code LIKE 'SIIBPL%'", nativeQuery = true)
     Long findMaxCustomerCodeNumber();
 }
