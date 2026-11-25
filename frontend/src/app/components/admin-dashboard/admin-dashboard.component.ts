@@ -300,8 +300,8 @@ import * as XLSX from 'xlsx';
             <table class="table table-hover">
               <thead>
                 <tr>
-                  <th style="width: 10%">Policy #</th>
                   <th style="width: 10%">Cust Code</th>
+                  <th style="width: 10%">Policy #</th>
                   <th style="width: 14%">Customer</th>
                   <th style="width: 10%">Expiry Date</th>
                   <th style="width: 9%">Renewer</th>
@@ -313,12 +313,12 @@ import * as XLSX from 'xlsx';
               </thead>
               <tbody>
                 <tr *ngFor="let record of filteredRecords">
-                  <td class="fw-bold">{{ record.policyNumber }}</td>
                   <td>
                     <span class="fw-bold text-dark" style="font-size: 0.88rem; letter-spacing: 0.2px;">
                       {{ record.customerCode || record.customer?.customerCode || '-' }}
                     </span>
                   </td>
+                  <td class="fw-bold">{{ record.policyNumber }}</td>
                   <td>
                     <div class="fw-bold">{{ record.customer?.firstName }} {{ record.customer?.lastName }}</div>
                     <small class="text-muted">{{ record.customer?.phone }}</small>
