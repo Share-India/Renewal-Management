@@ -144,8 +144,21 @@ public class ExcelUploadService {
                 customer.setState(getCellValue(row, headerMap, "state"));
                 customer.setBillingFrequency(getCellValue(row, headerMap, "billing frequency"));
 
+                // Assign customer code if missing (reuse for same customer name or generate next sequence)
+                if (customer.getCustomerCode() == null || customer.getCustomerCode().trim().isEmpty()) {
+                    String fullName = ((customer.getFirstName() != null ? customer.getFirstName() : "") + " " + (customer.getLastName() != null ? customer.getLastName() : "")).trim();
+                    String existingCode = customerRepository.findCustomerCodeByName(fullName);
+                    if (existingCode != null && !existingCode.trim().isEmpty()) {
+                        customer.setCustomerCode(existingCode);
+                    } else {
+                        Long max = customerRepository.findMaxCustomerCodeNumber();
+                        customer.setCustomerCode(String.format("CUST-%05d", (max != null ? max : 0) + 1));
+                    }
+                }
+
                 customer = customerRepository.save(customer);
                 policy.setCustomer(customer);
+                policy.setCustomerCode(customer.getCustomerCode());
 
                 // Set policy fields
                 policy.setType(getCellValue(row, headerMap, "insurance type"));

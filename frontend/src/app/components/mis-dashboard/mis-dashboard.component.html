@@ -137,7 +137,9 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
+                                    <div class="fw-bold">
+                                        <span *ngIf="policy.customerCode || policy.customer?.customerCode" class="badge bg-light text-primary border border-primary-subtle fw-bold font-monospace px-1 py-0 me-1" style="font-size: 0.75rem;">{{ policy.customerCode || policy.customer?.customerCode }}</span>
+                                        {{ policy.customer.firstName }} {{ policy.customer.lastName }}
                                     </div>
                                     <div class="small text-muted"
                                         *ngIf="policy.customer.phone && policy.customer.phone != 0 && policy.customer.phone !== 'null'">
@@ -217,7 +219,9 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
+                                    <div class="fw-bold">
+                                        <span *ngIf="policy.customerCode || policy.customer?.customerCode" class="badge bg-light text-primary border border-primary-subtle fw-bold font-monospace px-1 py-0 me-1" style="font-size: 0.75rem;">{{ policy.customerCode || policy.customer?.customerCode }}</span>
+                                        {{ policy.customer.firstName }} {{ policy.customer.lastName }}
                                     </div>
                                     <div class="small text-muted"
                                         *ngIf="policy.customer.phone && policy.customer.phone != 0 && policy.customer.phone !== 'null'">
@@ -275,7 +279,9 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}
+                                    <div class="fw-bold">
+                                        <span *ngIf="policy.customerCode || policy.customer?.customerCode" class="badge bg-light text-primary border border-primary-subtle fw-bold font-monospace px-1 py-0 me-1" style="font-size: 0.75rem;">{{ policy.customerCode || policy.customer?.customerCode }}</span>
+                                        {{ policy.customer.firstName }} {{ policy.customer.lastName }}
                                     </div>
                                     <div class="small text-muted">{{ policy.customer.phone || '-' }}</div>
                                 </td>

@@ -7,11 +7,16 @@ import java.time.LocalDate;
 
 @Data
 @Entity
-@Table(name = "customers")
+@Table(name = "customers", indexes = {
+    @Index(name = "idx_customer_code", columnList = "customer_code")
+})
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "customer_code")
+    private String customerCode;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;

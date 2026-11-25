@@ -118,7 +118,7 @@ import * as XLSX from 'xlsx';
 
             <div class="search-group">
                 <div class="input-group flex-nowrap shadow-sm">
-                    <input type="text" class="form-control border-secondary-subtle" placeholder="Search Policy # or Name" 
+                    <input type="text" class="form-control border-secondary-subtle" placeholder="Search Policy #, Cust Code or Name" 
                            [(ngModel)]="adminSearchTerm" (keyup.enter)="searchAdminDailyRecords()">
                     <button class="btn btn-outline-primary border-secondary-subtle px-2" type="button" (click)="searchAdminDailyRecords()" title="Search">
                         <i class="bi bi-search"></i>
@@ -301,21 +301,27 @@ import * as XLSX from 'xlsx';
               <thead>
                 <tr>
                   <th style="width: 10%">Policy #</th>
-                  <th style="width: 15%">Customer</th>
+                  <th style="width: 10%">Cust Code</th>
+                  <th style="width: 14%">Customer</th>
                   <th style="width: 10%">Expiry Date</th>
-                  <th style="width: 10%">Renewer</th>
-                  <th style="width: 12%">Call Outcome</th>
-                  <th style="width: 32%">Notes</th>
-                  <th style="width: 11%">Last Updated</th>
-                  <th style="width: 8%">Actions</th>
+                  <th style="width: 9%">Renewer</th>
+                  <th style="width: 11%">Call Outcome</th>
+                  <th style="width: 29%">Notes</th>
+                  <th style="width: 10%">Last Updated</th>
+                  <th style="width: 7%">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let record of filteredRecords">
                   <td class="fw-bold">{{ record.policyNumber }}</td>
                   <td>
-                    <div class="fw-bold">{{ record.customer.firstName }} {{ record.customer.lastName }}</div>
-                    <small class="text-muted">{{ record.customer.phone }}</small>
+                    <span class="badge bg-light text-primary border border-primary-subtle fw-bold font-monospace px-2 py-1">
+                      {{ record.customerCode || record.customer?.customerCode || '-' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="fw-bold">{{ record.customer?.firstName }} {{ record.customer?.lastName }}</div>
+                    <small class="text-muted">{{ record.customer?.phone }}</small>
                   </td>
                   <td>{{ record.reminder?.policy?.expiryDate | date:'mediumDate' }}</td>
                   <td>{{ (record.reminder?.lastUpdatedBy && record.reminder?.lastUpdatedBy !== 'System') ? record.reminder?.lastUpdatedBy : '--------' }}</td>

@@ -49,14 +49,15 @@
                                (change)="toggleSelectAllPage($event)" 
                                title="Select all on this page">
                     </th>
-                    <th style="width: 20%;">Policy #</th>
-                    <th style="width: 20%;">Customer</th>
-                    <th style="width: 15%;">Phone</th>
-                    <th style="width: 9%;">Start Date</th>
-                    <th style="width: 9%;">End Date</th>
-                    <th style="width: 9%;">Expiry Date</th>
-                    <th style="width: 9%;" class="text-center">Status</th>
-                    <th style="width: 9%;">Last Call</th>
+                    <th style="width: 17%;">Policy #</th>
+                    <th style="width: 11%;">Cust Code</th>
+                    <th style="width: 18%;">Customer</th>
+                    <th style="width: 14%;">Phone</th>
+                    <th style="width: 8%;">Start Date</th>
+                    <th style="width: 8%;">End Date</th>
+                    <th style="width: 8%;">Expiry Date</th>
+                    <th style="width: 8%;" class="text-center">Status</th>
+                    <th style="width: 8%;">Last Call</th>
                     <th style="width: 250px;" class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -140,7 +141,12 @@
                         </div>
                     </td>
                     <td>
-                        <div class="fw-bold">{{ policy.customer.firstName }} {{ policy.customer.lastName }}</div>
+                        <span class="badge bg-light text-primary border border-primary-subtle fw-bold font-monospace px-2 py-1" style="font-size: 0.85rem; letter-spacing: 0.5px;">
+                            {{ policy.customerCode || policy.customer?.customerCode || '-' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="fw-bold">{{ policy.customer?.firstName }} {{ policy.customer?.lastName }}</div>
                         <small class="text-muted">{{ policy.type }} • {{ policy.amount | currency:'INR' }}</small>
                     </td>
                     <td>

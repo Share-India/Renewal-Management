@@ -53,11 +53,14 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
         @Query("SELECT p FROM Policy p WHERE " +
                         "(LOWER(p.policyNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+                        "LOWER(p.customerCode) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(p.customer.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(p.customer.lastName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
                         "LOWER(p.associateName) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
                         "(:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         List<Policy> searchPolicies(@Param("query") String query, @Param("branch") String branch);
+
+        List<Policy> findByCustomerCode(String customerCode);
 
         @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE LOWER(p.associateName) = LOWER(:posp) AND (:branch IS NULL OR :branch = '' OR LOWER(p.branch) = LOWER(:branch)) ORDER BY p.expiryDate ASC")
         List<Policy> findByAssociateName(@Param("posp") String posp, @Param("branch") String branch);

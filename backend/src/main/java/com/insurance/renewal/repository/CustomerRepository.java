@@ -2,13 +2,30 @@ package com.insurance.renewal.repository;
 
 import com.insurance.renewal.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     boolean existsByEmail(String email);
 
-    java.util.List<Customer> findByPhone(String phone);
+    List<Customer> findByPhone(String phone);
 
-    java.util.Optional<Customer> findByEmail(String email);
+    Optional<Customer> findByEmail(String email);
+
+    Optional<Customer> findByCustomerCode(String customerCode);
+
+    @Query(value = "SELECT customer_code FROM customers " +
+            "WHERE customer_code IS NOT NULL AND customer_code != '' " +
+            "AND LOWER(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) = LOWER(TRIM(:fullName)) " +
+            "LIMIT 1", nativeQuery = true)
+    String findCustomerCodeByName(@Param("fullName") String fullName);
+
+    @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 6) AS UNSIGNED)), 0) " +
+            "FROM customers WHERE customer_code LIKE 'CUST-%'", nativeQuery = true)
+    Long findMaxCustomerCodeNumber();
 }

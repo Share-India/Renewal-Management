@@ -239,12 +239,12 @@ import { forkJoin, of, finalize } from 'rxjs';
               <!-- Search Bar -->
               <div class="input-group shadow-sm" style="width: 330px;">
                 <select class="form-select border-secondary-subtle text-muted" style="max-width: 150px; background-color: #f8f9fa; font-size: 0.9rem;" [(ngModel)]="searchBy" (change)="applyFilters()">
-                  <option value="customer">Customer/Policy</option>
+                  <option value="customer">Cust Code / Policy / Customer</option>
                   <option value="rm">RM Name</option>
                   <option value="posp">POSP Name</option>
                 </select>
                 <input type="text" class="form-control border-secondary-subtle ps-2" style="font-size: 0.9rem;"
-                       [placeholder]="searchBy === 'customer' ? 'Search customer or policy #...' : (searchBy === 'rm' ? 'Search by RM Name...' : 'Search by POSP Name...')" 
+                       [placeholder]="searchBy === 'customer' ? 'Search cust code, policy #, customer...' : (searchBy === 'rm' ? 'Search by RM Name...' : 'Search by POSP Name...')" 
                        [(ngModel)]="listSearchTerm" (input)="applyFilters()">
               </div>
 
@@ -1100,10 +1100,13 @@ export class RenewalComponent implements OnInit {
         return p.associateName && p.associateName.toLowerCase().includes(term);
       } else {
         const policyMatch = p.policyNumber && p.policyNumber.toLowerCase().includes(term);
+        const codeMatch = (p.customerCode && p.customerCode.toLowerCase().includes(term)) ||
+                          (p.customer?.customerCode && p.customer.customerCode.toLowerCase().includes(term));
         const firstMatch = p.customer && p.customer.firstName && p.customer.firstName.toLowerCase().includes(term);
         const lastMatch = p.customer && p.customer.lastName && p.customer.lastName.toLowerCase().includes(term);
+        const fullNameMatch = p.customer && ((p.customer.firstName || '') + ' ' + (p.customer.lastName || '')).toLowerCase().includes(term);
         const pospMatch = p.associateName && p.associateName.toLowerCase().includes(term);
-        return policyMatch || firstMatch || lastMatch || pospMatch;
+        return policyMatch || codeMatch || firstMatch || lastMatch || fullNameMatch || pospMatch;
       }
     };
 

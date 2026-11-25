@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
     @Index(name = "idx_policy_expiry", columnList = "expiry_date"),
     @Index(name = "idx_policy_status", columnList = "status"),
     @Index(name = "idx_policy_branch", columnList = "branch"),
-    @Index(name = "idx_policy_routed_at", columnList = "routed_at")
+    @Index(name = "idx_policy_routed_at", columnList = "routed_at"),
+    @Index(name = "idx_policy_customer_code", columnList = "customer_code")
 })
 public class Policy {
     @Id
@@ -21,6 +22,9 @@ public class Policy {
 
     @Column(name = "policy_number", nullable = false, unique = true)
     private String policyNumber;
+
+    @Column(name = "customer_code")
+    private String customerCode;
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinColumn(name = "customer_id", nullable = false)
@@ -207,6 +211,20 @@ public class Policy {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        syncCustomerCode();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        syncCustomerCode();
+    }
+
+    private void syncCustomerCode() {
+        if (customer != null && customer.getCustomerCode() != null && !customer.getCustomerCode().trim().isEmpty()) {
+            this.customerCode = customer.getCustomerCode();
+        }
     }
 }

@@ -32,6 +32,107 @@ public class InsuranceRenewalApplication {
 			} catch (Exception e) {
 				logger.warn("Could not alter assigned_rm column (it may already be TEXT or table may not exist yet): {}", e.getMessage());
 			}
+
+			try {
+				logger.info("Checking database schema for customer_code columns and indexes...");
+				// 1. Ensure customer_code exists on customers table
+				try {
+					jdbcTemplate.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS customer_code VARCHAR(50)");
+				} catch (Exception ex) {
+					try {
+						Integer count = jdbcTemplate.queryForObject(
+							"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'customer_code'",
+							Integer.class
+						);
+						if (count == null || count == 0) {
+							jdbcTemplate.execute("ALTER TABLE customers ADD COLUMN customer_code VARCHAR(50)");
+						}
+					} catch (Exception ignored) {}
+				}
+
+				try {
+					jdbcTemplate.execute("CREATE INDEX idx_customer_customer_code ON customers(customer_code)");
+				} catch (Exception ignored) {}
+
+				// 2. Ensure customer_code exists on policies table
+				try {
+					jdbcTemplate.execute("ALTER TABLE policies ADD COLUMN IF NOT EXISTS customer_code VARCHAR(50)");
+				} catch (Exception ex) {
+					try {
+						Integer count = jdbcTemplate.queryForObject(
+							"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'policies' AND COLUMN_NAME = 'customer_code'",
+							Integer.class
+						);
+						if (count == null || count == 0) {
+							jdbcTemplate.execute("ALTER TABLE policies ADD COLUMN customer_code VARCHAR(50)");
+						}
+					} catch (Exception ignored) {}
+				}
+
+				try {
+					jdbcTemplate.execute("CREATE INDEX idx_policy_customer_code ON policies(customer_code)");
+				} catch (Exception ignored) {}
+
+				// 3. Auto-populate customer_code for existing customers if any are missing
+				Integer unassignedCustomers = jdbcTemplate.queryForObject(
+					"SELECT COUNT(*) FROM customers WHERE customer_code IS NULL OR customer_code = ''",
+					Integer.class
+				);
+				if (unassignedCustomers != null && unassignedCustomers > 0) {
+					logger.info("Found {} customers without customer_code. Auto-generating codes...", unassignedCustomers);
+
+					Long existingMax = jdbcTemplate.queryForObject(
+						"SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 6) AS UNSIGNED)), 0) FROM customers WHERE customer_code LIKE 'CUST-%'",
+						Long.class
+					);
+					final long baseNumber = (existingMax != null) ? existingMax : 0L;
+
+					if (baseNumber > 0) {
+						jdbcTemplate.execute(
+							"UPDATE customers c " +
+							"JOIN ( " +
+							"    SELECT LOWER(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))) as norm_name, " +
+							"           MIN(customer_code) as existing_code " +
+							"    FROM customers " +
+							"    WHERE customer_code IS NOT NULL AND customer_code != '' " +
+							"    GROUP BY norm_name " +
+							") existing ON LOWER(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, '')))) = existing.norm_name " +
+							"SET c.customer_code = existing.existing_code " +
+							"WHERE c.customer_code IS NULL OR c.customer_code = ''"
+						);
+					}
+
+					jdbcTemplate.execute(
+						"UPDATE customers c " +
+						"JOIN ( " +
+						"    SELECT id, CONCAT('CUST-', LPAD(" + baseNumber + " + DENSE_RANK() OVER (ORDER BY LOWER(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))))), 5, '0')) as code " +
+						"    FROM customers " +
+						"    WHERE customer_code IS NULL OR customer_code = '' " +
+						") ranked ON c.id = ranked.id " +
+						"SET c.customer_code = ranked.code " +
+						"WHERE c.customer_code IS NULL OR c.customer_code = ''"
+					);
+					logger.info("Successfully assigned customer_code to all customers.");
+				}
+
+				// 4. Ensure policies have the matching customer_code from their customer
+				Integer unassignedPolicies = jdbcTemplate.queryForObject(
+					"SELECT COUNT(*) FROM policies WHERE customer_code IS NULL OR customer_code = ''",
+					Integer.class
+				);
+				if (unassignedPolicies != null && unassignedPolicies > 0) {
+					logger.info("Found {} policies without customer_code. Syncing from customers...", unassignedPolicies);
+					jdbcTemplate.execute(
+						"UPDATE policies p " +
+						"JOIN customers c ON p.customer_id = c.id " +
+						"SET p.customer_code = c.customer_code " +
+						"WHERE p.customer_code IS NULL OR p.customer_code = '' OR p.customer_code != c.customer_code"
+					);
+					logger.info("Successfully synced customer_code to policies.");
+				}
+			} catch (Exception e) {
+				logger.error("Error during customer_code schema update/migration: {}", e.getMessage(), e);
+			}
 		};
 	}
 }
