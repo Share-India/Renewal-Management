@@ -307,7 +307,7 @@ import { forkJoin, of, finalize } from 'rxjs';
 
       <!-- Renewal Modal with Multi-Step Flow -->
       <div class="modal-overlay" *ngIf="showRenewalModal" (click)="closeRenewalModal()">
-        <div class="custom-modal-content renewal-modal" style="max-width: 960px; width: 95%; max-height: 90vh;" (click)="$event.stopPropagation()">
+        <div class="custom-modal-content renewal-modal" style="max-width: 1140px; width: 95vw; max-height: 90vh; background: #ffffff !important; background-color: #ffffff !important; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);" (click)="$event.stopPropagation()">
           <div class="modal-header d-flex justify-content-between align-items-center py-3 px-4 border-bottom bg-light">
             <div class="d-flex align-items-center gap-2">
               <span class="badge bg-primary bg-opacity-10 text-primary p-2 rounded-circle">
@@ -326,10 +326,12 @@ import { forkJoin, of, finalize } from 'rxjs';
                 </small>
               </div>
             </div>
-            <button class="btn-close" (click)="closeRenewalModal()"></button>
+            <button type="button" class="btn btn-sm btn-light border-0 rounded-circle d-flex align-items-center justify-content-center shadow-none" style="width: 34px; height: 34px; cursor: pointer;" (click)="closeRenewalModal()" title="Close">
+              <i class="bi bi-x-lg fs-6 text-secondary"></i>
+            </button>
           </div>
 
-          <div class="modal-body p-4" style="overflow-y: auto;">
+          <div class="modal-body p-4 bg-white" style="overflow-y: auto; background-color: #ffffff !important; color: #1e293b;">
 
             <!-- STEP 1: SECTION SELECTION (Fresh, Renewal, Endorsement) -->
             <div *ngIf="renewalModalStep === 'section' && !selectedRenewalPolicy">
@@ -527,12 +529,9 @@ import { forkJoin, of, finalize } from 'rxjs';
                         <span *ngIf="selectedRenewalCustomer.city"><i class="bi bi-geo-alt me-1"></i>{{ selectedRenewalCustomer.city }}<span *ngIf="selectedRenewalCustomer.state">, {{ selectedRenewalCustomer.state }}</span></span>
                       </div>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
+                    <div>
                       <button class="btn btn-outline-secondary btn-sm" (click)="selectedRenewalCustomer = null; renewalSuccessMessage = ''">
                         <i class="bi bi-arrow-left me-1"></i> Pick Another Customer
-                      </button>
-                      <button class="btn btn-primary btn-sm fw-bold px-3 shadow-sm" (click)="proceedToRenewalType()">
-                        <i class="bi bi-plus-circle me-1"></i> Add Renewal Policy
                       </button>
                     </div>
                   </div>
@@ -559,41 +558,41 @@ import { forkJoin, of, finalize } from 'rxjs';
                   <!-- Policies Table: Expanded view showing ALL 31+ policies -->
                   <div class="card-body p-0">
                     <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-                      <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
-                        <thead class="table-light sticky-top">
-                          <tr>
-                            <th class="ps-3" style="width: 40px;">#</th>
-                            <th>Policy No.</th>
-                            <th>App No / Cust ID</th>
-                            <th>Type</th>
-                            <th>Insurer</th>
-                            <th>Product</th>
-                            <th>Expiry Date</th>
-                            <th>Premium</th>
-                            <th>Status</th>
-                            <th class="text-end pe-3">Action</th>
+                      <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem; width: 100%;">
+                        <thead class="table-light sticky-top shadow-sm" style="z-index: 2;">
+                          <tr class="text-secondary small fw-bold">
+                            <th class="ps-3 text-nowrap" style="width: 45px;">#</th>
+                            <th class="text-nowrap" style="width: 150px;">Policy No.</th>
+                            <th class="text-nowrap" style="width: 130px;">App No / Cust ID</th>
+                            <th class="text-nowrap" style="width: 110px;">Type</th>
+                            <th class="text-nowrap" style="width: 130px;">Insurer</th>
+                            <th class="text-nowrap" style="min-width: 140px;">Product</th>
+                            <th class="text-nowrap" style="width: 105px;">Expiry Date</th>
+                            <th class="text-nowrap" style="width: 95px;">Premium</th>
+                            <th class="text-nowrap" style="width: 85px;">Status</th>
+                            <th class="text-end pe-3 text-nowrap" style="width: 90px;">Action</th>
                           </tr>
                         </thead>
                         <tbody>
                           <tr *ngFor="let p of filteredCustomerPolicies; let idx = index" [class.table-success]="p.isNewRecord">
-                            <td class="ps-3 text-muted">{{ idx + 1 }}</td>
-                            <td class="fw-bold text-dark">
+                            <td class="ps-3 text-muted text-nowrap">{{ idx + 1 }}</td>
+                            <td class="fw-bold text-dark text-nowrap">
                               {{ p.policyNumber }}
                               <span *ngIf="p.isNewRecord" class="badge bg-success ms-1" style="font-size: 0.65rem;">NEW</span>
                             </td>
-                            <td><span class="text-muted">{{ p.applicationNumber || '-' }}</span></td>
-                            <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ p.type || '-' }}</span></td>
-                            <td>{{ p.insuranceName || '-' }}</td>
-                            <td><small class="text-muted">{{ p.productName || '-' }}</small></td>
+                            <td class="text-nowrap"><span class="text-muted">{{ p.applicationNumber || '-' }}</span></td>
+                            <td class="text-nowrap"><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ p.type || '-' }}</span></td>
+                            <td class="text-nowrap fw-medium text-dark">{{ p.insuranceName || '-' }}</td>
+                            <td class="text-truncate text-muted" style="max-width: 220px;" [title]="p.productName || ''">{{ p.productName || '-' }}</td>
                             <td class="text-nowrap">{{ (p.expiryDate || p.policyEndDate) | date:'mediumDate' }}</td>
-                            <td class="fw-semibold text-dark">₹{{ (p.duePremium || p.amount || 0) | number:'1.2-2' }}</td>
-                            <td>
+                            <td class="fw-semibold text-dark text-nowrap">₹{{ (p.duePremium || p.amount || 0) | number:'1.2-2' }}</td>
+                            <td class="text-nowrap">
                               <span class="badge" [ngClass]="p.status === 'EXPIRED' ? 'bg-danger' : (p.status === 'RENEWED' ? 'bg-success' : 'bg-info')">
                                 {{ p.status || 'ACTIVE' }}
                               </span>
                             </td>
-                            <td class="text-end pe-3">
-                              <button class="btn btn-xs btn-outline-primary py-0 px-2" (click)="renewSpecificPolicy(p)" title="Renew with details from this policy">
+                            <td class="text-end pe-3 text-nowrap">
+                              <button class="btn btn-xs btn-outline-primary py-0 px-2 fw-semibold" (click)="renewSpecificPolicy(p)" title="Renew with details from this policy">
                                 <i class="bi bi-arrow-repeat me-1"></i> Renew
                               </button>
                             </td>
@@ -749,14 +748,17 @@ import { forkJoin, of, finalize } from 'rxjs';
                   <button class="btn btn-sm btn-outline-secondary py-1 px-2" (click)="renewalModalStep = 'type'">
                     <i class="bi bi-arrow-repeat me-1"></i> Change Type
                   </button>
-                  <button class="btn btn-sm btn-outline-secondary py-1 px-2" (click)="renewalModalStep = 'section'; selectedSection = null;">
+                  <button class="btn btn-sm btn-outline-secondary py-1 px-2" *ngIf="selectedSection === 'Renewal'" (click)="renewalModalStep = 'renewal-search'">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Policies
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary py-1 px-2" *ngIf="selectedSection !== 'Renewal'" (click)="renewalModalStep = 'section'; selectedSection = null;">
                     <i class="bi bi-grid me-1"></i> Change Category
                   </button>
                 </div>
               </div>
 
-              <!-- Search Existing Customer / Policy (Optional) -->
-              <div class="form-group mb-3 position-relative" *ngIf="!selectedRenewalPolicy">
+              <!-- Search Existing Customer / Policy (Optional) - Only in Fresh mode when no customer is selected -->
+              <div class="form-group mb-3 position-relative" *ngIf="!selectedRenewalPolicy && selectedSection !== 'Renewal'">
                 <label class="form-label small fw-semibold text-muted">Search Existing Customer / Policy to Auto-fill (Optional)</label>
                 <div class="input-group input-group-sm">
                   <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
@@ -784,12 +786,10 @@ import { forkJoin, of, finalize } from 'rxjs';
                     <span class="badge bg-primary text-uppercase me-2">Renewal Policy</span>
                     <strong class="text-dark">{{ selectedRenewalCustomer.fullName }}</strong>
                     <span class="badge bg-dark ms-2">{{ selectedRenewalCustomer.customerCode }}</span>
+                    <span *ngIf="renewingBasePolicyNumber" class="badge bg-info text-dark ms-2"><i class="bi bi-link-45deg me-1"></i>Renewing Policy #{{ renewingBasePolicyNumber }}</span>
                     <div class="small text-muted mt-1">Customer code is locked and will be attached to this renewed policy.</div>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-outline-secondary" (click)="renewalModalStep = 'renewal-search'">
-                  <i class="bi bi-arrow-left me-1"></i> Change Customer
-                </button>
               </div>
 
               <!-- ================= FORMAT A: Health, Life, GMC, GPA, GTL ================= -->
@@ -811,7 +811,7 @@ import { forkJoin, of, finalize } from 'rxjs';
                 <div class="col-md-3">
                   <label class="form-label small fw-semibold">Gender</label>
                   <select class="form-select form-select-sm" [(ngModel)]="renewalForm.customer.gender">
-                    <option value="">Select Gender</option>
+                    <option [ngValue]="null" value="">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
@@ -1320,8 +1320,8 @@ import { forkJoin, of, finalize } from 'rxjs';
               <button class="btn btn-outline-secondary btn-sm" *ngIf="renewalModalStep === 'type'" (click)="selectedSection === 'Renewal' ? (renewalModalStep = 'renewal-search') : (renewalModalStep = 'section');">
                 <i class="bi bi-arrow-left me-1"></i> {{ selectedSection === 'Renewal' ? 'Back to Customer Policies' : 'Back to Categories' }}
               </button>
-              <button class="btn btn-outline-secondary btn-sm" *ngIf="renewalModalStep === 'form' && !selectedRenewalPolicy" (click)="renewalModalStep = 'type'">
-                <i class="bi bi-arrow-left me-1"></i> Back to Types
+              <button class="btn btn-outline-secondary btn-sm" *ngIf="renewalModalStep === 'form' && !selectedRenewalPolicy" (click)="selectedSection === 'Renewal' ? (renewalModalStep = 'renewal-search') : (renewalModalStep = 'type')">
+                <i class="bi bi-arrow-left me-1"></i> {{ selectedSection === 'Renewal' ? 'Back to Customer Policies' : 'Back to Types' }}
               </button>
             </div>
             <div class="d-flex gap-2">
@@ -1768,6 +1768,17 @@ export class RenewalComponent implements OnInit {
         this.selectedBranch = this.availableBranches[0]; // Default to first branch
       }
     }
+
+    this.apiService.getBranches().subscribe(branches => {
+      if (branches && branches.length > 0) {
+        if (!this.availableBranches || this.availableBranches.length === 0) {
+          this.availableBranches = branches;
+          if (!this.selectedBranch && this.availableBranches.length > 0) {
+            this.selectedBranch = this.availableBranches[0];
+          }
+        }
+      }
+    });
 
     this.apiService.selectedSourceTeam$.subscribe(team => {
       if (this.selectedSourceTeam !== team) {
@@ -2491,6 +2502,7 @@ export class RenewalComponent implements OnInit {
   hasSearchedCustomer: boolean = false;
   selectedRenewalCustomer: any = null;
   selectedRenewalPolicy: any = null;
+  renewingBasePolicyNumber: string = '';
   renewalForm: any = {
     customer: {}
   };
@@ -2563,11 +2575,13 @@ export class RenewalComponent implements OnInit {
 
   proceedToRenewalType() {
     if (!this.selectedRenewalCustomer) return;
+    this.renewingBasePolicyNumber = '';
     this.renewalModalStep = 'type';
   }
 
   renewSpecificPolicy(policy: any) {
     if (!this.selectedRenewalCustomer) return;
+    this.renewingBasePolicyNumber = policy.policyNumber || '';
     const t = (policy.type || '').toLowerCase();
     if (t.includes('motor') || t.includes('vehicle') || t.includes('car')) {
       this.selectedInsuranceType = 'Motor';
@@ -2615,14 +2629,18 @@ export class RenewalComponent implements OnInit {
       this.customerFullName = this.selectedRenewalCustomer.fullName;
 
       if (basePolicy) {
+        this.renewalForm.previousPolicyNumber = basePolicy.policyNumber;
+        this.renewalForm.applicationNumber = basePolicy.applicationNumber || '';
         this.renewalForm.insuranceName = basePolicy.insuranceName;
         this.renewalForm.productName = basePolicy.productName;
         this.renewalForm.amount = basePolicy.amount || basePolicy.duePremium;
         this.renewalForm.duePremium = basePolicy.duePremium || basePolicy.amount;
+        this.renewalForm.sumInsured = basePolicy.sumInsured;
         this.renewalForm.branch = basePolicy.branch;
         this.renewalForm.rmName = basePolicy.rmName;
         this.renewalForm.associateName = basePolicy.associateName;
         this.renewalForm.pospName = basePolicy.pospName;
+        this.renewalForm.policyStartDate = basePolicy.expiryDate || basePolicy.policyEndDate;
         this.renewalForm.vehicleRegNo = basePolicy.vehicleRegNo;
         this.renewalForm.vehicleModel = basePolicy.vehicleModel;
         this.renewalForm.mfgYear = basePolicy.mfgYear;
@@ -2690,6 +2708,7 @@ export class RenewalComponent implements OnInit {
     this.renewalSearchQuery = '';
     this.customerPolicySearchTerm = '';
     this.renewalSuccessMessage = '';
+    this.renewingBasePolicyNumber = '';
     this.searchingCustomers = false;
     this.hasSearchedCustomer = false;
     this.selectedRenewalCustomer = null;
