@@ -32,6 +32,9 @@ public class Customer {
     @Column(name = "billing_frequency")
     private String billingFrequency;
 
+    @Column(name = "gender")
+    private String gender;
+
     @Column(name = "dob")
     private LocalDate dob;
 

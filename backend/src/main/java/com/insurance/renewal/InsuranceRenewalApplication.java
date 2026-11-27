@@ -136,6 +136,47 @@ public class InsuranceRenewalApplication {
 					);
 					logger.info("Successfully synced customer_code to policies.");
 				}
+
+				// 5. Ensure gender exists on customers table
+				try {
+					jdbcTemplate.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS gender VARCHAR(20)");
+				} catch (Exception ex) {
+					try {
+						Integer count = jdbcTemplate.queryForObject(
+							"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'customers' AND COLUMN_NAME = 'gender'",
+							Integer.class
+						);
+						if (count == null || count == 0) {
+							jdbcTemplate.execute("ALTER TABLE customers ADD COLUMN gender VARCHAR(20)");
+						}
+					} catch (Exception ignored) {}
+				}
+
+				// 6. Ensure new policy columns exist
+				String[] policyCols = {
+					"posp_name VARCHAR(150)",
+					"od_amount DECIMAL(12, 2)",
+					"tp_amount DECIMAL(12, 2)",
+					"idv DECIMAL(12, 2)",
+					"mfg_year VARCHAR(20)",
+					"vehicle_type VARCHAR(100)"
+				};
+				for (String colDef : policyCols) {
+					String colName = colDef.split(" ")[0];
+					try {
+						jdbcTemplate.execute("ALTER TABLE policies ADD COLUMN IF NOT EXISTS " + colDef);
+					} catch (Exception ex) {
+						try {
+							Integer count = jdbcTemplate.queryForObject(
+								"SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'policies' AND COLUMN_NAME = '" + colName + "'",
+								Integer.class
+							);
+							if (count == null || count == 0) {
+								jdbcTemplate.execute("ALTER TABLE policies ADD COLUMN " + colDef);
+							}
+						} catch (Exception ignored) {}
+					}
+				}
 			} catch (Exception e) {
 				logger.error("Error during customer_code schema update/migration: {}", e.getMessage(), e);
 			}

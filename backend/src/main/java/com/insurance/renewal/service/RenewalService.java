@@ -1083,26 +1083,98 @@ public class RenewalService {
         if (policy.getStatus() == null) {
             policy.setStatus("ACTIVE");
         }
+        if (policy.getBusinessType() == null || policy.getBusinessType().trim().isEmpty()) {
+            policy.setBusinessType("Fresh");
+        }
+        if (policy.getExpiryDate() == null && policy.getPolicyEndDate() != null) {
+            policy.setExpiryDate(policy.getPolicyEndDate());
+        }
+        if ((policy.getAssociateName() == null || policy.getAssociateName().trim().isEmpty()) && policy.getPospName() != null) {
+            policy.setAssociateName(policy.getPospName());
+        } else if ((policy.getPospName() == null || policy.getPospName().trim().isEmpty()) && policy.getAssociateName() != null) {
+            policy.setPospName(policy.getAssociateName());
+        }
 
-        // Handle Customer: Check if exists by email to avoid duplicates
+        // Handle Customer: Check if exists by id, email, or full name to reuse customer & code
         Customer customer = policy.getCustomer();
-        if (customer != null && customer.getId() == null && customer.getEmail() != null) {
-            java.util.Optional<Customer> existingCustomer = customerRepository.findByEmail(customer.getEmail());
-            if (existingCustomer.isPresent()) {
-                policy.setCustomer(existingCustomer.get());
+        if (customer != null) {
+            Customer existingCustomer = null;
+            if (customer.getId() != null) {
+                existingCustomer = customerRepository.findById(customer.getId()).orElse(null);
+            }
+            if (existingCustomer == null && customer.getEmail() != null && !customer.getEmail().trim().isEmpty()) {
+                existingCustomer = customerRepository.findByEmail(customer.getEmail().trim()).orElse(null);
+            }
+            if (existingCustomer == null && customer.getFirstName() != null) {
+                String fullName = (customer.getFirstName() + " " + (customer.getLastName() != null ? customer.getLastName() : "")).trim();
+                String existingCode = customerRepository.findCustomerCodeByName(fullName);
+                if (existingCode != null && !existingCode.isEmpty()) {
+                    existingCustomer = customerRepository.findByCustomerCode(existingCode).orElse(null);
+                }
+            }
+
+            if (existingCustomer != null) {
+                // Update customer details if provided
+                if (customer.getFirstName() != null && !customer.getFirstName().trim().isEmpty()) existingCustomer.setFirstName(customer.getFirstName());
+                if (customer.getLastName() != null && !customer.getLastName().trim().isEmpty()) existingCustomer.setLastName(customer.getLastName());
+                if (customer.getPhone() != null && !customer.getPhone().trim().isEmpty()) existingCustomer.setPhone(customer.getPhone());
+                if (customer.getDob() != null) existingCustomer.setDob(customer.getDob());
+                if (customer.getGender() != null) existingCustomer.setGender(customer.getGender());
+                if (customer.getAddress() != null) existingCustomer.setAddress(customer.getAddress());
+                if (customer.getCity() != null) existingCustomer.setCity(customer.getCity());
+                if (customer.getState() != null) existingCustomer.setState(customer.getState());
+                if (customer.getPincode() != null) existingCustomer.setPincode(customer.getPincode());
+                if (customer.getPanNumber() != null) existingCustomer.setPanNumber(customer.getPanNumber());
+                if (customer.getBillingFrequency() != null) existingCustomer.setBillingFrequency(customer.getBillingFrequency());
+                
+                // Ensure customer code exists
+                if (existingCustomer.getCustomerCode() == null || existingCustomer.getCustomerCode().trim().isEmpty() || !existingCustomer.getCustomerCode().startsWith("SIIBPL")) {
+                    Long maxCode = customerRepository.findMaxCustomerCodeNumber();
+                    long nextNum = (maxCode != null ? maxCode : 0L) + 1L;
+                    existingCustomer.setCustomerCode(String.format("SIIBPL%05d", nextNum));
+                }
+                customerRepository.save(existingCustomer);
+                policy.setCustomer(existingCustomer);
+                policy.setCustomerCode(existingCustomer.getCustomerCode());
+            } else {
+                // New Customer: assign customer code if not provided
+                if (customer.getCustomerCode() == null || customer.getCustomerCode().trim().isEmpty() || !customer.getCustomerCode().startsWith("SIIBPL")) {
+                    String fullName = ((customer.getFirstName() != null ? customer.getFirstName() : "") + " " + (customer.getLastName() != null ? customer.getLastName() : "")).trim();
+                    String existingCodeByName = customerRepository.findCustomerCodeByName(fullName);
+                    if (existingCodeByName != null && !existingCodeByName.trim().isEmpty()) {
+                        customer.setCustomerCode(existingCodeByName);
+                    } else {
+                        Long maxCode = customerRepository.findMaxCustomerCodeNumber();
+                        long nextNum = (maxCode != null ? maxCode : 0L) + 1L;
+                        customer.setCustomerCode(String.format("SIIBPL%05d", nextNum));
+                    }
+                }
+                policy.setCustomerCode(customer.getCustomerCode());
+            }
+        }
+
+        // Check if policy number already exists (overwrite if already present)
+        if (policy.getPolicyNumber() != null && !policy.getPolicyNumber().trim().isEmpty()) {
+            java.util.Optional<Policy> existingPolicyOpt = policyRepository.findByPolicyNumber(policy.getPolicyNumber().trim());
+            if (existingPolicyOpt.isPresent()) {
+                Policy existing = existingPolicyOpt.get();
+                policy.setId(existing.getId());
             }
         }
 
         Policy savedPolicy = policyRepository.save(policy);
 
-        // Create default reminder
-        Reminder reminder = new Reminder();
-        reminder.setPolicy(savedPolicy);
-        reminder.setReminderStatus("PENDING");
-        reminder.setLastCallOutcome("Pending");
-        reminder.setLastUpdatedBy(agentName != null ? agentName : "System");
-        reminder.setLastReminderSentAt(null);
-        reminderRepository.save(reminder);
+        // Ensure default reminder
+        Reminder reminder = reminderRepository.findByPolicyId(savedPolicy.getId()).orElse(null);
+        if (reminder == null) {
+            reminder = new Reminder();
+            reminder.setPolicy(savedPolicy);
+            reminder.setReminderStatus("PENDING");
+            reminder.setLastCallOutcome("Pending");
+            reminder.setLastUpdatedBy(agentName != null ? agentName : "System");
+            reminder.setLastReminderSentAt(null);
+            reminderRepository.save(reminder);
+        }
 
         savedPolicy.setReminder(reminder);
         return savedPolicy;
@@ -1937,6 +2009,14 @@ public class RenewalService {
                     agentName);
             existingPolicy.setAssociateCode(updatedPolicy.getAssociateCode());
         }
+        if (updatedPolicy.getPospName() != null
+                && !updatedPolicy.getPospName().equals(existingPolicy.getPospName())) {
+            logChange(policyId, "POSP Name", existingPolicy.getPospName(), updatedPolicy.getPospName(), agentName);
+            existingPolicy.setPospName(updatedPolicy.getPospName());
+            if (existingPolicy.getAssociateName() == null || existingPolicy.getAssociateName().trim().isEmpty()) {
+                existingPolicy.setAssociateName(updatedPolicy.getPospName());
+            }
+        }
         if (updatedPolicy.getVehicleRegNo() != null
                 && !updatedPolicy.getVehicleRegNo().equals(existingPolicy.getVehicleRegNo())) {
             logChange(policyId, "Vehicle No", existingPolicy.getVehicleRegNo(), updatedPolicy.getVehicleRegNo(),
@@ -1948,6 +2028,46 @@ public class RenewalService {
             logChange(policyId, "Vehicle Model", existingPolicy.getVehicleModel(), updatedPolicy.getVehicleModel(),
                     agentName);
             existingPolicy.setVehicleModel(updatedPolicy.getVehicleModel());
+        }
+        if (updatedPolicy.getMfgYear() != null
+                && !updatedPolicy.getMfgYear().equals(existingPolicy.getMfgYear())) {
+            logChange(policyId, "Mfg Year", existingPolicy.getMfgYear(), updatedPolicy.getMfgYear(), agentName);
+            existingPolicy.setMfgYear(updatedPolicy.getMfgYear());
+        }
+        if (updatedPolicy.getVehicleType() != null
+                && !updatedPolicy.getVehicleType().equals(existingPolicy.getVehicleType())) {
+            logChange(policyId, "Vehicle Type", existingPolicy.getVehicleType(), updatedPolicy.getVehicleType(), agentName);
+            existingPolicy.setVehicleType(updatedPolicy.getVehicleType());
+        }
+        if (updatedPolicy.getOdAmount() != null
+                && !updatedPolicy.getOdAmount().equals(existingPolicy.getOdAmount())) {
+            logChange(policyId, "OD Amount", String.valueOf(existingPolicy.getOdAmount()), String.valueOf(updatedPolicy.getOdAmount()), agentName);
+            existingPolicy.setOdAmount(updatedPolicy.getOdAmount());
+        }
+        if (updatedPolicy.getTpAmount() != null
+                && !updatedPolicy.getTpAmount().equals(existingPolicy.getTpAmount())) {
+            logChange(policyId, "TP Amount", String.valueOf(existingPolicy.getTpAmount()), String.valueOf(updatedPolicy.getTpAmount()), agentName);
+            existingPolicy.setTpAmount(updatedPolicy.getTpAmount());
+        }
+        if (updatedPolicy.getIdv() != null
+                && !updatedPolicy.getIdv().equals(existingPolicy.getIdv())) {
+            logChange(policyId, "IDV", String.valueOf(existingPolicy.getIdv()), String.valueOf(updatedPolicy.getIdv()), agentName);
+            existingPolicy.setIdv(updatedPolicy.getIdv());
+        }
+        if (updatedPolicy.getPaymentMode() != null
+                && !updatedPolicy.getPaymentMode().equals(existingPolicy.getPaymentMode())) {
+            logChange(policyId, "Payment Mode", existingPolicy.getPaymentMode(), updatedPolicy.getPaymentMode(), agentName);
+            existingPolicy.setPaymentMode(updatedPolicy.getPaymentMode());
+        }
+        if (updatedPolicy.getPaymentReference() != null
+                && !updatedPolicy.getPaymentReference().equals(existingPolicy.getPaymentReference())) {
+            logChange(policyId, "Payment Reference", existingPolicy.getPaymentReference(), updatedPolicy.getPaymentReference(), agentName);
+            existingPolicy.setPaymentReference(updatedPolicy.getPaymentReference());
+        }
+        if (updatedPolicy.getSumInsured() != null
+                && !updatedPolicy.getSumInsured().equals(existingPolicy.getSumInsured())) {
+            logChange(policyId, "Sum Insured", String.valueOf(existingPolicy.getSumInsured()), String.valueOf(updatedPolicy.getSumInsured()), agentName);
+            existingPolicy.setSumInsured(updatedPolicy.getSumInsured());
         }
 
         // Update customer details if provided
@@ -2000,6 +2120,18 @@ public class RenewalService {
             if (uc.getBillingFrequency() != null && !uc.getBillingFrequency().equals(ec.getBillingFrequency())) {
                 logChange(policyId, "Billing Freq", ec.getBillingFrequency(), uc.getBillingFrequency(), agentName);
                 ec.setBillingFrequency(uc.getBillingFrequency());
+            }
+            if (uc.getGender() != null && !uc.getGender().equals(ec.getGender())) {
+                logChange(policyId, "Gender", ec.getGender(), uc.getGender(), agentName);
+                ec.setGender(uc.getGender());
+            }
+            if (uc.getPincode() != null && !uc.getPincode().equals(ec.getPincode())) {
+                logChange(policyId, "Pincode", ec.getPincode(), uc.getPincode(), agentName);
+                ec.setPincode(uc.getPincode());
+            }
+            if (uc.getCustomerCode() != null && !uc.getCustomerCode().equals(ec.getCustomerCode())) {
+                ec.setCustomerCode(uc.getCustomerCode());
+                existingPolicy.setCustomerCode(uc.getCustomerCode());
             }
         }
 

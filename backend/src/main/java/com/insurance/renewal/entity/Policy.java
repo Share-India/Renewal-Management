@@ -73,11 +73,29 @@ public class Policy {
     @Column(name = "associate_code")
     private String associateCode;
 
+    @Column(name = "posp_name")
+    private String pospName;
+
     @Column(name = "vehicle_reg_no")
     private String vehicleRegNo;
 
     @Column(name = "vehicle_model")
     private String vehicleModel;
+
+    @Column(name = "mfg_year")
+    private String mfgYear;
+
+    @Column(name = "vehicle_type")
+    private String vehicleType;
+
+    @Column(name = "od_amount")
+    private BigDecimal odAmount;
+
+    @Column(name = "tp_amount")
+    private BigDecimal tpAmount;
+
+    @Column(name = "idv")
+    private BigDecimal idv;
 
     @lombok.EqualsAndHashCode.Exclude
     @lombok.ToString.Exclude
