@@ -811,43 +811,137 @@ import * as XLSX from 'xlsx';
 
               <!-- Case 1: Searching / Picking a Customer (shown when NO customer is selected yet) -->
               <div *ngIf="!selectedRenewalCustomer">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <div>
-                    <h5 class="fw-bold text-dark mb-1"><i class="bi bi-search text-primary me-2"></i>Find Customer for Renewal</h5>
-                    <p class="text-muted small mb-0">Search by <strong>Policy Number</strong>, <strong>Customer Name</strong>, or <strong>Customer Code</strong></p>
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                  <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                      <i class="bi bi-arrow-repeat fs-4"></i>
+                    </div>
+                    <div>
+                      <div class="d-flex align-items-center gap-2">
+                        <h5 class="fw-bold text-dark mb-0">Find Customer for Renewal</h5>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 small fw-semibold">Step 2 of 4</span>
+                      </div>
+                      <p class="text-muted small mb-0 mt-1">Search by <strong>Customer Code</strong>, <strong>Policy Number</strong>, or <strong>Customer Name</strong></p>
+                    </div>
                   </div>
-                  <button class="btn btn-sm btn-outline-secondary" (click)="renewalModalStep = 'section'; selectedSection = null;">
-                    <i class="bi bi-arrow-left me-1"></i> Change Category
-                  </button>
                 </div>
 
-                <!-- Search Bar -->
-                <div class="card border-0 bg-light p-3 mb-3 shadow-sm rounded-3">
-                  <div class="input-group">
-                    <span class="input-group-text bg-white border-end-0">
-                      <i class="bi bi-search text-primary"></i>
+                <!-- Modern Spotlight Search Bar Card -->
+                <div class="card border-0 p-4 mb-4 shadow-sm" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1.5px solid #e2e8f0 !important; border-radius: 14px;">
+                  <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border bg-white">
+                    <span class="input-group-text bg-white border-0 ps-3 pe-2 text-primary">
+                      <i class="bi bi-search fs-5"></i>
                     </span>
                     <input type="text" 
-                           class="form-control border-start-0 ps-0" 
-                           placeholder="Enter Policy Number, Customer Name, or Customer Code (e.g. SIIBPL12529)..." 
+                           class="form-control border-0 py-3 ps-1" 
+                           style="font-size: 0.98rem; box-shadow: none;" 
+                           placeholder="Type Customer Code (e.g. SIIBPL11626), Policy #, or Customer Name..." 
                            [(ngModel)]="renewalSearchQuery" 
                            (keyup.enter)="searchRenewalCustomer()" 
                            autofocus>
-                    <button class="btn btn-outline-secondary" type="button" *ngIf="renewalSearchQuery" (click)="clearRenewalSearch()">
-                      <i class="bi bi-x-lg"></i> Clear
+                    <button class="btn btn-outline-light text-muted border-0 bg-white px-3" 
+                            type="button" 
+                            *ngIf="renewalSearchQuery" 
+                            (click)="clearRenewalSearch()" 
+                            title="Clear search">
+                      <i class="bi bi-x-circle-fill"></i>
                     </button>
-                    <button class="btn btn-primary px-4 fw-semibold" type="button" (click)="searchRenewalCustomer()" [disabled]="searchingCustomers || !renewalSearchQuery.trim()">
-                      <span *ngIf="searchingCustomers" class="spinner-border spinner-border-sm me-1"></span>
-                      <i *ngIf="!searchingCustomers" class="bi bi-search me-1"></i> Search
+                    <button class="btn btn-primary px-4 fw-bold d-flex align-items-center gap-2 shadow-none" 
+                            type="button" 
+                            style="min-width: 130px; justify-content: center; background-color: #2563eb; border: none;" 
+                            (click)="searchRenewalCustomer()" 
+                            [disabled]="searchingCustomers || !renewalSearchQuery.trim()">
+                      <span *ngIf="searchingCustomers" class="spinner-border spinner-border-sm"></span>
+                      <i *ngIf="!searchingCustomers" class="bi bi-search"></i>
+                      <span>{{ searchingCustomers ? 'Searching...' : 'Search' }}</span>
                     </button>
                   </div>
-                  <div class="d-flex align-items-center justify-content-between mt-2 px-1">
+
+                  <!-- Quick Search Tips / Suggestions -->
+                  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3 pt-2 border-top border-light-subtle">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                      <span class="text-muted small fw-semibold"><i class="bi bi-lightning-charge text-warning me-1"></i>Try quick search:</span>
+                      <button type="button" class="btn btn-sm btn-white border bg-white shadow-xs py-1 px-2 rounded-pill small text-secondary" (click)="setRenewalSearchExample('sagar')">
+                        <i class="bi bi-person text-primary me-1"></i> "Sagar"
+                      </button>
+                      <button type="button" class="btn btn-sm btn-white border bg-white shadow-xs py-1 px-2 rounded-pill small text-secondary" (click)="setRenewalSearchExample('SIIBPL11626')">
+                        <i class="bi bi-person-badge text-success me-1"></i> "SIIBPL11626"
+                      </button>
+                      <button type="button" class="btn btn-sm btn-white border bg-white shadow-xs py-1 px-2 rounded-pill small text-secondary" (click)="setRenewalSearchExample('24540762')">
+                        <i class="bi bi-file-earmark-text text-info me-1"></i> Policy Number
+                      </button>
+                    </div>
                     <small class="text-muted">
-                      <i class="bi bi-info-circle me-1"></i> Code & Policy No. find the exact customer; Name search shows all matching customers.
+                      <i class="bi bi-shield-check text-success me-1"></i> Direct lookup by Code / Policy #, or fuzzy search by Name
                     </small>
-                    <small class="text-muted" *ngIf="hasSearchedCustomer && renewalSearchResults.length > 0">
-                      Found <strong>{{ renewalSearchResults.length }}</strong> matching customer(s)
-                    </small>
+                  </div>
+                </div>
+
+                <!-- Empty State Guidance (Shown before searching to fill the screen gracefully) -->
+                <div *ngIf="!hasSearchedCustomer && !searchingCustomers" class="py-2">
+                  <div class="text-center text-muted small fw-bold text-uppercase tracking-wider mb-3">
+                    <i class="bi bi-compass me-1 text-primary"></i> 3 Ways to Locate Existing Policies
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <div class="card h-100 border-0 p-3 rounded-3 shadow-xs" style="background: #ffffff; border: 1px solid #e2e8f0 !important; border-top: 3px solid #2563eb !important;">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                          <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-person-badge-fill fs-5"></i>
+                          </div>
+                          <div>
+                            <h6 class="fw-bold mb-0 text-dark">By Customer Code</h6>
+                            <small class="text-primary fw-medium">Direct Portfolio View</small>
+                          </div>
+                        </div>
+                        <p class="text-muted small mb-0 mt-2">
+                          Enter the assigned code (e.g. <code class="text-primary fw-bold">SIIBPL11626</code>) to immediately open the customer's full policy portfolio.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="col-md-4">
+                      <div class="card h-100 border-0 p-3 rounded-3 shadow-xs" style="background: #ffffff; border: 1px solid #e2e8f0 !important; border-top: 3px solid #0ea5e9 !important;">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                          <div class="rounded-circle bg-info bg-opacity-10 text-info p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-file-earmark-medical-fill fs-5"></i>
+                          </div>
+                          <div>
+                            <h6 class="fw-bold mb-0 text-dark">By Policy Number</h6>
+                            <small class="text-info fw-medium">Exact Policy Link</small>
+                          </div>
+                        </div>
+                        <p class="text-muted small mb-0 mt-2">
+                          Search by any existing policy number to auto-link the renewal and inherit prior insurer, plan, and agent details.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="col-md-4">
+                      <div class="card h-100 border-0 p-3 rounded-3 shadow-xs" style="background: #ffffff; border: 1px solid #e2e8f0 !important; border-top: 3px solid #10b981 !important;">
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                          <div class="rounded-circle bg-success bg-opacity-10 text-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                            <i class="bi bi-people-fill fs-5"></i>
+                          </div>
+                          <div>
+                            <h6 class="fw-bold mb-0 text-dark">By Customer Name</h6>
+                            <small class="text-success fw-medium">Multiple Match List</small>
+                          </div>
+                        </div>
+                        <p class="text-muted small mb-0 mt-2">
+                          Type all or part of a customer's name to view all matching clients along with their total policy count and contact details.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="text-center mt-4 pt-2">
+                    <span class="text-muted small">
+                      <i class="bi bi-question-circle me-1 text-primary"></i> Customer does not exist in the system? 
+                      <button type="button" class="btn btn-link btn-sm text-primary fw-semibold p-0 text-decoration-none ms-1" (click)="selectSection('Fresh')">
+                        Switch to Fresh Policy Entry &rarr;
+                      </button>
+                    </span>
                   </div>
                 </div>
 
@@ -858,7 +952,7 @@ import * as XLSX from 'xlsx';
                 </div>
 
                 <!-- No Results Message -->
-                <div *ngIf="hasSearchedCustomer && !searchingCustomers && renewalSearchResults.length === 0" class="alert alert-warning border-0 shadow-sm text-center py-4 my-3">
+                <div *ngIf="hasSearchedCustomer && !searchingCustomers && renewalSearchResults.length === 0" class="alert alert-warning border-0 shadow-sm text-center py-4 my-3 rounded-3">
                   <i class="bi bi-exclamation-triangle-fill fs-3 text-warning d-block mb-2"></i>
                   <h6 class="fw-bold mb-1">No Customers Found</h6>
                   <p class="text-muted small mb-3">No matching record found for "<strong>{{ renewalSearchQuery }}</strong>". Please check your query or create as Fresh.</p>
@@ -869,31 +963,40 @@ import * as XLSX from 'xlsx';
 
                 <!-- Matching Customers List -->
                 <div *ngIf="!searchingCustomers && renewalSearchResults.length > 0" class="mb-3">
-                  <label class="form-label small fw-bold text-dark text-uppercase tracking-wider mb-2">
-                    Matching Customers ({{ renewalSearchResults.length }}) — Click on a customer to view all policies
-                  </label>
-                  <div class="list-group shadow-sm mb-3" style="max-height: 380px; overflow-y: auto;">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold text-dark text-uppercase tracking-wider">
+                      <i class="bi bi-people text-primary me-1"></i> Matching Customers ({{ renewalSearchResults.length }})
+                    </span>
+                    <span class="small text-muted">Click on a customer to view their policy portfolio</span>
+                  </div>
+                  <div class="list-group shadow-sm mb-3" style="max-height: 380px; overflow-y: auto; border-radius: 12px; border: 1px solid #e2e8f0;">
                     <button type="button" 
                             *ngFor="let cust of renewalSearchResults"
-                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
+                            class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 border-bottom"
+                            style="transition: background-color 0.15s ease;"
                             (click)="selectCustomerForRenewal(cust)">
-                      <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                          <span class="badge bg-dark text-white fw-bold px-2 py-1">{{ cust.customerCode }}</span>
-                          <strong class="text-dark fs-6">{{ cust.fullName }}</strong>
+                      <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary fw-bold d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px; font-size: 1rem;">
+                          {{ (cust.fullName || 'C')[0] | uppercase }}
                         </div>
-                        <div class="small text-muted d-flex flex-wrap gap-3">
-                          <span *ngIf="cust.phone"><i class="bi bi-telephone me-1"></i>{{ cust.phone }}</span>
-                          <span *ngIf="cust.email"><i class="bi bi-envelope me-1"></i>{{ cust.email }}</span>
-                          <span *ngIf="cust.city"><i class="bi bi-geo-alt me-1"></i>{{ cust.city }}<span *ngIf="cust.state">, {{ cust.state }}</span></span>
+                        <div>
+                          <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-dark text-white fw-bold px-2 py-1" style="letter-spacing: 0.3px;">{{ cust.customerCode }}</span>
+                            <strong class="text-dark fs-6">{{ cust.fullName }}</strong>
+                          </div>
+                          <div class="small text-muted d-flex flex-wrap gap-3">
+                            <span *ngIf="cust.phone"><i class="bi bi-telephone text-secondary me-1"></i>{{ cust.phone }}</span>
+                            <span *ngIf="cust.email"><i class="bi bi-envelope text-secondary me-1"></i>{{ cust.email }}</span>
+                            <span *ngIf="cust.city"><i class="bi bi-geo-alt text-secondary me-1"></i>{{ cust.city }}<span *ngIf="cust.state">, {{ cust.state }}</span></span>
+                          </div>
                         </div>
                       </div>
-                      <div class="text-end">
-                        <span class="badge bg-primary px-3 py-2 fs-6 mb-1 d-inline-block shadow-sm">
+                      <div class="text-end flex-shrink-0 ms-3">
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-2 fs-6 mb-1 d-inline-block fw-bold shadow-xs">
                           <i class="bi bi-shield-check me-1"></i>{{ cust.policyCount }} Policies
                         </span>
                         <div class="small text-primary fw-semibold mt-1">
-                          View Policies <i class="bi bi-chevron-right ms-1"></i>
+                          Select & View Policies <i class="bi bi-arrow-right ms-1"></i>
                         </div>
                       </div>
                     </button>
@@ -3407,6 +3510,11 @@ export class AdminDashboardComponent implements OnInit {
     this.renewalSearchResults = [];
     this.hasSearchedCustomer = false;
     this.selectedRenewalCustomer = null;
+  }
+
+  setRenewalSearchExample(query: string) {
+    this.renewalSearchQuery = query;
+    this.searchRenewalCustomer();
   }
 
   selectCustomerForRenewal(cust: any) {
