@@ -395,32 +395,44 @@
                     </h4>
                     <div class="info-row">
                         <label>Name:</label>
-                        <span>{{ selectedPolicyDetails?.customer.firstName }} {{
-                            selectedPolicyDetails?.customer.lastName }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.firstName }} {{ selectedPolicyDetails?.customer?.lastName }}</span>
+                        <div *ngIf="isEditing" class="d-flex gap-1">
+                            <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedPolicyDetails.customer.firstName" placeholder="First Name">
+                            <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedPolicyDetails.customer.lastName" placeholder="Last Name">
+                        </div>
+                    </div>
+                    <div class="info-row">
+                        <label>Gender:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.gender || 'N/A' }}</span>
+                        <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedPolicyDetails.customer.gender">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div class="info-row">
                         <label>Email:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.email }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.email || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="email" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.customer.email">
                     </div>
                     <div class="info-row">
                         <label>Phone:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.phone }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.phone || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.customer.phone">
                     </div>
-                    <!-- New Fields START -->
                     <div class="info-row">
                         <label>DOB:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.dob | date:'mediumDate' }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.dob | date:'mediumDate' }}</span>
                         <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.customer.dob">
                     </div>
                     <div class="info-row">
                         <label>Billing:</label>
                         <span *ngIf="!isEditing" class="badge bg-secondary">{{
-                            selectedPolicyDetails?.customer.billingFrequency || 'N/A' }}</span>
+                            selectedPolicyDetails?.customer?.billingFrequency || 'N/A' }}</span>
                         <select *ngIf="isEditing" class="form-select form-select-sm"
                             [(ngModel)]="selectedPolicyDetails.customer.billingFrequency">
                             <option value="Monthly">Monthly</option>
@@ -429,31 +441,30 @@
                             <option value="Yearly">Yearly</option>
                         </select>
                     </div>
-                    <div class="info-row" *ngIf="canViewSensitiveInfo">
+                    <div class="info-row" *ngIf="canViewSensitiveInfo || selectedPolicyDetails?.customer?.panNumber">
                         <label>PAN:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.panNumber || 'N/A' }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.panNumber || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm text-uppercase"
                             [(ngModel)]="selectedPolicyDetails.customer.panNumber">
                     </div>
-                    <div class="info-row" *ngIf="canViewSensitiveInfo">
+                    <div class="info-row" *ngIf="canViewSensitiveInfo || selectedPolicyDetails?.customer?.gstNumber">
                         <label>GST:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.gstNumber || 'N/A' }}</span>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.gstNumber || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm text-uppercase"
                             [(ngModel)]="selectedPolicyDetails.customer.gstNumber">
                     </div>
                     <div class="info-row">
                         <label>Address:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer.address || 'N/A' }}
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.address || 'N/A' }}
                             <small class="d-block text-muted"
-                                *ngIf="selectedPolicyDetails?.customer.city || selectedPolicyDetails?.customer.state">
-                                {{ selectedPolicyDetails?.customer.city }}{{ selectedPolicyDetails?.customer.state ? ',
-                                ' + selectedPolicyDetails?.customer.state : '' }}
+                                *ngIf="selectedPolicyDetails?.customer?.city || selectedPolicyDetails?.customer?.state || selectedPolicyDetails?.customer?.pincode">
+                                {{ selectedPolicyDetails?.customer?.city }}{{ selectedPolicyDetails?.customer?.state ? ', ' + selectedPolicyDetails?.customer?.state : '' }}{{ selectedPolicyDetails?.customer?.pincode ? ' - ' + selectedPolicyDetails?.customer?.pincode : '' }}
                             </small>
                         </span>
                         <div *ngIf="isEditing">
                             <textarea class="form-control form-control-sm mb-1" rows="2"
                                 [(ngModel)]="selectedPolicyDetails.customer.address" placeholder="Address"></textarea>
-                            <div class="d-flex gap-1">
+                            <div class="d-flex gap-1 mb-1">
                                 <input type="text" class="form-control form-control-sm"
                                     [(ngModel)]="selectedPolicyDetails.customer.city" placeholder="City">
                                 <input type="text" class="form-control form-control-sm"
@@ -461,12 +472,36 @@
                             </div>
                         </div>
                     </div>
-                    <!-- New Fields END -->
+                    <div class="info-row">
+                        <label>Pin Code:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.pincode || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.customer.pincode" placeholder="Pin Code">
+                    </div>
                 </div>
 
                 <!-- Policy Section -->
                 <div class="detail-card">
                     <h4 class="section-title"><i class="bi bi-file-text"></i> Policy Info</h4>
+                    <div class="info-row" *ngIf="isEditing">
+                        <label>Policy No:</label>
+                        <input type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.policyNumber">
+                    </div>
+                    <div class="info-row">
+                        <label>Type:</label>
+                        <span *ngIf="!isEditing" class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">{{ selectedPolicyDetails?.type || 'N/A' }}</span>
+                        <select *ngIf="isEditing" class="form-select form-select-sm"
+                            [(ngModel)]="selectedPolicyDetails.type">
+                            <option value="Health">Health</option>
+                            <option value="Life">Life</option>
+                            <option value="Motor">Motor</option>
+                            <option value="Commercial">Commercial</option>
+                            <option value="GMC">GMC</option>
+                            <option value="GPA">GPA</option>
+                            <option value="GTL">GTL</option>
+                        </select>
+                    </div>
                     <div class="info-row">
                         <label>Insurance:</label>
                         <span *ngIf="!isEditing" class="fw-bold">{{ selectedPolicyDetails?.insuranceName || 'N/A' }}</span>
@@ -480,6 +515,12 @@
                             [(ngModel)]="selectedPolicyDetails.productName">
                     </div>
                     <div class="info-row">
+                        <label>Issue Date:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.policyIssueDate | date:'mediumDate' }}</span>
+                        <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.policyIssueDate">
+                    </div>
+                    <div class="info-row">
                         <label>Start Date:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.policyStartDate | date:'mediumDate' }}</span>
                         <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
@@ -487,16 +528,27 @@
                     </div>
                     <div class="info-row">
                         <label>End Date:</label>
-                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.policyEndDate | date:'mediumDate' }}</span>
+                        <span *ngIf="!isEditing">{{ (selectedPolicyDetails?.policyEndDate || selectedPolicyDetails?.expiryDate) | date:'mediumDate' }}</span>
                         <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.policyEndDate">
                     </div>
                     <div class="info-row">
                         <label>Premium:</label>
-                        <span *ngIf="!isEditing" class="text-success fw-bold">{{ selectedPolicyDetails?.duePremium | currency:'INR'
-                            }}</span>
+                        <span *ngIf="!isEditing" class="text-success fw-bold">{{ selectedPolicyDetails?.duePremium ? (selectedPolicyDetails?.duePremium | currency:'INR') : 'N/A' }}</span>
                         <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.duePremium">
+                    </div>
+                    <div class="info-row">
+                        <label>Amount:</label>
+                        <span *ngIf="!isEditing" class="text-dark fw-bold">{{ selectedPolicyDetails?.amount ? (selectedPolicyDetails?.amount | currency:'INR') : 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.amount">
+                    </div>
+                    <div class="info-row">
+                        <label>Sum Insured:</label>
+                        <span *ngIf="!isEditing" class="fw-semibold text-primary">{{ selectedPolicyDetails?.sumInsured ? (selectedPolicyDetails?.sumInsured | currency:'INR') : 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.sumInsured">
                     </div>
 
                     <hr class="my-3 text-muted opacity-25">
@@ -514,10 +566,16 @@
                             [(ngModel)]="selectedPolicyDetails.rmEmail" [disabled]="!isAdmin">
                     </div>
                     <div class="info-row">
-                        <label>POSP:</label>
+                        <label>Associate:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.associateName || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.associateName">
+                    </div>
+                    <div class="info-row">
+                        <label>POSP:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.pospName || selectedPolicyDetails?.associateName || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.pospName">
                     </div>
                     <div class="info-row">
                         <label>Code:</label>
@@ -539,6 +597,7 @@
                             <option value="Fresh">Fresh</option>
                             <option value="Renewal">Renewal</option>
                             <option value="Portability">Portability</option>
+                            <option value="Endorsement">Endorsement</option>
                         </select>
                     </div>
                     <div class="info-row">
@@ -550,6 +609,7 @@
                             <option value="Issued">Issued</option>
                             <option value="Logged">Logged</option>
                             <option value="Cancelled">Cancelled</option>
+                            <option value="Pending">Pending</option>
                         </select>
                     </div>
                     <div class="info-row">
@@ -561,20 +621,50 @@
                 </div>
 
                 <!-- Vehicle Section (Only for Motor Insurance) -->
-                <div class="detail-card" *ngIf="isMotorPolicy">
-                    <h4 class="section-title"><i class="bi bi-car-front"></i> Asset Details</h4>
+                <div class="detail-card" *ngIf="isMotorPolicy || selectedPolicyDetails?.vehicleRegNo || selectedPolicyDetails?.vehicleModel || selectedPolicyDetails?.vehicleType || selectedPolicyDetails?.mfgYear || selectedPolicyDetails?.idv || selectedPolicyDetails?.odAmount || selectedPolicyDetails?.tpAmount">
+                    <h4 class="section-title"><i class="bi bi-car-front"></i> Asset Details (Motor)</h4>
                     <div class="info-row">
-                        <label>Reg No:</label>
+                        <label>Car/Reg No:</label>
                         <span *ngIf="!isEditing" class="fw-bold">{{ selectedPolicyDetails?.vehicleRegNo || 'N/A'
                             }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.vehicleRegNo">
                     </div>
                     <div class="info-row">
-                        <label>Model:</label>
+                        <label>Model Name:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.vehicleModel || 'N/A' }}</span>
                         <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.vehicleModel">
+                    </div>
+                    <div class="info-row">
+                        <label>Mfg Year:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.mfgYear || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.mfgYear">
+                    </div>
+                    <div class="info-row">
+                        <label>Vehicle Type:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.vehicleType || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.vehicleType">
+                    </div>
+                    <div class="info-row">
+                        <label>IDV:</label>
+                        <span *ngIf="!isEditing" class="fw-semibold">{{ selectedPolicyDetails?.idv ? (selectedPolicyDetails?.idv | currency:'INR') : 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.idv">
+                    </div>
+                    <div class="info-row">
+                        <label>OD Amount:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.odAmount ? (selectedPolicyDetails?.odAmount | currency:'INR') : 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.odAmount">
+                    </div>
+                    <div class="info-row">
+                        <label>TP Amount:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.tpAmount ? (selectedPolicyDetails?.tpAmount | currency:'INR') : 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.tpAmount">
                     </div>
                 </div>
             </div>
@@ -583,35 +673,53 @@
             <div class="detail-card mt-2">
                 <h4 class="section-title"><i class="bi bi-credit-card"></i> Payment Details</h4>
                 <div class="row g-2">
-                    <div class="col-6">
+                    <div class="col-md-6">
                         <div class="info-row">
-                            <label>Mode:</label>
-                            <span>{{ selectedPolicyDetails?.paymentMode || 'N/A' }}</span>
+                            <label>Payment Mode:</label>
+                            <span *ngIf="!isEditing">{{ selectedPolicyDetails?.paymentMode || 'N/A' }}</span>
+                            <select *ngIf="isEditing" class="form-select form-select-sm"
+                                [(ngModel)]="selectedPolicyDetails.paymentMode">
+                                <option value="">Select Mode</option>
+                                <option value="Online">Online</option>
+                                <option value="Cheque">Cheque</option>
+                                <option value="DD">DD</option>
+                                <option value="Cash">Cash</option>
+                                <option value="NEFT">NEFT</option>
+                                <option value="RTGS">RTGS</option>
+                                <option value="UPI">UPI</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-md-6">
                         <div class="info-row">
-                            <label>Date:</label>
-                            <span>{{ selectedPolicyDetails?.paymentDate | date:'mediumDate' }}</span>
+                            <label>Payment Date:</label>
+                            <span *ngIf="!isEditing">{{ selectedPolicyDetails?.paymentDate | date:'mediumDate' }}</span>
+                            <input *ngIf="isEditing" type="date" class="form-control form-control-sm"
+                                [(ngModel)]="selectedPolicyDetails.paymentDate">
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-md-6">
                         <div class="info-row">
-                            <label>Bank:</label>
-                            <span>{{ selectedPolicyDetails?.paymentBank || 'N/A' }}</span>
+                            <label>Bank Name:</label>
+                            <span *ngIf="!isEditing">{{ selectedPolicyDetails?.paymentBank || 'N/A' }}</span>
+                            <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                                [(ngModel)]="selectedPolicyDetails.paymentBank">
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-md-6">
                         <div class="info-row">
-                            <label>Ref/ID:</label>
-                            <span>{{ selectedPolicyDetails?.paymentReference || 'N/A' }}</span>
+                            <label>Ref / Cheque / DD No:</label>
+                            <span *ngIf="!isEditing">{{ selectedPolicyDetails?.paymentReference || 'N/A' }}</span>
+                            <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                                [(ngModel)]="selectedPolicyDetails.paymentReference">
                         </div>
                     </div>
                     <div class="col-12 border-top pt-2 mt-1">
                         <div class="info-row">
-                            <label>Amount:</label>
-                            <span class="text-success fw-bold">{{ selectedPolicyDetails?.paymentAmount | currency:'INR'
-                                }}</span>
+                            <label>Payment Amount:</label>
+                            <span *ngIf="!isEditing" class="text-success fw-bold">{{ (selectedPolicyDetails?.paymentAmount || selectedPolicyDetails?.amount) | currency:'INR' }}</span>
+                            <input *ngIf="isEditing" type="number" class="form-control form-control-sm"
+                                [(ngModel)]="selectedPolicyDetails.paymentAmount">
                         </div>
                     </div>
                 </div>

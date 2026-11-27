@@ -516,17 +516,25 @@ export class CustomerListComponent implements OnChanges {
     openDetailsModal(policy: any) {
         // Show modal immediately with cached data for responsiveness
         this.selectedPolicyDetails = policy;
+        if (this.selectedPolicyDetails && !this.selectedPolicyDetails.customer) {
+            this.selectedPolicyDetails.customer = {};
+        }
         this.showDetailsModal = true;
         this.isEditing = false;
 
         // Fetch latest version from server to ensure fresh data
-        this.apiService.getPolicyById(policy.id).subscribe({
-            next: (freshPolicy) => {
-                this.selectedPolicyDetails = freshPolicy;
-                console.log('Policy details refreshed from server');
-            },
-            error: (err) => console.error('Error refreshing policy details:', err)
-        });
+        if (policy && policy.id) {
+            this.apiService.getPolicyById(policy.id).subscribe({
+                next: (freshPolicy) => {
+                    this.selectedPolicyDetails = freshPolicy;
+                    if (this.selectedPolicyDetails && !this.selectedPolicyDetails.customer) {
+                        this.selectedPolicyDetails.customer = {};
+                    }
+                    console.log('Policy details refreshed from server');
+                },
+                error: (err) => console.error('Error refreshing policy details:', err)
+            });
+        }
     }
 
     closeDetailsModal() {
@@ -769,6 +777,13 @@ export class CustomerListComponent implements OnChanges {
         const insurance = (this.selectedPolicyDetails.insuranceName || '').toLowerCase();
         const product = (this.selectedPolicyDetails.productName || '').toLowerCase();
 
+        // If explicit motor fields are present, it's motor
+        if (this.selectedPolicyDetails.vehicleRegNo || this.selectedPolicyDetails.vehicleModel ||
+            this.selectedPolicyDetails.vehicleType || this.selectedPolicyDetails.mfgYear ||
+            this.selectedPolicyDetails.idv || this.selectedPolicyDetails.odAmount || this.selectedPolicyDetails.tpAmount) {
+            return true;
+        }
+
         // Aggressively hide for known non-motor types
         if (type.includes('life') || type.includes('health') ||
             product.includes('life') || product.includes('health') ||
@@ -776,8 +791,8 @@ export class CustomerListComponent implements OnChanges {
             return false;
         }
 
-        // Return true if any of these keywords are in the type or product
-        const motorKeywords = ['motor', 'auto', 'car', 'vehicle', 'two wheeler', 'gcv', 'pcv', 'commercial'];
+        // Return true if any motor keywords are in the type or product
+        const motorKeywords = ['motor', 'auto', 'car', 'vehicle', 'two wheeler', 'gcv', 'pcv'];
         return motorKeywords.some(keyword => type.includes(keyword) || product.includes(keyword));
     }
 

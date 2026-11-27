@@ -1251,6 +1251,7 @@ import { forkJoin, of, finalize } from 'rxjs';
   `]
 })
 export class RenewalComponent implements OnInit {
+  @ViewChild(CustomerListComponent) customerListComponent?: CustomerListComponent;
   policies: any[] = [];
   followUps: any[] = [];
   loading: boolean = false;
@@ -2386,20 +2387,53 @@ export class RenewalComponent implements OnInit {
       delete payload.reminder; // Remove reminder to avoid backend deserialization issues
 
       this.apiService.updatePolicy(this.selectedRenewalPolicy.id, payload).subscribe({
-        next: () => {
+        next: (updatedPolicy: any) => {
           this.notificationService.showSuccessToast('Policy updated successfully!');
           this.closeRenewalModal();
-          window.location.reload();
+          const target = updatedPolicy || payload;
+          if (target && (target.id || this.selectedRenewalPolicy.id)) {
+            const targetId = target.id || this.selectedRenewalPolicy.id;
+            const idx = this.policies.findIndex(p => p.id === targetId);
+            if (idx !== -1) {
+              this.policies[idx] = target;
+            }
+            const baseIdx = this.basePolicies.findIndex(p => p.id === targetId);
+            if (baseIdx !== -1) {
+              this.basePolicies[baseIdx] = target;
+            }
+          }
+          if (this.selectedDay === null && !this.selectedDate) {
+            this.selectedDay = 0;
+          }
+          setTimeout(() => {
+            if (this.customerListComponent) {
+              this.customerListComponent.openDetailsModal(target);
+            }
+          }, 200);
         },
         error: (err: any) => this.notificationService.showErrorModal('Error updating policy: ' + (err.error?.message || err.message))
       });
     } else {
       // Create new policy
       this.apiService.createPolicy(this.renewalForm).subscribe({
-        next: () => {
+        next: (createdPolicy: any) => {
           this.notificationService.showSuccessToast('Policy created successfully!');
           this.closeRenewalModal();
-          window.location.reload();
+          
+          if (createdPolicy) {
+            this.basePolicies = [createdPolicy, ...(this.basePolicies || [])];
+            this.policies = [createdPolicy, ...(this.policies || [])];
+
+            if (this.selectedDay === null && !this.selectedDate) {
+              this.selectedDay = 0;
+            }
+
+            setTimeout(() => {
+              if (this.customerListComponent) {
+                this.customerListComponent.openDetailsModal(createdPolicy);
+              }
+            }, 200);
+          }
         },
         error: (err: any) => this.notificationService.showErrorModal('Error creating policy: ' + (err.error?.message || err.message))
       });

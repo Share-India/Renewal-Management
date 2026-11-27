@@ -406,76 +406,202 @@ import * as XLSX from 'xlsx';
                 </div>
                 <div class="col-md-6">
                     <label class="fw-bold text-muted small">Customer Name</label>
-                    <div>{{ selectedViewPolicy.customer.firstName }} {{ selectedViewPolicy.customer.lastName }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.firstName }} {{ selectedViewPolicy.customer?.lastName }}</div>
+                    <div *ngIf="isEditing" class="d-flex gap-1">
+                        <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.firstName" placeholder="First Name">
+                        <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.lastName" placeholder="Last Name">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Gender</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.gender || '-' }}</div>
+                    <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedViewPolicy.customer.gender">
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label class="fw-bold text-muted small">Contact</label>
-                    <div>{{ selectedViewPolicy.customer.phone }}</div>
-                    <small class="text-muted">{{ selectedViewPolicy.customer.email }}</small>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.phone || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.phone">
                 </div>
                 <div class="col-md-6">
-                    <label class="fw-bold text-muted small">Policy Type</label>
-                    <div>{{ selectedViewPolicy.type }}</div>
-                    <small class="text-muted">{{ selectedViewPolicy.insuranceName }}</small>
+                    <label class="fw-bold text-muted small">Email ID</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.email || '-' }}</div>
+                    <input *ngIf="isEditing" type="email" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.email">
                 </div>
-                 <div class="col-md-6">
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Policy Number</label>
+                    <div *ngIf="!isEditing" class="fw-bold">{{ selectedViewPolicy.policyNumber }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.policyNumber">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Insurance Type</label>
+                    <div *ngIf="!isEditing"><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ selectedViewPolicy.type || '-' }}</span></div>
+                    <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedViewPolicy.type">
+                        <option value="Health">Health</option>
+                        <option value="Life">Life</option>
+                        <option value="Motor">Motor</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="GMC">GMC</option>
+                        <option value="GPA">GPA</option>
+                        <option value="GTL">GTL</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Insurer Name</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.insuranceName || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.insuranceName">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Product Name</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.productName || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.productName">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Policy Issue Date</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.policyIssueDate | date:'mediumDate' }}</div>
+                    <input *ngIf="isEditing" type="date" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.policyIssueDate">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Policy Start Date</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.policyStartDate | date:'mediumDate' }}</div>
+                    <input *ngIf="isEditing" type="date" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.policyStartDate">
+                </div>
+                <div class="col-md-6">
                     <label class="fw-bold text-muted small">Expiry Date</label>
-                    <div>{{ selectedViewPolicy.expiryDate | date:'mediumDate' }}</div>
+                    <div *ngIf="!isEditing">{{ (selectedViewPolicy.policyEndDate || selectedViewPolicy.expiryDate) | date:'mediumDate' }}</div>
+                    <input *ngIf="isEditing" type="date" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.policyEndDate">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Premium (Due)</label>
+                    <div *ngIf="!isEditing" class="text-success fw-bold">{{ selectedViewPolicy.duePremium ? (selectedViewPolicy.duePremium | currency:'INR') : '-' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.duePremium">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Total Amount</label>
+                    <div *ngIf="!isEditing" class="fw-bold">{{ selectedViewPolicy.amount ? (selectedViewPolicy.amount | currency:'INR') : '-' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.amount">
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Sum Assured / Insured</label>
+                    <div *ngIf="!isEditing" class="text-primary fw-semibold">{{ selectedViewPolicy.sumInsured ? (selectedViewPolicy.sumInsured | currency:'INR') : '-' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.sumInsured">
                 </div>
 
-                 <!-- Customer MIS Fields (Toggle-able) -->
-                 <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
+                <!-- Customer MIS Fields -->
+                <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
 
-                 <!-- DOB -->
-                 <div class="col-md-6">
+                <div class="col-md-6">
                     <label class="fw-bold text-muted small">Date of Birth</label>
-                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer.dob | date:'mediumDate' }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.dob | date:'mediumDate' }}</div>
                     <input *ngIf="isEditing" type="date" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.dob">
-                 </div>
-                 <!-- Billing Freq -->
-                 <div class="col-md-6">
+                </div>
+                <div class="col-md-6">
                     <label class="fw-bold text-muted small">Billing Freq.</label>
-                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer.billingFrequency || '-' }}</div>
-                     <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedViewPolicy.customer.billingFrequency">
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.billingFrequency || '-' }}</div>
+                    <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedViewPolicy.customer.billingFrequency">
                         <option value="Monthly">Monthly</option>
                         <option value="Quarterly">Quarterly</option>
-                        <option value="Half-YearLy">Half-Yearly</option>
+                        <option value="Half-Yearly">Half-Yearly</option>
                         <option value="Yearly">Yearly</option>
                     </select>
-                 </div>
-                 <!-- PAN -->
-                  <div class="col-md-6">
+                </div>
+                <div class="col-md-6">
                     <label class="fw-bold text-muted small">PAN Number</label>
-                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer.panNumber || '-' }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.panNumber || '-' }}</div>
                     <input *ngIf="isEditing" type="text" class="form-control form-control-sm text-uppercase" [(ngModel)]="selectedViewPolicy.customer.panNumber">
-                 </div>
-                 <!-- GST -->
-                  <div class="col-md-6">
+                </div>
+                <div class="col-md-6">
                     <label class="fw-bold text-muted small">GST Number</label>
-                     <div *ngIf="!isEditing">{{ selectedViewPolicy.customer.gstNumber || '-' }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.customer?.gstNumber || '-' }}</div>
                     <input *ngIf="isEditing" type="text" class="form-control form-control-sm text-uppercase" [(ngModel)]="selectedViewPolicy.customer.gstNumber">
-                 </div>
-                 <!-- Address -->
-                 <div class="col-12">
+                </div>
+                <div class="col-12">
                     <label class="fw-bold text-muted small">Address Details</label>
-                     <div *ngIf="!isEditing">
-                        <div>{{ selectedViewPolicy.customer.address || '-' }}</div>
-                        <div class="text-muted small" *ngIf="selectedViewPolicy.customer.city || selectedViewPolicy.customer.state">
-                            {{ selectedViewPolicy.customer.city }}{{ selectedViewPolicy.customer.state ? ', ' + selectedViewPolicy.customer.state : '' }}
+                    <div *ngIf="!isEditing">
+                        <div>{{ selectedViewPolicy.customer?.address || '-' }}</div>
+                        <div class="text-muted small" *ngIf="selectedViewPolicy.customer?.city || selectedViewPolicy.customer?.state || selectedViewPolicy.customer?.pincode">
+                            {{ selectedViewPolicy.customer?.city }}{{ selectedViewPolicy.customer?.state ? ', ' + selectedViewPolicy.customer?.state : '' }}{{ selectedViewPolicy.customer?.pincode ? ' - ' + selectedViewPolicy.customer?.pincode : '' }}
                         </div>
                     </div>
-                     <div *ngIf="isEditing" class="row g-2">
+                    <div *ngIf="isEditing" class="row g-2">
                         <div class="col-12">
                             <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="selectedViewPolicy.customer.address" placeholder="Full Address"></textarea>
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
                             <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.city" placeholder="City">
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
                             <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.state" placeholder="State">
                         </div>
+                        <div class="col-4">
+                            <input type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.customer.pincode" placeholder="Pin Code">
+                        </div>
                     </div>
-                 </div>
+                </div>
+
+                <!-- Team Details -->
+                <div class="col-12 mt-2">
+                    <h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-people-fill me-1"></i> Team & Sales Details</h6>
+                </div>
+                <div class="col-md-4">
+                    <label class="fw-bold text-muted small">RM Name</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.rmName || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.rmName">
+                </div>
+                <div class="col-md-4">
+                    <label class="fw-bold text-muted small">Associate Name</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.associateName || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.associateName">
+                </div>
+                <div class="col-md-4">
+                    <label class="fw-bold text-muted small">POSP Name</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.pospName || selectedViewPolicy.associateName || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.pospName">
+                </div>
+
+                <!-- Motor Asset Details Section (if motor) -->
+                <div class="col-12 mt-2" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-car-front-fill me-1"></i> Asset Details (Motor)</h6>
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">Car / Reg No</label>
+                    <div *ngIf="!isEditing" class="fw-bold">{{ selectedViewPolicy.vehicleRegNo || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.vehicleRegNo">
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">Model Name</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.vehicleModel || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.vehicleModel">
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">Mfg Year</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.mfgYear || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.mfgYear">
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">Vehicle Type</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.vehicleType || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.vehicleType">
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">IDV</label>
+                    <div *ngIf="!isEditing" class="fw-semibold">{{ selectedViewPolicy.idv ? (selectedViewPolicy.idv | currency:'INR') : '-' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.idv">
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">OD Amount</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.odAmount ? (selectedViewPolicy.odAmount | currency:'INR') : '-' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.odAmount">
+                </div>
+                <div class="col-md-4" *ngIf="isMotorPolicy(selectedViewPolicy)">
+                    <label class="fw-bold text-muted small">TP Amount</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.tpAmount ? (selectedViewPolicy.tpAmount | currency:'INR') : '-' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.tpAmount">
+                </div>
 
                 <!-- MIS Enrichment Details Section -->
                 <div class="col-12 mt-3">
@@ -517,23 +643,37 @@ import * as XLSX from 'xlsx';
                 </div>
                  <div class="col-md-6">
                     <label class="fw-bold text-muted small">Payment Mode</label>
-                    <div>{{ selectedViewPolicy.paymentMode || '-' }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.paymentMode || '-' }}</div>
+                    <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedViewPolicy.paymentMode">
+                        <option value="">Select Mode</option>
+                        <option value="Online">Online</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="DD">DD</option>
+                        <option value="Cash">Cash</option>
+                        <option value="NEFT">NEFT</option>
+                        <option value="RTGS">RTGS</option>
+                        <option value="UPI">UPI</option>
+                    </select>
                 </div>
                 <div class="col-md-6">
                     <label class="fw-bold text-muted small">Payment Date</label>
-                    <div>{{ selectedViewPolicy.paymentDate | date:'mediumDate' }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.paymentDate | date:'mediumDate' }}</div>
+                    <input *ngIf="isEditing" type="date" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.paymentDate">
                 </div>
                 <div class="col-md-6">
                     <label class="fw-bold text-muted small">Bank Name</label>
-                    <div>{{ selectedViewPolicy.paymentBank || '-' }}</div>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.paymentBank || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.paymentBank">
                 </div>
                  <div class="col-md-6">
-                    <label class="fw-bold text-muted small">Reference / ID</label>
-                    <div>{{ selectedViewPolicy.paymentReference || '-' }}</div>
+                    <label class="fw-bold text-muted small">Ref / Cheque / DD No</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.paymentReference || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.paymentReference">
                 </div>
                  <div class="col-md-6">
                     <label class="fw-bold text-muted small">Payment Amount</label>
-                    <div class="text-success fw-bold">{{ selectedViewPolicy.paymentAmount | currency:'INR' }}</div>
+                    <div *ngIf="!isEditing" class="text-success fw-bold">{{ (selectedViewPolicy.paymentAmount || selectedViewPolicy.amount) | currency:'INR' }}</div>
+                    <input *ngIf="isEditing" type="number" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.paymentAmount">
                 </div>
             </div>
             
@@ -2799,21 +2939,48 @@ export class AdminDashboardComponent implements OnInit {
   selectedViewPolicy: any = null;
   showViewModal: boolean = false;
 
+  isMotorPolicy(policy: any): boolean {
+    if (!policy) return false;
+    const type = (policy.type || '').toLowerCase();
+    const insurance = (policy.insuranceName || '').toLowerCase();
+    const product = (policy.productName || '').toLowerCase();
+
+    if (policy.vehicleRegNo || policy.vehicleModel || policy.vehicleType || policy.mfgYear ||
+        policy.idv || policy.odAmount || policy.tpAmount) {
+      return true;
+    }
+
+    if (type.includes('life') || type.includes('health') || product.includes('life') || product.includes('health')) {
+      return false;
+    }
+
+    const motorKeywords = ['motor', 'auto', 'car', 'vehicle', 'two wheeler', 'gcv', 'pcv'];
+    return motorKeywords.some(keyword => type.includes(keyword) || product.includes(keyword));
+  }
+
   openViewModal(policy: any) {
     this.selectedViewPolicy = policy;
+    if (this.selectedViewPolicy && !this.selectedViewPolicy.customer) {
+      this.selectedViewPolicy.customer = {};
+    }
     this.showViewModal = true;
     this.isEditing = false;
     this.viewHistoryMode = false;
     this.auditLogs = [];
 
     // Fetch fresh data
-    this.apiService.getPolicyById(policy.id).subscribe({
-      next: (freshPolicy) => {
-        this.selectedViewPolicy = freshPolicy;
-        console.log('Admin Dashboard: Policy refreshed from server');
-      },
-      error: (err) => console.error('Error refreshing policy in Admin Dashboard:', err)
-    });
+    if (policy && policy.id) {
+      this.apiService.getPolicyById(policy.id).subscribe({
+        next: (freshPolicy) => {
+          this.selectedViewPolicy = freshPolicy;
+          if (this.selectedViewPolicy && !this.selectedViewPolicy.customer) {
+            this.selectedViewPolicy.customer = {};
+          }
+          console.log('Admin Dashboard: Policy refreshed from server');
+        },
+        error: (err) => console.error('Error refreshing policy in Admin Dashboard:', err)
+      });
+    }
   }
 
   closeViewModal() {
@@ -3063,20 +3230,26 @@ export class AdminDashboardComponent implements OnInit {
       delete payload.reminder;
 
       this.apiService.updatePolicy(this.selectedRenewalPolicy.id, payload).subscribe({
-        next: () => {
+        next: (updatedPolicy: any) => {
           this.notificationService.showSuccessToast('Policy updated successfully!');
           this.closeRenewalModal();
           this.ngOnInit(); // Refresh stats
+          if (updatedPolicy) {
+            this.openViewModal(updatedPolicy);
+          }
         },
         error: (err) => this.notificationService.showErrorModal('Error updating policy: ' + (err.error?.message || err.message))
       });
     } else {
       // Create new policy
       this.apiService.createPolicy(this.renewalForm).subscribe({
-        next: () => {
+        next: (createdPolicy: any) => {
           this.notificationService.showSuccessToast('Policy created successfully!');
           this.closeRenewalModal();
           this.ngOnInit(); // Refresh stats
+          if (createdPolicy) {
+            this.openViewModal(createdPolicy);
+          }
         },
         error: (err) => this.notificationService.showErrorModal('Error creating policy: ' + (err.error?.message || err.message))
       });
