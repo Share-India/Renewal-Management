@@ -1180,6 +1180,90 @@ public class RenewalService {
         return savedPolicy;
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<Map<String, Object>> searchCustomerForRenewal(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        String cleanQuery = query.trim();
+
+        // 1. Search customers by customer code, name, phone, email
+        List<Customer> customers = customerRepository.searchCustomers(cleanQuery);
+
+        // 2. Search customers by policy number match
+        List<Customer> customersByPolicy = policyRepository.findCustomersByPolicyNumberSearch(cleanQuery);
+
+        // Deduplicate customers by ID preserving order
+        Map<Long, Customer> dedupMap = new java.util.LinkedHashMap<>();
+        for (Customer c : customers) {
+            if (c != null && c.getId() != null) {
+                dedupMap.put(c.getId(), c);
+            }
+        }
+        for (Customer c : customersByPolicy) {
+            if (c != null && c.getId() != null) {
+                dedupMap.putIfAbsent(c.getId(), c);
+            }
+        }
+
+        // Limit results to 25 customers to keep response fast
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        int count = 0;
+        for (Customer customer : dedupMap.values()) {
+            if (count++ >= 25) break;
+
+            Map<String, Object> cMap = new java.util.LinkedHashMap<>();
+            cMap.put("id", customer.getId());
+            cMap.put("customerCode", customer.getCustomerCode());
+            cMap.put("firstName", customer.getFirstName());
+            cMap.put("lastName", customer.getLastName());
+            String fullName = ((customer.getFirstName() != null ? customer.getFirstName() : "") + " " +
+                               (customer.getLastName() != null ? customer.getLastName() : "")).trim();
+            cMap.put("fullName", fullName);
+            cMap.put("phone", customer.getPhone());
+            cMap.put("email", customer.getEmail());
+            cMap.put("gender", customer.getGender());
+            cMap.put("dob", customer.getDob());
+            cMap.put("address", customer.getAddress());
+            cMap.put("city", customer.getCity());
+            cMap.put("state", customer.getState());
+            cMap.put("pincode", customer.getPincode());
+            cMap.put("panNumber", customer.getPanNumber());
+            cMap.put("billingFrequency", customer.getBillingFrequency());
+
+            // Fetch customer policies
+            List<Policy> policies = policyRepository.findPoliciesByCustomerId(customer.getId());
+            List<Map<String, Object>> policySummaries = new java.util.ArrayList<>();
+            for (Policy p : policies) {
+                Map<String, Object> pMap = new java.util.LinkedHashMap<>();
+                pMap.put("id", p.getId());
+                pMap.put("policyNumber", p.getPolicyNumber());
+                pMap.put("applicationNumber", p.getApplicationNumber());
+                pMap.put("type", p.getType());
+                pMap.put("insuranceName", p.getInsuranceName());
+                pMap.put("productName", p.getProductName());
+                pMap.put("duePremium", p.getDuePremium());
+                pMap.put("amount", p.getAmount());
+                pMap.put("policyStartDate", p.getPolicyStartDate());
+                pMap.put("policyEndDate", p.getPolicyEndDate());
+                pMap.put("expiryDate", p.getExpiryDate());
+                pMap.put("status", p.getStatus());
+                pMap.put("branch", p.getBranch());
+                pMap.put("rmName", p.getRmName());
+                pMap.put("associateName", p.getAssociateName());
+                pMap.put("pospName", p.getPospName());
+                pMap.put("vehicleRegNo", p.getVehicleRegNo());
+                pMap.put("vehicleModel", p.getVehicleModel());
+                pMap.put("businessType", p.getBusinessType());
+                policySummaries.add(pMap);
+            }
+            cMap.put("policies", policySummaries);
+            cMap.put("policyCount", policySummaries.size());
+            result.add(cMap);
+        }
+        return result;
+    }
+
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     @org.springframework.transaction.annotation.Transactional
     public void ensureRemindersExist() {
@@ -1930,6 +2014,12 @@ public class RenewalService {
             logChange(policyId, "Policy Number", existingPolicy.getPolicyNumber(), updatedPolicy.getPolicyNumber(),
                     agentName);
             existingPolicy.setPolicyNumber(updatedPolicy.getPolicyNumber());
+        }
+        if (updatedPolicy.getApplicationNumber() != null
+                && !updatedPolicy.getApplicationNumber().equals(existingPolicy.getApplicationNumber())) {
+            logChange(policyId, "Application Number", existingPolicy.getApplicationNumber(), updatedPolicy.getApplicationNumber(),
+                    agentName);
+            existingPolicy.setApplicationNumber(updatedPolicy.getApplicationNumber());
         }
         if (updatedPolicy.getType() != null && !updatedPolicy.getType().equals(existingPolicy.getType())) {
             logChange(policyId, "Type", existingPolicy.getType(), updatedPolicy.getType(), agentName);

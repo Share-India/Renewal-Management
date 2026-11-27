@@ -130,6 +130,12 @@ public class RenewalController {
         return ResponseEntity.ok(renewalService.createPolicy(policy, agentName));
     }
 
+    @GetMapping("/search-customer")
+    public ResponseEntity<List<Map<String, Object>>> searchCustomerForRenewal(
+            @RequestParam(value = "query", required = false) String query) {
+        return ResponseEntity.ok(renewalService.searchCustomerForRenewal(query));
+    }
+
     @GetMapping("/policies/download-format")
     public ResponseEntity<org.springframework.core.io.Resource> downloadFormat() {
         try {

@@ -25,6 +25,13 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
             "LIMIT 1", nativeQuery = true)
     String findCustomerCodeByName(@Param("fullName") String fullName);
 
+    @Query("SELECT DISTINCT c FROM Customer c WHERE " +
+            "LOWER(c.customerCode) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "LOWER(CONCAT(COALESCE(c.firstName, ''), ' ', COALESCE(c.lastName, ''))) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+            "c.phone LIKE CONCAT('%', :query, '%') OR " +
+            "LOWER(c.email) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<Customer> searchCustomers(@Param("query") String query);
+
     @Query(value = "SELECT COALESCE(MAX(CAST(SUBSTRING(customer_code, 7) AS UNSIGNED)), 0) " +
             "FROM customers WHERE customer_code LIKE 'SIIBPL%'", nativeQuery = true)
     Long findMaxCustomerCodeNumber();

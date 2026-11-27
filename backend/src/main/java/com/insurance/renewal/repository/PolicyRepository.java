@@ -12,6 +12,14 @@ import java.util.List;
 public interface PolicyRepository extends JpaRepository<Policy, Long> {
 
     java.util.Optional<Policy> findByPolicyNumber(String policyNumber);
+
+    @Query("SELECT DISTINCT p.customer FROM Policy p WHERE LOWER(p.policyNumber) LIKE LOWER(CONCAT('%', :query, '%'))")
+    List<com.insurance.renewal.entity.Customer> findCustomersByPolicyNumberSearch(@Param("query") String query);
+
+    @Query("SELECT p FROM Policy p LEFT JOIN FETCH p.reminder r JOIN FETCH p.customer c WHERE c.id = :customerId ORDER BY p.expiryDate DESC")
+    List<Policy> findPoliciesByCustomerId(@Param("customerId") Long customerId);
+
+    List<Policy> findByCustomerId(Long customerId);
         List<Policy> findByExpiryDate(LocalDate expiryDate);
         @Query("SELECT COUNT(p) FROM Policy p WHERE p.expiryDate = :expiryDate AND (:branch IS NULL OR :branch = '' OR p.branch = :branch)")
         long countByExpiryDate(@Param("expiryDate") LocalDate expiryDate, @Param("branch") String branch);

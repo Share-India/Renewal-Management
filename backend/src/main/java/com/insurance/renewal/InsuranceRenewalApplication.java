@@ -159,7 +159,8 @@ public class InsuranceRenewalApplication {
 					"tp_amount DECIMAL(12, 2)",
 					"idv DECIMAL(12, 2)",
 					"mfg_year VARCHAR(20)",
-					"vehicle_type VARCHAR(100)"
+					"vehicle_type VARCHAR(100)",
+					"application_number VARCHAR(100)"
 				};
 				for (String colDef : policyCols) {
 					String colName = colDef.split(" ")[0];

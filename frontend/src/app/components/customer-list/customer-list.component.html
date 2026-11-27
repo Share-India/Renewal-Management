@@ -312,9 +312,9 @@
             <div class="d-flex align-items-center gap-2 text-muted small">
                 <span>Showing <strong>{{ startIndex }}</strong> to <strong>{{ endIndex }}</strong> of <strong>{{ policies.length }}</strong> policies</span>
                 <span class="ms-2">|</span>
-                <label class="mb-0 ms-1">Per page:</label>
+                <label class="mb-0 ms-1 fw-semibold">Per page:</label>
                 <select class="form-select form-select-sm d-inline-block shadow-sm" 
-                        style="width: 78px !important; min-width: 78px; padding: 4px 26px 4px 10px !important; font-size: 0.85rem; font-weight: 500; cursor: pointer; border-radius: 6px; background-position: right 0.6rem center;" 
+                        style="width: 88px !important; min-width: 88px; padding: 4px 28px 4px 12px !important; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #ced4da; height: 32px; text-align: left; background-position: right 8px center;" 
                         [(ngModel)]="pageSize" 
                         (change)="onPageSizeChange()">
                     <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
@@ -355,6 +355,9 @@
                             style="font-size: 0.7rem; letter-spacing: 1px; line-height: 1;">Policy No</span>
                         <span class="fs-4 fw-bold text-white tracking-wide" style="line-height: 1.2;">{{
                             selectedPolicyDetails?.policyNumber }}</span>
+                        <span *ngIf="selectedPolicyDetails?.applicationNumber" class="text-white-50 small mt-1" style="font-size: 0.75rem;">
+                            App No / Cust ID: <span class="text-white fw-semibold">{{ selectedPolicyDetails?.applicationNumber }}</span>
+                        </span>
                     </div>
                 </div>
 
@@ -388,11 +391,15 @@
                     <h4 class="section-title d-flex align-items-center justify-content-between">
                         <span><i class="bi bi-person"></i> Customer Info</span>
                         <span *ngIf="selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode" 
-                              class="badge bg-light text-dark border px-2 py-1 fw-bold" 
-                              style="font-size: 0.84rem; background-color: #f8fafc !important; border-color: #cbd5e1 !important; color: #1e293b !important; letter-spacing: 0.3px;">
-                            {{ selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode }}
+                              class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" 
+                              style="font-size: 0.85rem; letter-spacing: 0.4px;">
+                            <i class="bi bi-person-badge me-1"></i>{{ selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode }}
                         </span>
                     </h4>
+                    <div class="info-row">
+                        <label>Customer Code:</label>
+                        <span class="fw-bold text-primary">{{ selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode || 'N/A' }}</span>
+                    </div>
                     <div class="info-row">
                         <label>Name:</label>
                         <span *ngIf="!isEditing">{{ selectedPolicyDetails?.customer?.firstName }} {{ selectedPolicyDetails?.customer?.lastName }}</span>
@@ -487,6 +494,12 @@
                         <label>Policy No:</label>
                         <input type="text" class="form-control form-control-sm"
                             [(ngModel)]="selectedPolicyDetails.policyNumber">
+                    </div>
+                    <div class="info-row">
+                        <label>Application / Cust ID:</label>
+                        <span *ngIf="!isEditing">{{ selectedPolicyDetails?.applicationNumber || 'N/A' }}</span>
+                        <input *ngIf="isEditing" type="text" class="form-control form-control-sm"
+                            [(ngModel)]="selectedPolicyDetails.applicationNumber" placeholder="Application no. / Customer ID">
                     </div>
                     <div class="info-row">
                         <label>Type:</label>

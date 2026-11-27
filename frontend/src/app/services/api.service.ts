@@ -183,6 +183,14 @@ export class ApiService {
         return this.http.post<any>(`${this.baseUrl}/renewals/policies`, policy, { headers: this.getHeaders() });
     }
 
+    searchCustomersForRenewal(query: string): Observable<any[]> {
+        const clean = (query || '').trim();
+        return this.http.get<any[]>(`${this.baseUrl}/renewals/search-customer`, {
+            params: { query: clean },
+            headers: this.getHeaders()
+        });
+    }
+
     getCallHistory(policyId: number): Observable<any[]> {
         return this.http.get<any[]>(`${this.baseUrl}/renewals/call-history/${policyId}`, { headers: this.getHeaders() });
     }

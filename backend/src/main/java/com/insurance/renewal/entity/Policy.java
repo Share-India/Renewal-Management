@@ -23,6 +23,9 @@ public class Policy {
     @Column(name = "policy_number", nullable = false, unique = true)
     private String policyNumber;
 
+    @Column(name = "application_number")
+    private String applicationNumber;
+
     @Column(name = "customer_code")
     private String customerCode;
 

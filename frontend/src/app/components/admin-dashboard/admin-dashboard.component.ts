@@ -438,6 +438,11 @@ import * as XLSX from 'xlsx';
                     <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.policyNumber">
                 </div>
                 <div class="col-md-6">
+                    <label class="fw-bold text-muted small">Application no. / Customer ID</label>
+                    <div *ngIf="!isEditing">{{ selectedViewPolicy.applicationNumber || '-' }}</div>
+                    <input *ngIf="isEditing" type="text" class="form-control form-control-sm" [(ngModel)]="selectedViewPolicy.applicationNumber" placeholder="Application no. / Cust ID">
+                </div>
+                <div class="col-md-6">
                     <label class="fw-bold text-muted small">Insurance Type</label>
                     <div *ngIf="!isEditing"><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ selectedViewPolicy.type || '-' }}</span></div>
                     <select *ngIf="isEditing" class="form-select form-select-sm" [(ngModel)]="selectedViewPolicy.type">
@@ -713,8 +718,9 @@ import * as XLSX from 'xlsx';
                 <h4 class="mb-0 fw-bold text-dark">{{ selectedRenewalPolicy ? 'Edit Policy Details' : 'Add / Edit Policy' }}</h4>
                 <small class="text-muted" *ngIf="!selectedRenewalPolicy">
                   <span *ngIf="renewalModalStep === 'section'">Step 1: Choose Policy Category</span>
-                  <span *ngIf="renewalModalStep === 'type'">Step 2: Choose Insurance Type (Fresh)</span>
-                  <span *ngIf="renewalModalStep === 'form'">Step 3: Fill Policy & Customer Details</span>
+                  <span *ngIf="renewalModalStep === 'renewal-search'">Step 2: Search & Select Customer</span>
+                  <span *ngIf="renewalModalStep === 'type'">Step {{ selectedSection === 'Renewal' ? '3' : '2' }}: Choose Insurance Type</span>
+                  <span *ngIf="renewalModalStep === 'form'">Step {{ selectedSection === 'Renewal' ? '4' : '3' }}: Fill Policy & Customer Details</span>
                 </small>
                 <small class="text-muted" *ngIf="selectedRenewalPolicy">
                   Policy #: <strong>{{ selectedRenewalPolicy.policyNumber }}</strong> | Type: <strong>{{ selectedInsuranceType }}</strong>
@@ -758,8 +764,8 @@ import * as XLSX from 'xlsx';
                       <i class="bi bi-arrow-repeat fs-2"></i>
                     </div>
                     <h5 class="fw-bold mb-1 text-dark">Renewal</h5>
-                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Existing Policy</span>
-                    <p class="text-muted small mb-0">Renew an existing policy expiring soon or update renewal details.</p>
+                    <span class="badge bg-primary bg-opacity-10 text-primary mb-2">Existing Customer</span>
+                    <p class="text-muted small mb-0">Find existing customer by code, name, or policy #, view all policies, and add renewal.</p>
                   </div>
                 </div>
 
@@ -778,30 +784,198 @@ import * as XLSX from 'xlsx';
                 </div>
               </div>
 
-              <!-- Notice for Renewal & Endorsement -->
-              <div *ngIf="selectedSection === 'Renewal' || selectedSection === 'Endorsement'" class="alert alert-info border-0 shadow-sm d-flex align-items-center justify-content-between p-3 mt-3">
+              <!-- Notice for Endorsement -->
+              <div *ngIf="selectedSection === 'Endorsement'" class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between p-3 mt-3">
                 <div class="d-flex align-items-center gap-3">
-                  <i class="bi bi-info-circle-fill fs-4 text-info"></i>
+                  <i class="bi bi-info-circle-fill fs-4 text-warning"></i>
                   <div>
-                    <strong class="d-block text-dark">{{ selectedSection }} Section Notice</strong>
-                    <span class="small text-muted">{{ selectedSection }} workflow and field format is scheduled for upcoming configuration. You can proceed with <strong>Fresh</strong> entry.</span>
+                    <strong class="d-block text-dark">Endorsement Section</strong>
+                    <span class="small text-muted">Endorsement alteration workflow is coming soon. Please select <strong>Fresh</strong> or <strong>Renewal</strong> to continue.</span>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-primary text-nowrap" (click)="selectSection('Fresh')">
-                  Proceed with Fresh <i class="bi bi-arrow-right ms-1"></i>
-                </button>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-primary text-nowrap" (click)="selectSection('Fresh')">
+                    Fresh Entry
+                  </button>
+                  <button class="btn btn-sm btn-success text-nowrap" (click)="selectSection('Renewal')">
+                    Renewal Entry
+                  </button>
+                </div>
               </div>
             </div>
 
-            <!-- STEP 2: INSURANCE TYPE SELECTION (For Fresh) -->
+            <!-- STEP: RENEWAL CUSTOMER SEARCH -->
+            <div *ngIf="renewalModalStep === 'renewal-search' && !selectedRenewalPolicy">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="fw-bold text-dark mb-1"><i class="bi bi-search text-primary me-2"></i>Find Customer for Renewal</h5>
+                  <p class="text-muted small mb-0">Search by <strong>Policy Number</strong>, <strong>Customer Name</strong>, or <strong>Customer Code</strong></p>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" (click)="renewalModalStep = 'section'; selectedSection = null;">
+                  <i class="bi bi-arrow-left me-1"></i> Change Category
+                </button>
+              </div>
+
+              <!-- Search Bar -->
+              <div class="card border-0 bg-light p-3 mb-3 shadow-sm rounded-3">
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-primary"></i>
+                  </span>
+                  <input type="text" 
+                         class="form-control border-start-0 ps-0" 
+                         placeholder="Enter Policy Number, Customer Name, or Customer Code (e.g. SIIBPL12529)..." 
+                         [(ngModel)]="renewalSearchQuery" 
+                         (keyup.enter)="searchRenewalCustomer()" 
+                         autofocus>
+                  <button class="btn btn-outline-secondary" type="button" *ngIf="renewalSearchQuery" (click)="clearRenewalSearch()">
+                    <i class="bi bi-x-lg"></i> Clear
+                  </button>
+                  <button class="btn btn-primary px-4 fw-semibold" type="button" (click)="searchRenewalCustomer()" [disabled]="searchingCustomers || !renewalSearchQuery.trim()">
+                    <span *ngIf="searchingCustomers" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!searchingCustomers" class="bi bi-search me-1"></i> Search
+                  </button>
+                </div>
+                <div class="d-flex align-items-center justify-content-between mt-2 px-1">
+                  <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i> Code & Policy No. find the exact customer; Name search shows all matching customers.
+                  </small>
+                  <small class="text-muted" *ngIf="hasSearchedCustomer && renewalSearchResults.length > 0">
+                    Found <strong>{{ renewalSearchResults.length }}</strong> matching customer(s)
+                  </small>
+                </div>
+              </div>
+
+              <!-- Loading Indicator -->
+              <div *ngIf="searchingCustomers" class="text-center py-5">
+                <div class="spinner-border text-primary mb-2" role="status"></div>
+                <div class="text-muted small">Searching customers & existing policies...</div>
+              </div>
+
+              <!-- No Results Message -->
+              <div *ngIf="hasSearchedCustomer && !searchingCustomers && renewalSearchResults.length === 0" class="alert alert-warning border-0 shadow-sm text-center py-4 my-3">
+                <i class="bi bi-exclamation-triangle-fill fs-3 text-warning d-block mb-2"></i>
+                <h6 class="fw-bold mb-1">No Customers Found</h6>
+                <p class="text-muted small mb-3">No matching record found for "<strong>{{ renewalSearchQuery }}</strong>". Please check your query or create as Fresh.</p>
+                <button class="btn btn-sm btn-outline-primary" (click)="selectSection('Fresh')">
+                  <i class="bi bi-file-earmark-plus me-1"></i> Add as Fresh Policy
+                </button>
+              </div>
+
+              <!-- Matching Customers List -->
+              <div *ngIf="!searchingCustomers && renewalSearchResults.length > 0" class="mb-3">
+                <label class="form-label small fw-bold text-dark text-uppercase tracking-wider mb-2">
+                  Matching Customers ({{ renewalSearchResults.length }}) — Click to Select
+                </label>
+                <div class="list-group shadow-sm mb-3" style="max-height: 220px; overflow-y: auto;">
+                  <button type="button" 
+                          *ngFor="let cust of renewalSearchResults"
+                          class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3"
+                          [class.active]="selectedRenewalCustomer?.id === cust.id"
+                          [class.bg-primary-subtle]="selectedRenewalCustomer?.id === cust.id"
+                          [class.border-primary]="selectedRenewalCustomer?.id === cust.id"
+                          (click)="selectCustomerForRenewal(cust)">
+                    <div>
+                      <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge" [ngClass]="selectedRenewalCustomer?.id === cust.id ? 'bg-primary text-white' : 'bg-dark text-white'">
+                          {{ cust.customerCode }}
+                        </span>
+                        <strong class="text-dark fs-6">{{ cust.fullName }}</strong>
+                        <span *ngIf="selectedRenewalCustomer?.id === cust.id" class="badge bg-success">
+                          <i class="bi bi-check-circle-fill me-1"></i> Selected
+                        </span>
+                      </div>
+                      <div class="small text-muted d-flex flex-wrap gap-3">
+                        <span *ngIf="cust.phone"><i class="bi bi-telephone me-1"></i>{{ cust.phone }}</span>
+                        <span *ngIf="cust.email"><i class="bi bi-envelope me-1"></i>{{ cust.email }}</span>
+                        <span *ngIf="cust.city"><i class="bi bi-geo-alt me-1"></i>{{ cust.city }}<span *ngIf="cust.state">, {{ cust.state }}</span></span>
+                      </div>
+                    </div>
+                    <div class="text-end">
+                      <span class="badge bg-light text-dark border px-2 py-1 mb-1 d-inline-block">
+                        <i class="bi bi-shield-check me-1 text-primary"></i>{{ cust.policyCount }} Policies
+                      </span>
+                      <div class="small text-primary fw-semibold" *ngIf="selectedRenewalCustomer?.id !== cust.id">
+                        Select <i class="bi bi-chevron-right ms-1"></i>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Selected Customer Details & Policies Table -->
+              <div *ngIf="selectedRenewalCustomer" class="card border-primary border-opacity-25 shadow-sm rounded-3 mb-3">
+                <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center py-2 px-3">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-dark fw-bold">{{ selectedRenewalCustomer.customerCode }}</span>
+                    <strong class="text-dark">{{ selectedRenewalCustomer.fullName }}</strong>
+                    <span class="badge bg-primary rounded-pill">{{ selectedRenewalCustomer.policies?.length || 0 }} Total Policies</span>
+                  </div>
+                  <button class="btn btn-primary btn-sm fw-bold shadow-sm" (click)="proceedToRenewalType()">
+                    <i class="bi bi-plus-circle me-1"></i> Add Renewal Policy
+                  </button>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive" style="max-height: 250px;">
+                    <table class="table table-hover table-sm align-middle mb-0" style="font-size: 0.85rem;">
+                      <thead class="table-light sticky-top">
+                        <tr>
+                          <th class="ps-3">Policy No.</th>
+                          <th>App No / Cust ID</th>
+                          <th>Type</th>
+                          <th>Insurer</th>
+                          <th>Product</th>
+                          <th>Expiry Date</th>
+                          <th>Premium</th>
+                          <th>Status</th>
+                          <th class="text-end pe-3">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let p of selectedRenewalCustomer.policies">
+                          <td class="ps-3 fw-bold text-dark">{{ p.policyNumber }}</td>
+                          <td><span class="text-muted">{{ p.applicationNumber || '-' }}</span></td>
+                          <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ p.type || '-' }}</span></td>
+                          <td>{{ p.insuranceName || '-' }}</td>
+                          <td><small class="text-muted">{{ p.productName || '-' }}</small></td>
+                          <td class="text-nowrap">{{ (p.expiryDate || p.policyEndDate) | date:'mediumDate' }}</td>
+                          <td class="fw-semibold text-dark">₹{{ (p.duePremium || p.amount || 0) | number:'1.2-2' }}</td>
+                          <td>
+                            <span class="badge" [ngClass]="p.status === 'EXPIRED' ? 'bg-danger' : (p.status === 'RENEWED' ? 'bg-success' : 'bg-info')">
+                              {{ p.status || 'ACTIVE' }}
+                            </span>
+                          </td>
+                          <td class="text-end pe-3">
+                            <button class="btn btn-xs btn-outline-primary py-0 px-2" (click)="renewSpecificPolicy(p)" title="Renew this policy">
+                              <i class="bi bi-arrow-repeat me-1"></i> Renew
+                            </button>
+                          </td>
+                        </tr>
+                        <tr *ngIf="!selectedRenewalCustomer.policies || selectedRenewalCustomer.policies.length === 0">
+                          <td colspan="9" class="text-center text-muted py-3">No existing policies found for this customer.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- STEP 2 / 3: INSURANCE TYPE SELECTION -->
             <div *ngIf="renewalModalStep === 'type' && !selectedRenewalPolicy">
               <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                   <h5 class="fw-bold text-dark mb-1">Select Insurance Type</h5>
-                  <p class="text-muted small mb-0">Choose insurance type to load the tailored field format</p>
+                  <p class="text-muted small mb-0" *ngIf="selectedSection === 'Renewal' && selectedRenewalCustomer">
+                    Renewing for: <strong>{{ selectedRenewalCustomer.fullName }}</strong> ({{ selectedRenewalCustomer.customerCode }})
+                  </p>
+                  <p class="text-muted small mb-0" *ngIf="selectedSection !== 'Renewal'">
+                    Choose insurance type to load the tailored field format
+                  </p>
                 </div>
-                <button class="btn btn-sm btn-outline-secondary" (click)="renewalModalStep = 'section'; selectedSection = null;">
-                  <i class="bi bi-arrow-left me-1"></i> Change Category
+                <button class="btn btn-sm btn-outline-secondary" (click)="selectedSection === 'Renewal' ? (renewalModalStep = 'renewal-search') : (renewalModalStep = 'section');">
+                  <i class="bi bi-arrow-left me-1"></i> {{ selectedSection === 'Renewal' ? 'Back to Customer Search' : 'Change Category' }}
                 </button>
               </div>
 
@@ -951,14 +1125,35 @@ import * as XLSX from 'xlsx';
                 </div>
               </div>
 
+              <!-- Renewal Customer Locked Banner -->
+              <div *ngIf="selectedSection === 'Renewal' && selectedRenewalCustomer" class="alert alert-primary bg-primary bg-opacity-10 border-primary border-opacity-25 d-flex justify-content-between align-items-center p-3 mb-4 rounded-3">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="bg-primary text-white rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-arrow-repeat fs-5"></i>
+                  </div>
+                  <div>
+                    <span class="badge bg-primary text-uppercase me-2">Renewal Policy</span>
+                    <strong class="text-dark">{{ selectedRenewalCustomer.fullName }}</strong>
+                    <span class="badge bg-dark ms-2">{{ selectedRenewalCustomer.customerCode }}</span>
+                    <div class="small text-muted mt-1">Customer code is locked and will be attached to this renewed policy.</div>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" (click)="renewalModalStep = 'renewal-search'">
+                  <i class="bi bi-arrow-left me-1"></i> Change Customer
+                </button>
+              </div>
+
               <!-- ================= FORMAT A: Health, Life, GMC, GPA, GTL ================= -->
               <div class="row g-3" *ngIf="isGeneralFormat()">
                 <!-- Customer Details -->
                 <div class="col-12"><h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-person-fill me-1"></i> Customer Details</h6></div>
                 
                 <div class="col-md-4">
-                  <label class="form-label small fw-semibold">Customer Code</label>
-                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.customerCode" placeholder="Auto-generated (e.g. SIIBPL...)">
+                  <label class="form-label small fw-semibold">Customer Code <span *ngIf="selectedSection === 'Renewal'" class="badge bg-secondary-subtle text-secondary ms-1">Auto-Selected</span></label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.customerCode" 
+                         [disabled]="selectedSection === 'Renewal'" [readonly]="selectedSection === 'Renewal'"
+                         [class.bg-light]="selectedSection === 'Renewal'"
+                         placeholder="Auto-generated (e.g. SIIBPL...)">
                 </div>
                 <div class="col-md-5">
                   <label class="form-label small fw-semibold">Customer Name *</label>
@@ -1007,15 +1202,19 @@ import * as XLSX from 'xlsx';
                 <!-- Policy Details -->
                 <div class="col-12 mt-3"><h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-file-earmark-text-fill me-1"></i> Policy Details</h6></div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Policy No. *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.policyNumber" placeholder="Enter policy number">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Application no. / Customer ID</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.applicationNumber" placeholder="Optional application no. / customer ID">
+                </div>
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Insurance Type *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.type" placeholder="e.g. Health, Life, GMC">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Insurer Name *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.insuranceName" placeholder="e.g. HDFC ERGO, Star Health">
                 </div>
@@ -1112,8 +1311,11 @@ import * as XLSX from 'xlsx';
                 <div class="col-12"><h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-person-fill me-1"></i> Customer Details</h6></div>
 
                 <div class="col-md-4">
-                  <label class="form-label small fw-semibold">Customer Code</label>
-                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.customerCode" placeholder="Auto-generated (e.g. SIIBPL...)">
+                  <label class="form-label small fw-semibold">Customer Code <span *ngIf="selectedSection === 'Renewal'" class="badge bg-secondary-subtle text-secondary ms-1">Auto-Selected</span></label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.customerCode" 
+                         [disabled]="selectedSection === 'Renewal'" [readonly]="selectedSection === 'Renewal'"
+                         [class.bg-light]="selectedSection === 'Renewal'"
+                         placeholder="Auto-generated (e.g. SIIBPL...)">
                 </div>
                 <div class="col-md-8">
                   <label class="form-label small fw-semibold">Customer Name *</label>
@@ -1187,15 +1389,19 @@ import * as XLSX from 'xlsx';
                 <!-- Policy Details -->
                 <div class="col-12 mt-3"><h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-file-earmark-text-fill me-1"></i> Policy Details</h6></div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Policy No. *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.policyNumber" placeholder="Enter policy number">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Application no. / Customer ID</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.applicationNumber" placeholder="Optional application no. / customer ID">
+                </div>
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Insurance Type *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.type" placeholder="Motor Insurance">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Insurer Name *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.insuranceName" placeholder="e.g. ICICI Lombard, Tata AIG">
                 </div>
@@ -1291,8 +1497,11 @@ import * as XLSX from 'xlsx';
                 <div class="col-12"><h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-person-fill me-1"></i> Customer & Entity Details</h6></div>
 
                 <div class="col-md-4">
-                  <label class="form-label small fw-semibold">Customer Code</label>
-                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.customerCode" placeholder="Auto-generated (e.g. SIIBPL...)">
+                  <label class="form-label small fw-semibold">Customer Code <span *ngIf="selectedSection === 'Renewal'" class="badge bg-secondary-subtle text-secondary ms-1">Auto-Selected</span></label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.customerCode" 
+                         [disabled]="selectedSection === 'Renewal'" [readonly]="selectedSection === 'Renewal'"
+                         [class.bg-light]="selectedSection === 'Renewal'"
+                         placeholder="Auto-generated (e.g. SIIBPL...)">
                 </div>
                 <div class="col-md-5">
                   <label class="form-label small fw-semibold">Customer Name *</label>
@@ -1345,15 +1554,19 @@ import * as XLSX from 'xlsx';
                 <!-- Policy Details -->
                 <div class="col-12 mt-3"><h6 class="border-bottom pb-1 text-primary fw-bold"><i class="bi bi-file-earmark-text-fill me-1"></i> Policy Details</h6></div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Policy No. *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.policyNumber" placeholder="Enter policy number">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Application no. / Customer ID</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.applicationNumber" placeholder="Optional application no. / customer ID">
+                </div>
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Insurance Type *</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.type" placeholder="Commercial">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label class="form-label small fw-semibold">Insurer Name</label>
                   <input type="text" class="form-control form-control-sm" [(ngModel)]="renewalForm.insuranceName" placeholder="Enter insurance company">
                 </div>
@@ -1447,11 +1660,24 @@ import * as XLSX from 'xlsx';
 
           </div>
 
-          <div class="modal-footer py-2 px-4 bg-light border-top">
-            <button class="btn btn-secondary" (click)="closeRenewalModal()">Cancel</button>
-            <button class="btn btn-primary px-4 shadow-sm" *ngIf="renewalModalStep === 'form'" (click)="submitRenewal()">
-              <i class="bi bi-check-circle-fill me-1"></i> {{ selectedRenewalPolicy ? 'Update Policy' : 'Create Policy' }}
-            </button>
+          <div class="modal-footer py-2 px-4 bg-light border-top d-flex justify-content-between align-items-center">
+            <div>
+              <button class="btn btn-outline-secondary btn-sm" *ngIf="renewalModalStep === 'renewal-search'" (click)="renewalModalStep = 'section'; selectedSection = null;">
+                <i class="bi bi-arrow-left me-1"></i> Back to Categories
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" *ngIf="renewalModalStep === 'type'" (click)="selectedSection === 'Renewal' ? (renewalModalStep = 'renewal-search') : (renewalModalStep = 'section');">
+                <i class="bi bi-arrow-left me-1"></i> {{ selectedSection === 'Renewal' ? 'Back to Customer Search' : 'Back to Categories' }}
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" *ngIf="renewalModalStep === 'form' && !selectedRenewalPolicy" (click)="renewalModalStep = 'type'">
+                <i class="bi bi-arrow-left me-1"></i> Back to Types
+              </button>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-secondary btn-sm" (click)="closeRenewalModal()">Cancel</button>
+              <button class="btn btn-primary btn-sm px-4 shadow-sm" *ngIf="renewalModalStep === 'form'" (click)="submitRenewal()">
+                <i class="bi bi-check-circle-fill me-1"></i> {{ selectedRenewalPolicy ? 'Update Policy' : 'Create Policy' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -2107,7 +2333,7 @@ export class AdminDashboardComponent implements OnInit {
 
   // Renewal Modal
   showRenewalModal: boolean = false;
-  renewalModalStep: 'section' | 'type' | 'form' = 'section';
+  renewalModalStep: 'section' | 'renewal-search' | 'type' | 'form' = 'section';
   selectedSection: 'Fresh' | 'Renewal' | 'Endorsement' | null = null;
   selectedInsuranceType: string | null = null;
   customerFullName: string = '';
@@ -2115,6 +2341,10 @@ export class AdminDashboardComponent implements OnInit {
   selectedRenewalPolicy: any = null;
   renewalSearchTerm: string = '';
   renewalSearchResults: any[] = [];
+  renewalSearchQuery: string = '';
+  searchingCustomers: boolean = false;
+  hasSearchedCustomer: boolean = false;
+  selectedRenewalCustomer: any = null;
   newPolicyEndDate: string = '';
 
   // Renewer Stats Modal
@@ -2960,8 +3190,15 @@ export class AdminDashboardComponent implements OnInit {
 
   openViewModal(policy: any) {
     this.selectedViewPolicy = policy;
-    if (this.selectedViewPolicy && !this.selectedViewPolicy.customer) {
-      this.selectedViewPolicy.customer = {};
+    if (this.selectedViewPolicy) {
+      if (!this.selectedViewPolicy.customer) {
+        this.selectedViewPolicy.customer = {};
+      }
+      if (!this.selectedViewPolicy.customerCode && this.selectedViewPolicy.customer?.customerCode) {
+        this.selectedViewPolicy.customerCode = this.selectedViewPolicy.customer.customerCode;
+      } else if (!this.selectedViewPolicy.customer?.customerCode && this.selectedViewPolicy.customerCode) {
+        this.selectedViewPolicy.customer.customerCode = this.selectedViewPolicy.customerCode;
+      }
     }
     this.showViewModal = true;
     this.isEditing = false;
@@ -2973,8 +3210,15 @@ export class AdminDashboardComponent implements OnInit {
       this.apiService.getPolicyById(policy.id).subscribe({
         next: (freshPolicy) => {
           this.selectedViewPolicy = freshPolicy;
-          if (this.selectedViewPolicy && !this.selectedViewPolicy.customer) {
-            this.selectedViewPolicy.customer = {};
+          if (this.selectedViewPolicy) {
+            if (!this.selectedViewPolicy.customer) {
+              this.selectedViewPolicy.customer = {};
+            }
+            if (!this.selectedViewPolicy.customerCode && this.selectedViewPolicy.customer?.customerCode) {
+              this.selectedViewPolicy.customerCode = this.selectedViewPolicy.customer.customerCode;
+            } else if (!this.selectedViewPolicy.customer?.customerCode && this.selectedViewPolicy.customerCode) {
+              this.selectedViewPolicy.customer.customerCode = this.selectedViewPolicy.customerCode;
+            }
           }
           console.log('Admin Dashboard: Policy refreshed from server');
         },
@@ -3043,18 +3287,124 @@ export class AdminDashboardComponent implements OnInit {
   selectSection(section: 'Fresh' | 'Renewal' | 'Endorsement') {
     this.selectedSection = section;
     if (section === 'Fresh') {
+      this.selectedRenewalCustomer = null;
       this.renewalModalStep = 'type';
+    } else if (section === 'Renewal') {
+      this.selectedRenewalCustomer = null;
+      this.renewalSearchQuery = '';
+      this.renewalSearchResults = [];
+      this.hasSearchedCustomer = false;
+      this.renewalModalStep = 'renewal-search';
     } else {
       this.renewalModalStep = 'section';
     }
   }
 
-  selectInsuranceType(type: string) {
+  searchRenewalCustomer() {
+    const q = (this.renewalSearchQuery || '').trim();
+    if (!q) return;
+    this.searchingCustomers = true;
+    this.hasSearchedCustomer = false;
+    this.apiService.searchCustomersForRenewal(q).subscribe({
+      next: (results) => {
+        this.searchingCustomers = false;
+        this.hasSearchedCustomer = true;
+        this.renewalSearchResults = results || [];
+        if (this.renewalSearchResults.length === 1) {
+          this.selectCustomerForRenewal(this.renewalSearchResults[0]);
+        }
+      },
+      error: (err) => {
+        this.searchingCustomers = false;
+        this.hasSearchedCustomer = true;
+        console.error('Error searching customers for renewal:', err);
+      }
+    });
+  }
+
+  clearRenewalSearch() {
+    this.renewalSearchQuery = '';
+    this.renewalSearchResults = [];
+    this.hasSearchedCustomer = false;
+    this.selectedRenewalCustomer = null;
+  }
+
+  selectCustomerForRenewal(cust: any) {
+    this.selectedRenewalCustomer = cust;
+  }
+
+  proceedToRenewalType() {
+    if (!this.selectedRenewalCustomer) return;
+    this.renewalModalStep = 'type';
+  }
+
+  renewSpecificPolicy(policy: any) {
+    if (!this.selectedRenewalCustomer) return;
+    const t = (policy.type || '').toLowerCase();
+    if (t.includes('motor') || t.includes('vehicle') || t.includes('car')) {
+      this.selectedInsuranceType = 'Motor';
+    } else if (t.includes('commercial')) {
+      this.selectedInsuranceType = 'Commercial';
+    } else if (t.includes('life')) {
+      this.selectedInsuranceType = 'Life';
+    } else if (t.includes('gmc')) {
+      this.selectedInsuranceType = 'GMC';
+    } else if (t.includes('gpa')) {
+      this.selectedInsuranceType = 'GPA';
+    } else if (t.includes('gtl')) {
+      this.selectedInsuranceType = 'GTL';
+    } else {
+      this.selectedInsuranceType = 'Health';
+    }
+    this.selectInsuranceType(this.selectedInsuranceType, policy);
+  }
+
+  selectInsuranceType(type: string, basePolicy: any = null) {
     this.selectedInsuranceType = type;
     if (!this.renewalForm) this.renewalForm = { customer: {} };
     if (!this.renewalForm.customer) this.renewalForm.customer = {};
     this.renewalForm.type = type;
     this.renewalForm.businessType = this.selectedSection || 'Fresh';
+
+    if (this.selectedSection === 'Renewal' && this.selectedRenewalCustomer) {
+      this.renewalForm.customer = {
+        id: this.selectedRenewalCustomer.id,
+        customerCode: this.selectedRenewalCustomer.customerCode,
+        firstName: this.selectedRenewalCustomer.firstName,
+        lastName: this.selectedRenewalCustomer.lastName,
+        gender: this.selectedRenewalCustomer.gender,
+        dob: this.selectedRenewalCustomer.dob,
+        phone: this.selectedRenewalCustomer.phone,
+        email: this.selectedRenewalCustomer.email,
+        address: this.selectedRenewalCustomer.address,
+        city: this.selectedRenewalCustomer.city,
+        state: this.selectedRenewalCustomer.state,
+        pincode: this.selectedRenewalCustomer.pincode,
+        panNumber: this.selectedRenewalCustomer.panNumber,
+        billingFrequency: this.selectedRenewalCustomer.billingFrequency
+      };
+      this.renewalForm.customerCode = this.selectedRenewalCustomer.customerCode;
+      this.customerFullName = this.selectedRenewalCustomer.fullName;
+
+      if (basePolicy) {
+        this.renewalForm.insuranceName = basePolicy.insuranceName;
+        this.renewalForm.productName = basePolicy.productName;
+        this.renewalForm.amount = basePolicy.amount || basePolicy.duePremium;
+        this.renewalForm.duePremium = basePolicy.duePremium || basePolicy.amount;
+        this.renewalForm.branch = basePolicy.branch || this.selectedAdminBranch || 'Corporate';
+        this.renewalForm.rmName = basePolicy.rmName;
+        this.renewalForm.associateName = basePolicy.associateName;
+        this.renewalForm.pospName = basePolicy.pospName;
+        this.renewalForm.vehicleRegNo = basePolicy.vehicleRegNo;
+        this.renewalForm.vehicleModel = basePolicy.vehicleModel;
+        this.renewalForm.mfgYear = basePolicy.mfgYear;
+        this.renewalForm.vehicleType = basePolicy.vehicleType;
+        this.renewalForm.idv = basePolicy.idv;
+        this.renewalForm.odAmount = basePolicy.odAmount;
+        this.renewalForm.tpAmount = basePolicy.tpAmount;
+      }
+    }
+
     this.renewalModalStep = 'form';
   }
 
@@ -3109,6 +3459,10 @@ export class AdminDashboardComponent implements OnInit {
   resetRenewalForm() {
     this.renewalSearchTerm = '';
     this.renewalSearchResults = [];
+    this.renewalSearchQuery = '';
+    this.searchingCustomers = false;
+    this.hasSearchedCustomer = false;
+    this.selectedRenewalCustomer = null;
     this.selectedRenewalPolicy = null;
     this.renewalForm = { customer: {} };
     this.customerFullName = '';
@@ -3187,7 +3541,12 @@ export class AdminDashboardComponent implements OnInit {
       this.onCustomerNameChange(this.customerFullName);
     }
 
-    if (this.renewalForm.customerCode) {
+    if (this.selectedRenewalCustomer) {
+      this.renewalForm.customer.id = this.selectedRenewalCustomer.id;
+      this.renewalForm.customerCode = this.selectedRenewalCustomer.customerCode;
+      this.renewalForm.customer.customerCode = this.selectedRenewalCustomer.customerCode;
+      this.renewalForm.businessType = 'Renewal';
+    } else if (this.renewalForm.customerCode) {
       this.renewalForm.customer.customerCode = this.renewalForm.customerCode;
     } else if (this.renewalForm.customer.customerCode) {
       this.renewalForm.customerCode = this.renewalForm.customer.customerCode;

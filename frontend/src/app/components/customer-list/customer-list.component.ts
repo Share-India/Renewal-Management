@@ -516,8 +516,15 @@ export class CustomerListComponent implements OnChanges {
     openDetailsModal(policy: any) {
         // Show modal immediately with cached data for responsiveness
         this.selectedPolicyDetails = policy;
-        if (this.selectedPolicyDetails && !this.selectedPolicyDetails.customer) {
-            this.selectedPolicyDetails.customer = {};
+        if (this.selectedPolicyDetails) {
+            if (!this.selectedPolicyDetails.customer) {
+                this.selectedPolicyDetails.customer = {};
+            }
+            if (!this.selectedPolicyDetails.customerCode && this.selectedPolicyDetails.customer?.customerCode) {
+                this.selectedPolicyDetails.customerCode = this.selectedPolicyDetails.customer.customerCode;
+            } else if (!this.selectedPolicyDetails.customer?.customerCode && this.selectedPolicyDetails.customerCode) {
+                this.selectedPolicyDetails.customer.customerCode = this.selectedPolicyDetails.customerCode;
+            }
         }
         this.showDetailsModal = true;
         this.isEditing = false;
@@ -527,8 +534,15 @@ export class CustomerListComponent implements OnChanges {
             this.apiService.getPolicyById(policy.id).subscribe({
                 next: (freshPolicy) => {
                     this.selectedPolicyDetails = freshPolicy;
-                    if (this.selectedPolicyDetails && !this.selectedPolicyDetails.customer) {
-                        this.selectedPolicyDetails.customer = {};
+                    if (this.selectedPolicyDetails) {
+                        if (!this.selectedPolicyDetails.customer) {
+                            this.selectedPolicyDetails.customer = {};
+                        }
+                        if (!this.selectedPolicyDetails.customerCode && this.selectedPolicyDetails.customer?.customerCode) {
+                            this.selectedPolicyDetails.customerCode = this.selectedPolicyDetails.customer.customerCode;
+                        } else if (!this.selectedPolicyDetails.customer?.customerCode && this.selectedPolicyDetails.customerCode) {
+                            this.selectedPolicyDetails.customer.customerCode = this.selectedPolicyDetails.customerCode;
+                        }
                     }
                     console.log('Policy details refreshed from server');
                 },
