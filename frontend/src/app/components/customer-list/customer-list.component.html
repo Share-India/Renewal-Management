@@ -314,7 +314,7 @@
                 <span class="ms-2">|</span>
                 <label class="mb-0 ms-1 fw-semibold">Per page:</label>
                 <select class="form-select form-select-sm d-inline-block shadow-sm" 
-                        style="width: 88px !important; min-width: 88px; padding: 4px 28px 4px 12px !important; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #ced4da; height: 32px; text-align: left; background-position: right 8px center;" 
+                        style="width: 95px !important; min-width: 95px; padding: 4px 34px 4px 12px !important; font-size: 0.88rem; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid #ced4da; height: 32px; text-align: left; background-position: right 10px center;" 
                         [(ngModel)]="pageSize" 
                         (change)="onPageSizeChange()">
                     <option *ngFor="let opt of pageSizeOptions" [value]="opt">{{ opt }}</option>
@@ -389,11 +389,10 @@
                 <!-- Customer Section -->
                 <div class="detail-card">
                     <h4 class="section-title d-flex align-items-center justify-content-between">
-                        <span><i class="bi bi-person"></i> Customer Info</span>
-                        <span *ngIf="selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode" 
-                              class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold" 
+                        <span><i class="bi bi-person me-2"></i>Customer Info</span>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 fw-bold shadow-sm" 
                               style="font-size: 0.85rem; letter-spacing: 0.4px;">
-                            <i class="bi bi-person-badge me-1"></i>{{ selectedPolicyDetails?.customerCode || selectedPolicyDetails?.customer?.customerCode }}
+                            <i class="bi bi-person-badge me-1"></i>{{ getCustomerCode(selectedPolicyDetails) }}
                         </span>
                     </h4>
                     <div class="info-row">

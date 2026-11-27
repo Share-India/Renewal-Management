@@ -556,6 +556,15 @@ export class CustomerListComponent implements OnChanges {
         this.selectedPolicyDetails = null;
     }
 
+    getCustomerCode(policy: any): string {
+        if (!policy) return 'N/A';
+        const code = policy.customerCode || policy.customer?.customerCode;
+        if (code && typeof code === 'string' && code.trim() && code.trim() !== '-') {
+            return code.trim();
+        }
+        return 'N/A';
+    }
+
     get canEditPolicy(): boolean {
         // Sales and Claims team views should not have edit access in the Eye modal.
         if (this.adminViewAs === 'sales' || this.adminViewAs === 'claims') {
